@@ -3,6 +3,7 @@
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
+const applied = { id: null, name: null };
 
 const state = {
   court: 'half', // 'half' | 'full'
@@ -47,6 +48,7 @@ function init(){
   bindPointerEvents();
   draw();
 }
+
 
 function resizeForDPI(){
   const cssW = canvas.clientWidth;
@@ -349,3 +351,29 @@ function exportPNG(){
 }
 
 init();
+
+readAppliedPlay().then(()=> toastAppliedIfAny());
+
+async function readAppliedPlay(){
+  const id = localStorage.getItem('applyPlayId');
+  if (!id) return;
+  try {
+    const res = await fetch('./plays/plays.json');
+    const list = await res.json();
+    const p = list.find(x=>x.id===id);
+    applied.id = id;
+    applied.name = p ? p.name : id;
+  } catch(e){
+    applied.id = id; applied.name = id;
+  }
+  localStorage.removeItem('applyPlayId'); // 用一次就清
+}
+
+function toastAppliedIfAny(){
+  if(!applied.id) return;
+  const bar = document.createElement('div');
+  bar.textContent = `已选择战术：${applied.name}（预览占位）`;
+  bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:999;background:#FFEDD5;color:#9A3412;padding:8px 12px;text-align:center;border-bottom:1px solid #FED7AA';
+  document.body.appendChild(bar);
+  setTimeout(()=>bar.remove(), 4000);
+}
