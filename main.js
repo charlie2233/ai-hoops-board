@@ -226,18 +226,56 @@ function drawCourt(){
     ctx.beginPath(); ctx.arc(centerX, H*0.92, 9, 0, Math.PI*2); ctx.stroke();
     // Free throw circle
     ctx.beginPath(); ctx.arc(centerX, H*0.72, W*0.12, 0, Math.PI*2); ctx.stroke();
-  } else {
-    // Full court simplified
-    ctx.strokeRect(W*0.05, H*0.05, W*0.90, H*0.90);
-    // Mid court line
-    ctx.beginPath(); ctx.moveTo(W*0.05, H*0.50); ctx.lineTo(W*0.95, H*0.50); ctx.stroke();
-    // Two paints
-    const laneW = W*0.24, laneH = H*0.18, cx=W/2;
-    ctx.strokeRect(cx - laneW/2, H*0.05, laneW, laneH);
-    ctx.strokeRect(cx - laneW/2, H*0.95 - laneH, laneW, laneH);
-    // Hoops
-    ctx.beginPath(); ctx.arc(cx, H*0.05 + 18, 9, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, H*0.95 - 18, 9, 0, Math.PI*2); ctx.stroke();
+  }   } else {
+    // ------- Full court：左右方向 -------
+    const m = Math.min(W, H) * 0.05;
+    const left   = m, right  = W - m;
+    const top    = m, bottom = H - m;
+    const cx = W / 2, cy = H / 2;
+
+    // 外框
+    ctx.strokeRect(left, top, right - left, bottom - top);
+
+    // 中线 + 中圈
+    ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bottom); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, Math.min(W, H) * 0.07, 0, Math.PI * 2); ctx.stroke();
+
+    // 罚球区（左右各一个）
+    const laneLen = (right - left) * 0.19;     // 由边线向内的长度
+    const laneW   = (bottom - top) * 0.24;     // 罚球区宽度（竖向）
+    ctx.strokeRect(left,            cy - laneW/2, laneLen,           laneW);  // 左
+    ctx.strokeRect(right - laneLen, cy - laneW/2, laneLen,           laneW);  // 右
+    // 罚球圈（完整圆，简化处理）
+    ctx.beginPath(); ctx.arc(left  + laneLen,  cy, laneW/2, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(right - laneLen,  cy, laneW/2, 0, Math.PI*2); ctx.stroke();
+
+    // 篮圈
+    const rimR = 9;
+    const hoopLx = left  + 18, hoopRx = right - 18;
+    ctx.beginPath(); ctx.arc(hoopLx, cy, rimR, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hoopRx, cy, rimR, 0, Math.PI*2); ctx.stroke();
+
+    // 三分线（近角直线 + 弧线，近似绘制）
+    const cornerXLeft  = left  + (right - left) * 0.12; // 近角直线的 x
+    const cornerXRight = right - (right - left) * 0.12;
+
+    // 近角直线（上下两段）
+    ctx.beginPath(); ctx.moveTo(cornerXLeft, top);            ctx.lineTo(cornerXLeft, cy - laneW/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXLeft, cy + laneW/2);   ctx.lineTo(cornerXLeft, bottom);       ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(cornerXRight, top);           ctx.lineTo(cornerXRight, cy - laneW/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXRight, cy + laneW/2);  ctx.lineTo(cornerXRight, bottom);       ctx.stroke();
+
+    // 弧线：以篮圈为圆心，从上边界到下边界之间的圆弧
+    function arcBetween(hoopX, hoopY, r, yTop, yBottom){
+      const t1 = Math.asin((yTop    - hoopY) / r);
+      const t2 = Math.asin((yBottom - hoopY) / r);
+      ctx.beginPath(); ctx.arc(hoopX, hoopY, r, t1, t2); ctx.stroke();
+    }
+    const rLeft  = Math.abs(cornerXLeft  - hoopLx);
+    const rRight = Math.abs(hoopRx       - cornerXRight);
+    arcBetween(hoopLx, cy, rLeft,  top, bottom);
+    arcBetween(hoopRx, cy, rRight, top, bottom);
   }
 
   ctx.restore();
