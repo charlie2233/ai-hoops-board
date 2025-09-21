@@ -5,6 +5,12 @@ const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const applied = { id: null, name: null };
 
+// 长按切换持球人
+let longPressTimer = null;
+let downPt = null;
+const LONG_PRESS_MS = 600;   // 0.6s 触发
+
+
 // —— 本地保存策略
 const SAVE_KEY = 'boardState_v1';          // 保持原键名即可
 const SAVE_SCHEMA = 1;                     // 数据结构版本号（升级结构就 +1）
@@ -93,37 +99,29 @@ function init(){
   layoutPlayers();
   bindPointerEvents();
   draw();
--  try {
--    const raw = localStorage.getItem('boardState_v1');
--    if (raw) {
--      const data = JSON.parse(raw);
--      state.court  = data.court  ?? state.court;
--      state.players= data.players ?? state.players;
--      state.shapes  = data.shapes  ?? [];
--      draw();
--    }
--  } catch(_) {}
-// +  // —— 自动恢复（带过期/不兼容处理）
-// +  try {
-// +    const raw = localStorage.getItem(SAVE_KEY);
-// +    if (raw) {
-// +      const data = JSON.parse(raw);
-// +      const expired = !data.ts || Date.now() - data.ts > SAVE_TTL;
-// +      const incompatible = data.schema !== SAVE_SCHEMA;
-// +      if (expired || incompatible) {
-// +        localStorage.removeItem(SAVE_KEY); // 过期或不兼容就直接清
-// +      } else {
-// +        state.court   = data.court   ?? state.court;
-// +        state.players = data.players ?? state.players;
-// +        state.shapes  = data.shapes  ?? [];
-// +        draw();
-// +      }
-// +    }
-// +  } catch(_) {}
-// +
-+  // 长按“清空”= 同时清除保存（隐性手势，不加按钮）
-+  bindLongPressClearSave();
+
+  // —— 自动恢复（带过期/不兼容处理）
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      const expired = !data.ts || Date.now() - data.ts > SAVE_TTL;
+      const incompatible = data.schema !== SAVE_SCHEMA;
+      if (expired || incompatible) {
+        localStorage.removeItem(SAVE_KEY); // 过期或不兼容就直接清
+      } else {
+        state.court   = data.court   ?? state.court;
+        state.players = data.players ?? state.players;
+        state.shapes  = data.shapes  ?? [];
+        draw();
+      }
+    }
+  } catch(_) {}
+
+  // 长按“清空”= 同时清除保存（隐性手势，不加按钮）
+  bindLongPressClearSave();
 }
+
 
 function bindLongPressClearSave(){
   const el = $('clear');
@@ -140,6 +138,12 @@ function bindLongPressClearSave(){
   ['pointerup','pointercancel','pointerleave'].forEach(ev => el.addEventListener(ev, cancel));
 }
 
+function setBallHandler(p){
+  state.players.forEach(x=>{ if (x.team==='O') x.ball = false; });
+  p.ball = true;
+  draw();
+  toast('持球人：' + p.id);
+}
 
 function resizeForDPI(){
   const cssW = canvas.clientWidth;
@@ -285,6 +289,39 @@ function drawShapes(){
     }
   }
 }
+function spacingThresholdPx(){
+  // 阈值≈短边的 9%，可微调
+  return Math.min(canvas.clientWidth, canvas.clientHeight) * 0.09;
+}
+
+function drawSpacingAlerts(){
+  const thr = spacingThresholdPx();
+  const O = state.players.filter(p=>p.team==='O');
+  for (let i=0;i<O.length;i++){
+    for (let j=i+1;j<O.length;j++){
+      const a = O[i], b = O[j];
+      const d = Math.hypot(a.x-b.x, a.y-b.y);
+      if (d < thr){
+        const R = Math.max(16, Math.min(canvas.clientWidth, canvas.clientHeight)*0.028);
+        const midx = (a.x+b.x)/2, midy = (a.y+b.y)/2;
+        [a,b].forEach(p=>{
+          ctx.save();
+          ctx.strokeStyle = '#F87171';
+          ctx.setLineDash([6,6]);
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(p.x, p.y, R+8, 0, Math.PI*2); ctx.stroke();
+          ctx.restore();
+        });
+        ctx.save();
+        ctx.fillStyle = '#B91C1C';
+        ctx.font = 'bold 12px system-ui';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('拉开', midx, midy);
+        ctx.restore();
+      }
+    }
+  }
+}
 
 function drawPolyline(pts, color, dashed=false){
   if (pts.length<2) return;
@@ -327,7 +364,9 @@ function draw(){
   drawCourt();
   drawShapes();
   drawPlayers();
+  drawSpacingAlerts(); // 新增
 }
+
 
 function getPointerPos(e){
   const rect = canvas.getBoundingClientRect();
@@ -360,7 +399,14 @@ function onDown(e){
   const pt = getPointerPos(e);
   if (state.mode==='drag'){
     const hit = nearestPlayer(pt);
-    if (hit){ state.dragTarget = hit; }
+    if (hit){ 
+      state.dragTarget = hit;
+      downPt = pt;
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        if (hit.team === 'O') setBallHandler(hit);
+      }, LONG_PRESS_MS);
+    }
   } else {
     state.drawing = true;
     state.currentLine = { type: state.mode==='run'?'run':'pass', pts: [pt] };
@@ -368,11 +414,22 @@ function onDown(e){
 }
 
 function onMove(e){
-  if (!e.pressure && e.pointerType==='mouse' && e.buttons===0) return;
+  // 鼠标松开不处理（但要先拿到pt用于长按判断也行）
+  // 如果想保留这条，建议放到下面；先取 pt
   const pt = getPointerPos(e);
+
+  // 拖动距离超过阈值则取消长按
+  if (longPressTimer && downPt){
+    const dx = pt.x - downPt.x, dy = pt.y - downPt.y;
+    if (dx*dx + dy*dy > 16) { clearTimeout(longPressTimer); longPressTimer = null; }
+  }
+
+  if (!e.pressure && e.pointerType==='mouse' && e.buttons===0) return;
+
   if (state.mode==='drag'){
     if (state.dragTarget){
-      state.dragTarget.x = pt.x; state.dragTarget.y = pt.y;
+      state.dragTarget.x = pt.x; 
+      state.dragTarget.y = pt.y;
       draw();
     }
   } else if (state.drawing){
@@ -385,7 +442,9 @@ function onMove(e){
   }
 }
 
+
 function onUp(e){
+  clearTimeout(longPressTimer); longPressTimer = null; downPt = null;
   if (state.mode==='drag'){
     state.dragTarget = null;
   } else if (state.drawing){
