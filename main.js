@@ -5,6 +5,11 @@ const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const applied = { id: null, name: null };
 
+// —— 本地保存策略
+const SAVE_KEY = 'boardState_v1';          // 保持原键名即可
+const SAVE_SCHEMA = 1;                     // 数据结构版本号（升级结构就 +1）
+const SAVE_TTL = 14 * 24 * 3600 * 1000;    // 保存有效期：14 天
+
 const state = {
   court: 'half', // 'half' | 'full'
   mode: 'drag',  // 'drag' | 'run' | 'pass'
@@ -47,19 +52,20 @@ $('erase').onclick = () => {
   toast('已删除最近一条线');
 };
 
-// —— 本地保存/载入（localStorage）
-const SAVE_KEY = 'boardState_v1';
 
 $('save').onclick = () => {
   const payload = {
     court: state.court,
     players: state.players,
     shapes: state.shapes,
-    ts: Date.now()
+    ts: Date.now(),
+    schema: SAVE_SCHEMA
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   toast('已保存到本地');
 };
+
+
 
 $('load').onclick = () => {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -87,17 +93,51 @@ function init(){
   layoutPlayers();
   bindPointerEvents();
   draw();
-  try {
-    const raw = localStorage.getItem('boardState_v1');
-    if (raw) {
-      const data = JSON.parse(raw);
-      state.court  = data.court  ?? state.court;
-      state.players= data.players ?? state.players;
-      state.shapes = data.shapes  ?? [];
-      //layoutPlayers();
-      draw();
-    }
-  } catch(_) {}
+-  try {
+-    const raw = localStorage.getItem('boardState_v1');
+-    if (raw) {
+-      const data = JSON.parse(raw);
+-      state.court  = data.court  ?? state.court;
+-      state.players= data.players ?? state.players;
+-      state.shapes  = data.shapes  ?? [];
+-      draw();
+-    }
+-  } catch(_) {}
+// +  // —— 自动恢复（带过期/不兼容处理）
+// +  try {
+// +    const raw = localStorage.getItem(SAVE_KEY);
+// +    if (raw) {
+// +      const data = JSON.parse(raw);
+// +      const expired = !data.ts || Date.now() - data.ts > SAVE_TTL;
+// +      const incompatible = data.schema !== SAVE_SCHEMA;
+// +      if (expired || incompatible) {
+// +        localStorage.removeItem(SAVE_KEY); // 过期或不兼容就直接清
+// +      } else {
+// +        state.court   = data.court   ?? state.court;
+// +        state.players = data.players ?? state.players;
+// +        state.shapes  = data.shapes  ?? [];
+// +        draw();
+// +      }
+// +    }
+// +  } catch(_) {}
+// +
++  // 长按“清空”= 同时清除保存（隐性手势，不加按钮）
++  bindLongPressClearSave();
+}
+
+function bindLongPressClearSave(){
+  const el = $('clear');
+  if (!el) return;
+  let timer = null;
+  const start = () => {
+    timer = setTimeout(() => {
+      localStorage.removeItem(SAVE_KEY);
+      toast('已清除本地保存');
+    }, 800); // 长按 0.8s 触发
+  };
+  const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  el.addEventListener('pointerdown', start);
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => el.addEventListener(ev, cancel));
 }
 
 
