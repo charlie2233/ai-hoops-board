@@ -1,6 +1,6 @@
 // service-worker.js
 // 版本号每次改动都要 +1，才能触发客户端更新
-const CACHE = 'ai-hoops-mvp-v6';
+const CACHE = 'ai-hoops-mvp-v7';
 
 const ASSETS = [
   './',
