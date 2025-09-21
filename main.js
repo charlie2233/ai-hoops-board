@@ -400,6 +400,59 @@ function drawPolyline(pts, color, dashed=false){
   ctx.restore();
 }
 
+function applyPlay(play){
+  if (!play) return;
+  pushUndo();
+
+  // 1) 切换场地（不再调用 layoutPlayers，因为我们要用战术里的坐标）
+  if (play.court === 'half' || play.court === 'full') {
+    state.court = play.court;
+  }
+
+  // 2) 进攻 O1~O5（你的 O 是 1..5）
+  if (Array.isArray(play.offense)){
+    for (let i = 0; i < Math.min(5, play.offense.length); i++){
+      const p = state.players[i];                 // 1..5
+      const n = play.offense[i];                  // {x:0..1, y:0..1}
+      if (p && n) {
+        const px = normToPx(n);
+        p.x = px.x; p.y = px.y;
+      }
+    }
+  }
+
+  // 3) 防守 X1~X5（你的 D 是 5..9 索引）
+  if (Array.isArray(play.defense)){
+    for (let i = 0; i < Math.min(5, play.defense.length); i++){
+      const p = state.players[5 + i];             // X1..X5
+      const n = play.defense[i];
+      if (p && n) {
+        const px = normToPx(n);
+        p.x = px.x; p.y = px.y;
+      }
+    }
+  }
+
+  // 4) 线路（跑位/传球）
+  if (Array.isArray(play.shapes)){
+    state.shapes = play.shapes.map(s => {
+      const pts = (s.pts || []).map(normToPx);
+      return { type: s.type === 'pass' ? 'pass' : 'run', pts };
+    });
+  }
+
+  // 5) 持球人（可选字段：ballHandler，取值 '1'..'5'）
+  if (play.ballHandler){
+    const id = String(play.ballHandler);
+    state.players.forEach(x => { if (x.team==='O') x.ball = false; });
+    const target = state.players.find(x => x.team==='O' && x.id === id);
+    if (target) target.ball = true;
+  }
+
+  draw();
+}
+
+
 function drawArrow(p0, p1, color){
   ctx.save();
   ctx.strokeStyle = color;
@@ -448,6 +501,21 @@ function getPointerPos(e){
   const y = (e.clientY - rect.top);
   return {x,y};
 }
+
+function getCourtRect(){
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const m = Math.min(W, H) * 0.05; // 和 drawCourt 外框一致
+  return { left: m, top: m, right: W - m, bottom: H - m, width: W - 2*m, height: H - 2*m };
+}
+
+function normToPx(pt){
+  const r = getCourtRect();
+  return {
+    x: r.left + pt.x * r.width,
+    y: r.top  + pt.y * r.height
+  };
+}
+
 
 function nearestPlayer(pt){
   let hit=null, min=1e9;
@@ -671,8 +739,6 @@ function promptExportOptions(){
 
 init();
 
-readAppliedPlay().then(()=> toastAppliedIfAny());
-
 async function readAppliedPlay(){
   const id = localStorage.getItem('applyPlayId');
   if (!id) return;
@@ -682,11 +748,14 @@ async function readAppliedPlay(){
     const p = list.find(x=>x.id===id);
     applied.id = id;
     applied.name = p ? p.name : id;
+
+    if (p) applyPlay(p);       // ✨ 关键：真正应用战术
   } catch(e){
     applied.id = id; applied.name = id;
   }
   localStorage.removeItem('applyPlayId'); // 用一次就清
 }
+
 
 function toastAppliedIfAny(){
   if(!applied.id) return;
