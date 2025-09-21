@@ -226,7 +226,7 @@ function drawCourt(){
     ctx.beginPath(); ctx.arc(centerX, H*0.92, 9, 0, Math.PI*2); ctx.stroke();
     // Free throw circle
     ctx.beginPath(); ctx.arc(centerX, H*0.72, W*0.12, 0, Math.PI*2); ctx.stroke();
-  }   } else {
+  }else {
     // ------- Full court：左右方向 -------
     const m = Math.min(W, H) * 0.05;
     const left   = m, right  = W - m;
