@@ -38,6 +38,46 @@ $('clear').onclick=()=>{ pushUndo(); state.shapes=[]; draw(); };
 $('toggle-court').onclick=()=>{ state.court = (state.court==='half'?'full':'half'); layoutPlayers(); draw(); };
 $('export').onclick=()=>exportPNG();
 
+// —— 橡皮擦：删除最近一条线
+$('erase').onclick = () => {
+  if (!state.shapes.length) return;
+  pushUndo();
+  state.shapes.pop();
+  draw();
+  toast('已删除最近一条线');
+};
+
+// —— 本地保存/载入（localStorage）
+const SAVE_KEY = 'boardState_v1';
+
+$('save').onclick = () => {
+  const payload = {
+    court: state.court,
+    players: state.players,
+    shapes: state.shapes,
+    ts: Date.now()
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  toast('已保存到本地');
+};
+
+$('load').onclick = () => {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) { toast('没有可载入的本地保存'); return; }
+  try {
+    const data = JSON.parse(raw);
+    pushUndo();
+    state.court  = data.court  ?? state.court;
+    state.players= data.players ?? state.players;
+    state.shapes = data.shapes  ?? [];
+    //layoutPlayers(); // 兼容旧结构
+    draw();
+    toast('载入完成');
+  } catch(e){
+    toast('载入失败：数据损坏');
+  }
+};
+
 setMode('drag');
 
 // Init
@@ -47,6 +87,17 @@ function init(){
   layoutPlayers();
   bindPointerEvents();
   draw();
+  try {
+    const raw = localStorage.getItem('boardState_v1');
+    if (raw) {
+      const data = JSON.parse(raw);
+      state.court  = data.court  ?? state.court;
+      state.players= data.players ?? state.players;
+      state.shapes = data.shapes  ?? [];
+      //layoutPlayers();
+      draw();
+    }
+  } catch(_) {}
 }
 
 
@@ -376,4 +427,13 @@ function toastAppliedIfAny(){
   bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:999;background:#FFEDD5;color:#9A3412;padding:8px 12px;text-align:center;border-bottom:1px solid #FED7AA';
   document.body.appendChild(bar);
   setTimeout(()=>bar.remove(), 4000);
+}
+
+function toast(msg){
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);'
+    + 'background:#111;color:#fff;padding:8px 12px;border-radius:10px;z-index:999;opacity:.92';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1600);
 }
