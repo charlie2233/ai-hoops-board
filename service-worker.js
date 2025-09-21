@@ -1,4 +1,6 @@
-const CACHE = 'ai-hoops-mvp-v2'; // <- 改个新版本号
+// service-worker.js
+// 版本号每次改动都要 +1，才能触发客户端更新
+const CACHE = 'ai-hoops-mvp-v3';
 
 const ASSETS = [
   './',
@@ -7,29 +9,48 @@ const ASSETS = [
   './manifest.json',
   './assets/icon-192.png',
   './assets/icon-512.png',
-  // 新增：把新页面也缓存
+  // 新增页面/文件记得加进来
   './pages/library.html',
   './pages/drills.html'
 ];
 
-
-self.addEventListener('install', (e)=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+self.addEventListener('install', (e) => {
+  // 新 SW 安装时预缓存静态资源
+  e.waitUntil(
+    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
 });
 
-self.addEventListener('activate', (e)=>{
-  e.waitUntil(self.clients.claim());
+self.addEventListener('activate', (e) => {
+  // 清理旧缓存，并让新 SW 立刻接管
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
-self.addEventListener('fetch', (e)=>{
-  const url = new URL(e.request.url);
-  if (ASSETS.includes(url.pathname) || url.origin===location.origin){
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  const url = new URL(req.url);
+
+  // 对本站静态资源：Cache-First（离线可用）
+  if (url.origin === location.origin) {
     e.respondWith(
-      caches.match(e.request).then(res=> res || fetch(e.request).then(resp=>{
-        const copy = resp.clone();
-        caches.open(CACHE).then(c=>c.put(e.request, copy));
-        return resp;
-      }))
+      caches.match(req).then((hit) => {
+        if (hit) return hit;
+        return fetch(req).then((resp) => {
+          const copy = resp.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return resp;
+        });
+      })
     );
+    return;
   }
+
+  // 第三方请求（如图片、字体等）：网络优先，失败再看缓存
+  e.respondWith(
+    fetch(req).catch(() => caches.match(req))
+  );
 });
