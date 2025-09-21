@@ -1,0 +1,68 @@
+[
+  {
+    "playId": "spain",
+    "title": "背掩护时机与沟通",
+    "youtubeId": "VIDEO_ID_1",
+    "duration": "4:32",
+    "notes": "背掩后外弹接应；顺下延迟0.3s",
+    "tags": [
+      "背掩",
+      "顺下"
+    ]
+  },
+  {
+    "playId": "spain",
+    "title": "短顺与弧顶分球",
+    "youtubeId": "VIDEO_ID_2",
+    "duration": "3:55",
+    "notes": "短顺站位在罚球线附近",
+    "tags": [
+      "短顺",
+      "分球"
+    ]
+  },
+  {
+    "playId": "floppy",
+    "title": "绕双掩脚步与接球即投",
+    "youtubeId": "VIDEO_ID_3",
+    "duration": "5:01",
+    "notes": "肩贴掩护人；脚步稳定后起跳",
+    "tags": [
+      "脚步",
+      "接投"
+    ]
+  },
+  {
+    "playId": "floppy",
+    "title": "假走真反切训练",
+    "youtubeId": "VIDEO_ID_4",
+    "duration": "4:10",
+    "notes": "读防守追身改线",
+    "tags": [
+      "反切",
+      "阅读"
+    ]
+  },
+  {
+    "playId": "hammer",
+    "title": "弱侧底角 Hammer 掩护角",
+    "youtubeId": "VIDEO_ID_5",
+    "duration": "3:58",
+    "notes": "掩护人脚尖朝底角，避免犯规",
+    "tags": [
+      "掩护角",
+      "底角3"
+    ]
+  },
+  {
+    "playId": "hammer",
+    "title": "底角定点 + 延伸突破",
+    "youtubeId": "VIDEO_ID_6",
+    "duration": "4:20",
+    "notes": "底角保持 45°接应线",
+    "tags": [
+      "底角",
+      "定点"
+    ]
+  }
+]

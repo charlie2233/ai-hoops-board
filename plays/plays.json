@@ -1,0 +1,293 @@
+[
+  {
+    "id": "horns_L",
+    "name": "Horns Left PnR",
+    "type": "PnR",
+    "vs": [
+      "ICE",
+      "Drop"
+    ],
+    "outcome": "PG 突破 / 5 顺下",
+    "roles": "1持球；5掩护顺下；2底角牵制",
+    "cues": [
+      "5上掩—1突—5顺",
+      "弱侧45°外扩"
+    ],
+    "errors": [
+      "顺下过早",
+      "掩护角度小"
+    ],
+    "variants": [
+      "Reject + Short Roll"
+    ],
+    "drills": [
+      "顺下终结",
+      "掩护角度练习"
+    ]
+  },
+  {
+    "id": "horns_R",
+    "name": "Horns Right PnR",
+    "type": "PnR",
+    "vs": [
+      "ICE",
+      "Drop"
+    ],
+    "outcome": "镜像执行",
+    "roles": "1右手优先；5掩护顺下",
+    "cues": [
+      "镜像执行"
+    ],
+    "errors": [
+      "同左侧"
+    ],
+    "variants": [
+      "Spain 变体"
+    ],
+    "drills": [
+      "镜像跑位",
+      "弱侧外扩"
+    ]
+  },
+  {
+    "id": "spain",
+    "name": "Spain PnR",
+    "type": "PnR",
+    "vs": [
+      "ICE",
+      "Drop"
+    ],
+    "outcome": "顺下内线 / 外线三分",
+    "roles": "1持球；5顺下；2背掩5；3/4外线拉开",
+    "cues": [
+      "背掩后外弹",
+      "顺下延迟0.3s"
+    ],
+    "errors": [
+      "背掩过早",
+      "两人站重"
+    ],
+    "variants": [
+      "Spain STS"
+    ],
+    "drills": [
+      "背掩护时机",
+      "短顺分球"
+    ]
+  },
+  {
+    "id": "double_drag",
+    "name": "Double Drag",
+    "type": "PnR",
+    "vs": [
+      "Drop",
+      "Switch"
+    ],
+    "outcome": "持球急停 / 顺下二择",
+    "roles": "4先掩外弹；5后掩顺下",
+    "cues": [
+      "节奏：慢-快-快"
+    ],
+    "errors": [
+      "两掩护距太近"
+    ],
+    "variants": [
+      "Flip 回掩护"
+    ],
+    "drills": [
+      "急停跳投",
+      "顺下接应"
+    ]
+  },
+  {
+    "id": "ghost",
+    "name": "Ghost PnR",
+    "type": "PnR",
+    "vs": [
+      "Hedge",
+      "Switch"
+    ],
+    "outcome": "假掩护外弹三分",
+    "roles": "4假掩外弹；1持球突破威胁",
+    "cues": [
+      "不碰身快速外弹"
+    ],
+    "errors": [
+      "站位暴露意图"
+    ],
+    "variants": [
+      "Slip 提前切"
+    ],
+    "drills": [
+      "外弹接球即投",
+      "换防读解"
+    ]
+  },
+  {
+    "id": "floppy",
+    "name": "Floppy",
+    "type": "Off-Ball",
+    "vs": [
+      "Man",
+      "2-3"
+    ],
+    "outcome": "底线绕双掩护接投",
+    "roles": "2射手绕出；4/5设双掩",
+    "cues": [
+      "读防上/下路"
+    ],
+    "errors": [
+      "出线太贴底线"
+    ],
+    "variants": [
+      "假走真反切"
+    ],
+    "drills": [
+      "绕掩脚步",
+      "接球即投"
+    ]
+  },
+  {
+    "id": "chicago",
+    "name": "Chicago (DHO+Pindown)",
+    "type": "Off-Ball",
+    "vs": [
+      "Man",
+      "3-2"
+    ],
+    "outcome": "中翼 DHO 接投/突破",
+    "roles": "3持球 DHO；2借下掩出",
+    "cues": [
+      "接球胸口朝框"
+    ],
+    "errors": [
+      "DHO 距离过远"
+    ],
+    "variants": [
+      "拒绝 DHO 直切"
+    ],
+    "drills": [
+      "DHO 时机",
+      "下掩护角度"
+    ]
+  },
+  {
+    "id": "elevator",
+    "name": "Elevator",
+    "type": "Off-Ball",
+    "vs": [
+      "3-2",
+      "Box+1"
+    ],
+    "outcome": "电梯门中路三分",
+    "roles": "2穿门；4/5合拢",
+    "cues": [
+      "出门节奏变速"
+    ],
+    "errors": [
+      "门合时机不准"
+    ],
+    "variants": [
+      "假门转切篮下"
+    ],
+    "drills": [
+      "门合时机",
+      "中路定点"
+    ]
+  },
+  {
+    "id": "hammer",
+    "name": "Hammer",
+    "type": "Special",
+    "vs": [
+      "Switch",
+      "Zone"
+    ],
+    "outcome": "底角三分",
+    "roles": "1突破吸引；4弱侧底线掩；2底角接应",
+    "cues": [
+      "突破到底线延伸"
+    ],
+    "errors": [
+      "掩护角度不正"
+    ],
+    "variants": [
+      "Lift 到 45°"
+    ],
+    "drills": [
+      "底角定点",
+      "弱侧掩护角"
+    ]
+  },
+  {
+    "id": "princeton",
+    "name": "Princeton Chin",
+    "type": "High-Post",
+    "vs": [
+      "Man",
+      "Box+1"
+    ],
+    "outcome": "高位 DHO + 背切",
+    "roles": "5高位轴心；1/2背切/外弹",
+    "cues": [
+      "读防守头部朝向"
+    ],
+    "errors": [
+      "背切不果断"
+    ],
+    "variants": [
+      "Chin STS"
+    ],
+    "drills": [
+      "背切时机",
+      "高位传导"
+    ]
+  },
+  {
+    "id": "blob_box",
+    "name": "BLOB – Box",
+    "type": "BLOB",
+    "vs": [
+      "Man"
+    ],
+    "outcome": "篮下/中路快抛",
+    "roles": "箱型站位；2绕掩出",
+    "cues": [
+      "发球3秒内出手"
+    ],
+    "errors": [
+      "发球视野被挡"
+    ],
+    "variants": [
+      "Screen-the-screener"
+    ],
+    "drills": [
+      "发球读解",
+      "三秒选择"
+    ]
+  },
+  {
+    "id": "slob_zipper",
+    "name": "SLOB – Zipper",
+    "type": "SLOB",
+    "vs": [
+      "Man",
+      "Switch"
+    ],
+    "outcome": "侧翼接球发起 PnR",
+    "roles": "2自底线沿 Zipper 上提",
+    "cues": [
+      "接球即进攻"
+    ],
+    "errors": [
+      "上提节奏单一"
+    ],
+    "variants": [
+      "假上提反切"
+    ],
+    "drills": [
+      "Zipper 脚步",
+      "侧翼接球第一步"
+    ]
+  }
+]
