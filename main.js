@@ -29,6 +29,15 @@ const state = {
   dpi: window.devicePixelRatio || 1,
 };
 
+// 放在 state 定义后
+const EXPORT_OPTS_KEY = 'exportOpts_v1';
+state.exportOpts = (() => {
+  try { return Object.assign({ hideDefense:false, bg:'court' }, JSON.parse(localStorage.getItem(EXPORT_OPTS_KEY) || '{}')); }
+  catch(_) { return { hideDefense:false, bg:'court' }; }
+})();
+function saveExportOpts(){ localStorage.setItem(EXPORT_OPTS_KEY, JSON.stringify(state.exportOpts)); }
+
+
 // UI
 const $ = (id)=>document.getElementById(id);
 const modeButtons = {
@@ -47,7 +56,13 @@ $('undo').onclick=()=>undo();
 $('redo').onclick=()=>redo();
 $('clear').onclick=()=>{ pushUndo(); state.shapes=[]; draw(); };
 $('toggle-court').onclick=()=>{ state.court = (state.court==='half'?'full':'half'); layoutPlayers(); draw(); };
-$('export').onclick=()=>exportPNG();
+
+$('export').onclick = async () => {
+  const opts = await promptExportOptions();   // { bg:'court'|'white', hideDefense:boolean } | null
+  if (!opts) return;                          // 取消
+  exportPNG(opts);
+};
+
 
 // —— 橡皮擦：删除最近一条线
 $('erase').onclick = () => {
@@ -255,36 +270,47 @@ function drawCourt(){
     ctx.beginPath(); ctx.arc(hoopLx, cy, rimR, 0, Math.PI*2); ctx.stroke();
     ctx.beginPath(); ctx.arc(hoopRx, cy, rimR, 0, Math.PI*2); ctx.stroke();
 
-    // 三分线（近角直线 + 弧线，近似绘制）
-    const cornerXLeft  = left  + (right - left) * 0.12; // 近角直线的 x
-    const cornerXRight = right - (right - left) * 0.12;
-
+    // 三分线（近角直线 + 弧线）
+    const cornerXLeft  = left  + (right - left) * 0.13; // 可在 0.13~0.14 微调
+    const cornerXRight = right - (right - left) * 0.13;
+    
     // 近角直线（上下两段）
-    ctx.beginPath(); ctx.moveTo(cornerXLeft, top);            ctx.lineTo(cornerXLeft, cy - laneW/2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXLeft, cy + laneW/2);   ctx.lineTo(cornerXLeft, bottom);       ctx.stroke();
-
-    ctx.beginPath(); ctx.moveTo(cornerXRight, top);           ctx.lineTo(cornerXRight, cy - laneW/2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXRight, cy + laneW/2);  ctx.lineTo(cornerXRight, bottom);       ctx.stroke();
-
-    // 弧线：以篮圈为圆心，从上边界到下边界之间的圆弧
-    function arcBetween(hoopX, hoopY, r, yTop, yBottom){
-      const t1 = Math.asin((yTop    - hoopY) / r);
-      const t2 = Math.asin((yBottom - hoopY) / r);
-      ctx.beginPath(); ctx.arc(hoopX, hoopY, r, t1, t2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXLeft, top);          ctx.lineTo(cornerXLeft, cy - laneW/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXLeft, cy + laneW/2); ctx.lineTo(cornerXLeft, bottom);       ctx.stroke();
+    
+    ctx.beginPath(); ctx.moveTo(cornerXRight, top);          ctx.lineTo(cornerXRight, cy - laneW/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXRight, cy + laneW/2); ctx.lineTo(cornerXRight, bottom);       ctx.stroke();
+    
+    // 弧线：用 acos(dx/r3) 计算夹角，避免 NaN
+    const r3 = (right - left) * 0.39; // 三分弧半径（可在 0.37~0.41 微调）
+    function arcByCorner(hoopX, hoopY, cornerX, side /* 'L' | 'R' */){
+      const dx = Math.abs(cornerX - hoopX);
+      const R  = Math.max(r3, dx + 1);  // 防止 dx>R
+      const theta = Math.acos(dx / R);  // 0~π/2
+      ctx.beginPath();
+      if (side === 'L'){
+        // 以左筐为圆心，朝右开口：-θ → +θ
+        ctx.arc(hoopX, hoopY, R, -theta, theta);
+      } else {
+        // 以右筐为圆心，朝左开口：π-θ → π+θ
+        ctx.arc(hoopX, hoopY, R, Math.PI - theta, Math.PI + theta);
+      }
+      ctx.stroke();
     }
-    const rLeft  = Math.abs(cornerXLeft  - hoopLx);
-    const rRight = Math.abs(hoopRx       - cornerXRight);
-    arcBetween(hoopLx, cy, rLeft,  top, bottom);
-    arcBetween(hoopRx, cy, rRight, top, bottom);
+    arcByCorner(hoopLx, cy, cornerXLeft,  'L');
+    arcByCorner(hoopRx, cy, cornerXRight, 'R');
+
   }
 
   ctx.restore();
 }
 
-function drawPlayers(){
+function drawPlayers(opts = {}){
+  const hideDefense = !!opts.hideDefense;
   const W = canvas.clientWidth, H = canvas.clientHeight;
   const R = Math.max(16, Math.min(W,H)*0.028);
   state.players.forEach(p=>{
+    if (hideDefense && p.team === 'D') return;
     ctx.save();
     if (p.team==='O'){
       ctx.fillStyle = '#2563EB'; // blue solid
@@ -398,12 +424,22 @@ function drawArrow(p0, p1, color){
   ctx.restore();
 }
 
-function draw(){
-  drawCourt();
+function draw(opts = {}){
+  const bg = opts.bg || 'court';
+  const hideDefense = !!opts.hideDefense;
+
+  if (bg === 'white'){
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H); ctx.restore();
+  }else{
+    drawCourt();
+  }
   drawShapes();
-  drawPlayers();
-  drawSpacingAlerts(); // 新增
+  drawPlayers({ hideDefense });
+  drawSpacingAlerts();
 }
+
 
 
 function getPointerPos(e){
@@ -518,14 +554,14 @@ function redo(){
   draw();
 }
 //导出png
-function exportPNG(){
-  // 确保画面是最新
-  draw();
+function exportPNG(opts = { bg:'court', hideDefense:false }){
+  // 用本次选择渲染一帧
+  draw({ bg: opts.bg, hideDefense: opts.hideDefense });
 
   const W = canvas.clientWidth, H = canvas.clientHeight;
   ctx.save();
 
-  // ===== 标题信息块（左上角）=====
+  // ===== 左上角标题块 & 右下水印（保留你现有的样式）=====
   const title = applied.name ? `战术：${applied.name}` : '战术：未命名';
   const meta  = `${state.court==='half'?'半场':'全场'} · ${new Date().toLocaleString()}`;
 
@@ -536,38 +572,29 @@ function exportPNG(){
   const boxW = Math.max(tW, mW) + 24;
   const boxH = 46, pad = 12;
 
-  // 背板 + 描边
   roundRect(ctx, pad, pad, boxW, boxH, 10);
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#FF7A1A';
-  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.88)'; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = '#FF7A1A'; ctx.stroke();
 
-  // 文本
   ctx.fillStyle = '#111';
-  ctx.font = 'bold 14px system-ui';
-  ctx.fillText(title, pad + 12, pad + 18);
-  ctx.font = '12px system-ui';
-  ctx.fillText(meta,  pad + 12, pad + 36);
+  ctx.font = 'bold 14px system-ui'; ctx.fillText(title, pad + 12, pad + 18);
+  ctx.font = '12px system-ui';      ctx.fillText(meta,  pad + 12, pad + 36);
 
-  // ===== 右下角水印 =====
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.font = 'bold 14px system-ui';
-  const stamp = new Date().toLocaleString();
-  const mark = `AI 战术板 • ${stamp}`;
-  ctx.fillText(mark, W - 220, H - 12);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.font = 'bold 14px system-ui';
+  ctx.fillText(`AI 战术板 • ${new Date().toLocaleString()}`, W - 220, H - 12);
 
   ctx.restore();
 
-  // 导出当前画布
+  // 下载
   const dataURL = canvas.toDataURL('image/png');
   const a = document.createElement('a');
   a.href = dataURL; a.download = (applied.name || 'play') + '.png';
   a.click();
 
-  draw(); // 复原到无标题块的普通画面
+  // 恢复到正常预览
+  draw();
 }
+
 
 // 小工具：圆角矩形
 function roundRect(ctx, x, y, w, h, r){
@@ -582,6 +609,63 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.lineTo(x, y+r);
   ctx.quadraticCurveTo(x, y, x+r, y);
   ctx.closePath();
+}
+
+function promptExportOptions(){
+  return new Promise((resolve)=>{
+    // 遮罩
+    const ov = document.createElement('div');
+    ov.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:2000;
+      display:flex;align-items:center;justify-content:center;padding:16px;`;
+
+    // 弹窗
+    const box = document.createElement('div');
+    box.style.cssText = `
+      width: min(92vw, 420px); background:#fff; border:1px solid #E5E7EB; border-radius:14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18); font:14px/1.5 system-ui; color:#0F172A;`;
+    box.innerHTML = `
+      <div style="padding:14px 16px; border-bottom:1px solid #E5E7EB; font-weight:700;">导出选项</div>
+      <div style="padding:16px;">
+        <div style="margin-bottom:12px; font-weight:600;">背景</div>
+        <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+          <input type="radio" name="bg" value="court" checked>
+          <span>球场背景（默认）</span>
+        </label>
+        <label style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+          <input type="radio" name="bg" value="white">
+          <span>白底（适合讲解/打印）</span>
+        </label>
+
+        <div style="margin-bottom:12px; font-weight:600;">显示内容</div>
+        <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+          <input type="radio" name="vis" value="all" checked>
+          <span>进攻 + 防守（默认）</span>
+        </label>
+        <label style="display:flex;gap:8px;align-items:center;">
+          <input type="radio" name="vis" value="atk">
+          <span>仅进攻（隐藏 X1–X5）</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #E5E7EB;">
+        <button data-act="cancel" style="height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:10px;background:#fff;">取消</button>
+        <button data-act="ok"     style="height:40px;padding:0 16px;border:0;border-radius:10px;background:#FF7A1A;color:#fff;font-weight:700;">导出</button>
+      </div>
+    `;
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+
+    const close = () => ov.remove();
+    box.querySelector('[data-act="cancel"]').onclick = () => { close(); resolve(null); };
+    box.querySelector('[data-act="ok"]').onclick = () => {
+      const bg  = box.querySelector('input[name="bg"]:checked').value;
+      const vis = box.querySelector('input[name="vis"]:checked').value;
+      close();
+      resolve({ bg, hideDefense: vis === 'atk' });
+    };
+    // 点击遮罩关闭
+    ov.addEventListener('pointerdown', (e)=>{ if (e.target === ov){ close(); resolve(null); } }, true);
+  });
 }
 
 
