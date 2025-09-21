@@ -1,5 +1,6 @@
 // AI 战术板 · Step 1 MVP
 // 功能：半场/全场绘制；攻防棋子拖拽；跑位虚线、传球箭头；撤销/重做；导出PNG（水印）
+import { getPreset } from './plays/presets.js';
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -738,23 +739,51 @@ function promptExportOptions(){
 
 
 init();
+readAppliedPlay();   // 启动时尝试接收 Library 的“应用”指令
+
 
 async function readAppliedPlay(){
   const id = localStorage.getItem('applyPlayId');
   if (!id) return;
+
+  const applyFromGeometry = (geom, label) => {
+    if (geom) {
+      applyPlay(geom);
+      toast(`已应用：${applied.name}${label?`（${label}）`:''}`);
+    } else {
+      toast('未找到战术预设，已保持当前布置');
+    }
+  };
+
   try {
-    const res = await fetch('./plays/plays.json');
+    const url = './plays/plays.json?t=' + Date.now();
+    const res = await fetch(url, { cache: 'no-store' });
     const list = await res.json();
     const p = list.find(x=>x.id===id);
+
     applied.id = id;
     applied.name = p ? p.name : id;
 
-    if (p) applyPlay(p);       // ✨ 关键：真正应用战术
+    // 1) 先尝试从 plays.json 直接拿几何（未来兼容）
+    let geom = null;
+    if (p) {
+      if (p.geometry) geom = p.geometry;                 // 未来：显式 geometry 字段
+      else if (p.offense || p.shapes) geom = p;          // 兼容：把条目本身当几何
+    }
+    // 2) 没有的话，用预设；再没有退 fiveOut
+    if (!geom) geom = getPreset(id) || getPreset('fiveOut');
+
+    applyFromGeometry(geom, geom === getPreset('fiveOut') ? '预设兜底' : '预设');
   } catch(e){
+    // 离线/失败也可用预设
     applied.id = id; applied.name = id;
+    const geom = getPreset(id) || getPreset('fiveOut');
+    applyFromGeometry(geom, '离线预设');
   }
-  localStorage.removeItem('applyPlayId'); // 用一次就清
+
+  localStorage.removeItem('applyPlayId'); // 用一次即清
 }
+
 
 
 function toastAppliedIfAny(){
