@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>战术库</title>
+<style>
+  :root{--accent:#FF7A1A;--border:#E5E7EB;--tap:48px}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"PingFang SC",Arial}
+  .appbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);
+    padding:12px 16px;display:flex;gap:12px;align-items:center;z-index:10}
+  .appbar a{color:#111;text-decoration:none}
+  h1{font-size:18px;margin:0}
+  .filters{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)}
+  select,input{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px}
+  input{flex:1}
+  .list{padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;
+    display:flex;flex-direction:column;gap:8px}
+  .name{font-weight:700}
+  .tags{font-size:12px;color:#475569}
+  .row{display:flex;gap:8px}
+  .btn{flex:1;height:40px;border-radius:10px;border:1px solid var(--accent);background:#fff;color:#000}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <a href="../index.html">← 画板</a>
+    <h1>战术库</h1>
+  </div>
+
+  <div class="filters">
+    <input id="q" placeholder="搜索名称/标签…"/>
+    <select id="fType">
+      <option value="">类型</option><option>PnR</option><option>Off-Ball</option>
+      <option>High-Post</option><option>Special</option><option>BLOB</option><option>SLOB</option>
+    </select>
+    <select id="fVs">
+      <option value="">Vs 防守</option>
+      <option>ICE</option><option>Drop</option><option>Switch</option>
+      <option>Hedge</option><option>2-3</option><option>3-2</option><option>Box+1</option>
+    </select>
+  </div>
+
+  <div class="list" id="list"></div>
+
+<script>
+let plays=[];
+async function load(){
+  const res = await fetch('../plays/plays.json'); 
+  plays = await res.json();
+  render();
+}
+function match(p, q, t, v){
+  const qok = !q || (p.name+p.type+(p.vs||[]).join(',')).toLowerCase().includes(q.toLowerCase());
+  const tok = !t || p.type===t;
+  const vok = !v || (p.vs||[]).includes(v);
+  return qok && tok && vok;
+}
+function render(){
+  const list = document.getElementById('list');
+  const q = document.getElementById('q').value.trim();
+  const t = document.getElementById('fType').value;
+  const v = document.getElementById('fVs').value;
+  const rows = plays.filter(p=>match(p,q,t,v)).map(p=>`
+    <div class="card">
+      <div class="name">${p.name}</div>
+      <div class="tags">${p.type} · Vs ${p.vs?.join('/')||'-'}</div>
+      <div style="font-size:12px;color:#64748B">口令：${(p.cues||[]).slice(0,2).join(' / ')}</div>
+      <div class="row">
+        <button class="btn" onclick="preview('${p.id}')">预览</button>
+        <button class="btn primary" onclick="apply('${p.id}')">应用到战术板</button>
+      </div>
+    </div>`).join('');
+  list.innerHTML = rows || '<div style="color:#64748B">没有匹配项</div>';
+}
+function preview(id){
+  alert('预览占位：稍后做可视化。当前选择：'+id);
+}
+function apply(id){
+  localStorage.setItem('applyPlayId', id);
+  location.href = '../index.html';
+}
+document.getElementById('q').oninput = render;
+document.getElementById('fType').onchange = render;
+document.getElementById('fVs').onchange = render;
+load();
+</script>
+</body>
+</html>
