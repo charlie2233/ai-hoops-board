@@ -1,12 +1,17 @@
-const CACHE = 'ai-hoops-mvp-v1';
+const CACHE = 'ai-hoops-mvp-v2'; // <- 改个新版本号
+
 const ASSETS = [
   './',
   './index.html',
   './main.js',
   './manifest.json',
   './assets/icon-192.png',
-  './assets/icon-512.png'
+  './assets/icon-512.png',
+  // 新增：把新页面也缓存
+  './pages/library.html',
+  './pages/drills.html'
 ];
+
 
 self.addEventListener('install', (e)=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
