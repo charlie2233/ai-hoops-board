@@ -380,26 +380,73 @@ function redo(){
   state.shapes = next.shapes;
   draw();
 }
-
+//导出png
 function exportPNG(){
-  // Draw a temporary watermark then export at device pixel ratio
+  // 确保画面是最新
+  draw();
+
   const W = canvas.clientWidth, H = canvas.clientHeight;
-  draw(); // ensure up-to-date
   ctx.save();
+
+  // ===== 标题信息块（左上角）=====
+  const title = applied.name ? `战术：${applied.name}` : '战术：未命名';
+  const meta  = `${state.court==='half'?'半场':'全场'} · ${new Date().toLocaleString()}`;
+
+  ctx.font = 'bold 14px system-ui';
+  const tW = ctx.measureText(title).width;
+  ctx.font = '12px system-ui';
+  const mW = ctx.measureText(meta).width;
+  const boxW = Math.max(tW, mW) + 24;
+  const boxH = 46, pad = 12;
+
+  // 背板 + 描边
+  roundRect(ctx, pad, pad, boxW, boxH, 10);
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#FF7A1A';
+  ctx.stroke();
+
+  // 文本
+  ctx.fillStyle = '#111';
+  ctx.font = 'bold 14px system-ui';
+  ctx.fillText(title, pad + 12, pad + 18);
+  ctx.font = '12px system-ui';
+  ctx.fillText(meta,  pad + 12, pad + 36);
+
+  // ===== 右下角水印 =====
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.font = 'bold 14px system-ui';
   const stamp = new Date().toLocaleString();
   const mark = `AI 战术板 • ${stamp}`;
-  ctx.fillText(mark, W-220, H-12);
+  ctx.fillText(mark, W - 220, H - 12);
+
   ctx.restore();
 
+  // 导出当前画布
   const dataURL = canvas.toDataURL('image/png');
   const a = document.createElement('a');
-  a.href = dataURL;
-  a.download = 'play.png';
+  a.href = dataURL; a.download = (applied.name || 'play') + '.png';
   a.click();
-  draw(); // redraw to remove watermark render state
+
+  draw(); // 复原到无标题块的普通画面
 }
+
+// 小工具：圆角矩形
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
 
 init();
 
