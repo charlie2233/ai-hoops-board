@@ -814,174 +814,85 @@ function toast(msg){
   setTimeout(()=>el.remove(), 1600);
 }
 
-// ===== 回放引擎（Phase A：MOVE/PASS + 60fps）=====
-state.replay = {
-  playing: false,
-  speed: 1,
-  startTs: 0,
-  lastTs: 0,
-  followers: [],     // [{player, pts, dur}]
-  passQueue: [],     // [{from,to,p0,p1,start,dur,arc}]
-  flight: null,      // {t, dur, p0, p1, arc}
-  snapshot: null     // {players:[{...}], ballOwnerId}
-};
+// ===== 回放引擎 · Phase B =====
+state.replay = { playing:false, paused:false, speed:1, startStamp:0, lastStamp:0,
+  timeMs:0, durationMs:0, runs:[], passes:[], snapshot:null, flightBall:null };
 
-const MOVE_SPEED = 320;     // px/s（跑位速度）
-const PASS_SPEED = 900;     // px/s（传球飞行速度）
-const PASS_DELAY = 600;     // ms（从开始到传球的固定延迟）
+const MOVE_SPEED = 320, PASS_SPEED = 900, BASE_DELAY = 600;
 
-// 线段工具
-function polyLength(pts){
-  let L = 0; for (let i=1;i<pts.length;i++){ L += Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y); }
-  return L;
-}
-function polyLerp(pts, u){ // u∈[0,1]
-  if (pts.length===1) return pts[0];
-  const L = polyLength(pts); if (!L) return pts[0];
-  let d = u * L;
-  for (let i=1;i<pts.length;i++){
-    const a = pts[i-1], b = pts[i];
-    const seg = Math.hypot(b.x-a.x, b.y-a.y);
-    if (d <= seg) {
-      const t = seg? d/seg : 0;
-      return { x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t };
-    }
-    d -= seg;
-  }
-  return pts[pts.length-1];
+// Catmull-Rom 样条 & 折线工具
+function catmullRom(a,b,c,d,t){const t2=t*t,t3=t2*t;return{
+  x:0.5*((2*b.x)+(-a.x+c.x)*t+(2*a.x-5*b.x+4*c.x-d.x)*t2+(-a.x+3*b.x-3*c.x+d.x)*t3),
+  y:0.5*((2*b.y)+(-a.y+c.y)*t+(2*a.y-5*b.y+4*c.y-d.y)*t2+(-a.y+3*b.y-3*c.y+d.y)*t3)};}
+function sampleSpline(pts,n=64){ if(!pts||pts.length<3) return pts?.slice()||[];
+  const r=[],L=pts.length; for(let i=0;i<L-1;i++){const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(L-1,i+2)];
+    for(let k=0;k<(i<L-2?n:1?n:1);k++){const t=k/n; r.push(catmullRom(p0,p1,p2,p3,t));}} r.push(pts[L-1]); return r;}
+function polyLength(pts){let L=0; for(let i=1;i<pts.length;i++) L+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y); return L;}
+function polyLerp(pts,u){if(!pts||!pts.length)return{x:0,y:0}; if(pts.length===1)return pts[0];
+  const tot=polyLength(pts); if(!tot) return pts[0]; let d=u*tot;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],seg=Math.hypot(b.x-a.x,b.y-a.y);
+    if(d<=seg){const t=seg?d/seg:0;return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t}} d-=seg;} return pts.at(-1);}
+
+// 编译时间线（从 shapes 推出 runs/passes）
+function compileTimeline(){
+  const runs=[],passes=[],O=state.players.filter(p=>p.team==='O');
+  const nearest=pt=>O.reduce((m,p)=>{const d=Math.hypot(pt.x-p.x,pt.y-p.y);return(!m||d<m.d)?{p,d}:m},null)?.p;
+  state.shapes.filter(s=>s.type==='run'&&s.pts?.length>=2).forEach(s=>{
+    const player=nearest(s.pts[0]); if(!player) return; const smooth=sampleSpline(s.pts,64);
+    const dur=Math.max(0.2,polyLength(smooth)/MOVE_SPEED); runs.push({player,pts:smooth,t0:0,t1:dur*1000});});
+  let idx=0;
+  state.shapes.filter(s=>s.type==='pass'&&s.pts?.length>=2).forEach(s=>{
+    const a=s.pts[0],b=s.pts.at(-1),from=nearest(a),to=nearest(b); if(!from||!to) return;
+    const dist=Math.hypot(b.x-a.x,b.y-a.y),dur=Math.max(0.2,dist/PASS_SPEED),t0=BASE_DELAY+idx*300,arc=Math.max(28,Math.min(84,dist*0.18));
+    passes.push({from,to,p0:a,p1:b,t0,dur:dur*1000,arc}); idx++;});
+  const durationMs=Math.max(runs.reduce((m,r)=>Math.max(m,r.t1),0),passes.reduce((m,p)=>Math.max(m,p.t0+p.dur),0))||0;
+  return {runs,passes,durationMs};
 }
 
-// 赋予 run 线路给最近的进攻球员
-function assignFollowersFromShapes(){
-  const followers = [];
-  const used = new Set();
-  const O = state.players.filter(p=>p.team==='O');
-  state.shapes.filter(s=>s.type==='run' && s.pts?.length>=2).forEach(s=>{
-    // 找到离起点最近的未占用进攻球员（阈值 120px）
-    const start = s.pts[0];
-    let best=null,bestd=1e9,idx=-1;
-    O.forEach((p,i)=>{
-      if (used.has(p)) return;
-      const d = Math.hypot(p.x-start.x, p.y-start.y);
-      if (d<bestd){ bestd=d; best=p; idx=i; }
-    });
-    if (!best || bestd>120) return; // 太远就忽略该线路
-    used.add(best);
-    const dur = Math.max(0.3, polyLength(s.pts)/MOVE_SPEED);
-    followers.push({ player: best, pts: s.pts.slice(), dur });
-  });
-  return followers;
-}
-
-// 生成一次传球（起点/终点各找最近的进攻球员）
-function compilePassQueue(){
-  const pass = [];
-  const O = state.players.filter(p=>p.team==='O');
-  state.shapes.filter(s=>s.type==='pass' && s.pts?.length>=2).forEach(s=>{
-    const a = s.pts[0], b = s.pts[s.pts.length-1];
-    const nearest = (pt)=> O.reduce((best,p)=>{
-      const d = Math.hypot(pt.x-p.x, pt.y-p.y);
-      return (!best || d<best.d) ? {p, d} : best;
-    }, null);
-    const from = nearest(a)?.p, to = nearest(b)?.p;
-    if (!from || !to) return;
-    const dist = Math.hypot(b.x-a.x, b.y-a.y);
-    const dur = Math.max(0.2, dist / PASS_SPEED);
-    const arc = Math.max(30, Math.min(80, dist*0.18)); // 抛物线高度
-    pass.push({ from, to, p0: a, p1: b, start: PASS_DELAY, dur, arc, fired:false });
-  });
-  return pass;
-}
-
-// 回放控制
+// 控制与定位
 function startReplay(){
-  if (state.replay.playing) return;
-
-  // 快照当前站位与球权
-  state.replay.snapshot = {
-    players: JSON.parse(JSON.stringify(state.players)),
-    ballOwnerId: state.players.find(p=>p.team==='O' && p.ball)?.id || null
-  };
-
-  // 禁止交互
-  canvas.style.pointerEvents = 'none';
-
-  state.replay.followers = assignFollowersFromShapes();
-  state.replay.passQueue = compilePassQueue();
-  state.replay.flight = null;
-  state.replay.playing = true;
-  state.replay.startTs = performance.now();
-  state.replay.lastTs  = state.replay.startTs;
-
+  state.replay.snapshot={players:JSON.parse(JSON.stringify(state.players)),ballOwnerId:state.players.find(p=>p.team==='O'&&p.ball)?.id||null};
+  canvas.style.pointerEvents='none';
+  const tl=compileTimeline(); state.replay.runs=tl.runs; state.replay.passes=tl.passes; state.replay.durationMs=Math.max(100,tl.durationMs);
+  state.replay.timeMs=0; state.replay.playing=true; state.replay.paused=false;
+  state.replay.speed=parseFloat(document.getElementById('speed').value||'1');
+  state.replay.startStamp=performance.now(); state.replay.lastStamp=state.replay.startStamp; requestAnimationFrame(tickReplay);
+}
+function stopReplay(){ if(!state.replay.playing) return; state.replay.playing=false; state.replay.paused=false; canvas.style.pointerEvents='auto';
+  if(state.replay.snapshot){ state.players=JSON.parse(JSON.stringify(state.replay.snapshot.players));
+    state.players.forEach(p=>p.ball=(p.team==='O'&&p.id===state.replay.snapshot.ballOwnerId)); }
+  state.replay.flightBall=null; draw(); const b=document.getElementById('btn-playpause'); if(b) b.textContent='▶ 回放';
+  const s=document.getElementById('seek'); if(s) s.value=0; }
+function pauseReplay(){ state.replay.paused=true; }
+function resumeReplay(){ state.replay.paused=false; state.replay.lastStamp=performance.now(); }
+function setSpeed(k){ state.replay.speed=Math.max(0.25,Math.min(3,k||1)); }
+function setReplayTime(ms){
+  const t=Math.max(0,Math.min(state.replay.durationMs,ms|0)); state.replay.timeMs=t;
+  state.replay.runs.forEach(r=>{const u=(t<r.t0)?0:(t>r.t1?1:(t-r.t0)/(r.t1-r.t0)); const pos=polyLerp(r.pts,Math.max(0,Math.min(1,u))); r.player.x=pos.x; r.player.y=pos.y;});
+  state.players.forEach(p=>{if(p.team==='O') p.ball=false;}); state.replay.flightBall=null;
+  let inFlight=null,lastDone=null; state.replay.passes.forEach(p=>{ if(t>=p.t0+p.dur) lastDone=p; else if(t>=p.t0&&t<p.t0+p.dur) inFlight=p;});
+  if(inFlight){ const u=(t-inFlight.t0)/inFlight.dur,base=polyLerp([inFlight.p0,inFlight.p1],Math.max(0,Math.min(1,u))),arcY=-4*inFlight.arc*u*(1-u);
+    state.replay.flightBall={x:base.x,y:base.y+arcY}; } else { const targetId=lastDone?lastDone.to.id:state.replay.snapshot.ballOwnerId;
+    const holder=state.players.find(p=>p.team==='O'&&p.id===targetId); if(holder) holder.ball=true; }
+  draw(); const s=document.getElementById('seek'); if(s) s.value=(t/state.replay.durationMs)*100;
+}
+function tickReplay(now){ if(!state.replay.playing) return;
+  if(!state.replay.paused){ const dt=Math.min(50,now-state.replay.lastStamp); const next=state.replay.timeMs+dt*state.replay.speed;
+    setReplayTime(next); state.replay.lastStamp=now; if(next>=state.replay.durationMs){ stopReplay(); return; } }
   requestAnimationFrame(tickReplay);
 }
-
-function stopReplay(){
-  if (!state.replay.playing) return;
-  state.replay.playing = false;
-  canvas.style.pointerEvents = 'auto';
-  // 恢复快照
-  if (state.replay.snapshot){
-    state.players = JSON.parse(JSON.stringify(state.replay.snapshot.players));
-    state.players.forEach(p=>p.ball = (p.team==='O' && p.id===state.replay.snapshot.ballOwnerId));
-  }
-  state.replay.followers = [];
-  state.replay.passQueue = [];
-  state.replay.flight = null;
-  draw();
-}
-
-function tickReplay(now){
-  if (!state.replay.playing) return;
-  const { startTs, speed } = state.replay;
-  const t = (now - startTs) * speed;
-
-  // 跑位：所有跟随器基于各自 dur 从 0 开始
-  state.replay.followers.forEach(f=>{
-    const u = Math.max(0, Math.min(1, t / (f.dur*1000)));
-    const pos = polyLerp(f.pts, u);
-    f.player.x = pos.x; f.player.y = pos.y;
-  });
-
-  // 传球：到时触发一次飞行；飞行时隐藏球权点
-  if (!state.replay.flight){
-    const evt = state.replay.passQueue.find(e=>!e.fired && t >= e.start);
-    if (evt){
-      // 触发传球
-      state.players.forEach(p=>{ if (p.team==='O') p.ball=false; });
-      evt.fired = true;
-      state.replay.flight = { t:0, dur: evt.dur*1000, p0: evt.p0, p1: evt.p1, arc: evt.arc, to: evt.to };
-    }
-  } else {
-    state.replay.flight.t += (now - state.replay.lastTs) * speed;
-    if (state.replay.flight.t >= state.replay.flight.dur){
-      // 接球：球权到接收者
-      if (state.replay.flight.to) state.replay.flight.to.ball = true;
-      state.replay.flight = null;
-    }
-  }
-
-  state.replay.lastTs = now;
-  draw();        // 用当前帧位姿重画
-  requestAnimationFrame(tickReplay);
-}
-
-// 回放时的飞行球渲染
-const _draw = draw;
-draw = function(opts={}){  // 轻包装：在原 draw 之后画飞行球
-  _draw(opts);
-  if (state.replay && state.replay.flight){
-    const f = state.replay.flight;
-    const u = Math.max(0, Math.min(1, f.t / f.dur));
-    const base = polyLerp([f.p0, f.p1], u);
-    // 简单抛物线：沿 y 方向加高度（屏幕坐标向下为正，因此向上减）
-    const arcY = -4 * f.arc * u * (1 - u);
-    ctx.save();
-    ctx.fillStyle = '#FF7A1A';
-    ctx.beginPath();
-    ctx.arc(base.x, base.y + arcY, 6, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  }
-};
-
+// 包装 draw：回放时绘制飞行球
+const _draw_replay_wrap = draw;
+draw = function(opts={}){ _draw_replay_wrap(opts);
+  if(state.replay&&state.replay.flightBall){ const b=state.replay.flightBall; ctx.save(); ctx.fillStyle='#FF7A1A';
+    ctx.beginPath(); ctx.arc(b.x,b.y,6,0,Math.PI*2); ctx.fill(); ctx.restore(); } };
+// 绑定 UI
+(function(){ const $=id=>document.getElementById(id);
+  const bp=$('btn-playpause'), bs=$('btn-stop'), seek=$('seek'), spd=$('speed');
+  if(bp){ bp.onclick=()=>{ if(!state.replay.playing){ startReplay(); bp.textContent='⏸ 暂停'; return; }
+    if(state.replay.paused){ resumeReplay(); bp.textContent='⏸ 暂停'; } else { pauseReplay(); bp.textContent='▶ 继续'; }};}
+  if(bs){ bs.onclick=()=>stopReplay(); }
+  if(seek){ seek.oninput=e=>{ if(!state.replay.playing){ const tl=compileTimeline(); state.replay.runs=tl.runs; state.replay.passes=tl.passes; state.replay.durationMs=Math.max(100,tl.durationMs); }
+    setReplayTime((parseFloat(e.target.value||'0')/100)*state.replay.durationMs); }; }
+  if(spd){ spd.onchange=e=>setSpeed(parseFloat(e.target.value||'1')); }
+})();
