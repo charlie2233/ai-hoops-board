@@ -106,13 +106,29 @@ $('load').onclick = () => {
   }
 };
 
-$('play').onclick = () => {
-  if (state.replay.playing) {
-    stopReplay();
-    $('play').textContent = '回放';
-  } else {
+$('play').onclick = () => {//btnPlay.onclick = ()=>{
+  // 1) 未播放：可能是初始或“已结束待重播”
+  if(!state.replay.playing){
+    const ended = (state.replay.timeMs >= state.replay.durationMs) && state.replay.durationMs > 0;
+    if (ended) {               // 已结束 → 重播
+      setReplayTime(0);
+      startReplay();
+      btnPlay.textContent = '⏸ 暂停';
+      return;
+    }
+    // 初始播放
     startReplay();
-    $('play').textContent = '停止';
+    btnPlay.textContent = '⏸ 暂停';
+    return;
+  }
+
+  // 2) 播放中：切换 暂停/继续
+  if(state.replay.paused){
+    resumeReplay();
+    btnPlay.textContent = '⏸ 暂停';
+  }else{
+    pauseReplay();
+    btnPlay.textContent = '▶ 继续';
   }
 };
 
@@ -858,11 +874,37 @@ function startReplay(){
   state.replay.speed=parseFloat(document.getElementById('speed').value||'1');
   state.replay.startStamp=performance.now(); state.replay.lastStamp=state.replay.startStamp; requestAnimationFrame(tickReplay);
 }
-function stopReplay(){ if(!state.replay.playing) return; state.replay.playing=false; state.replay.paused=false; canvas.style.pointerEvents='auto';
-  if(state.replay.snapshot){ state.players=JSON.parse(JSON.stringify(state.replay.snapshot.players));
-    state.players.forEach(p=>p.ball=(p.team==='O'&&p.id===state.replay.snapshot.ballOwnerId)); }
-  state.replay.flightBall=null; draw(); const b=document.getElementById('btn-playpause'); if(b) b.textContent='▶ 回放';
-  const s=document.getElementById('seek'); if(s) s.value=0; }
+function stopReplay(restore = true){
+  if(!state.replay.playing && !restore) {
+    // 已经停止且要求保留现场：只更新按钮文案
+    const btn = document.getElementById('btn-playpause');
+    if (btn) btn.textContent = '↻ 重播';
+    return;
+  }
+
+  state.replay.playing = false;
+  state.replay.paused  = false;
+  canvas.style.pointerEvents = 'auto';
+
+  if (restore && state.replay.snapshot){
+    // 恢复到回放前
+    state.players = JSON.parse(JSON.stringify(state.replay.snapshot.players));
+    state.players.forEach(p => p.ball = (p.team==='O' && p.id===state.replay.snapshot.ballOwnerId));
+  }
+  state.replay.flightBall = null;
+
+  draw();
+
+  const btn = document.getElementById('btn-playpause');
+  if (btn) btn.textContent = restore ? '▶ 回放' : '↻ 重播';
+
+  const seek = document.getElementById('seek');
+  if (seek){
+    const ended = !restore && state.replay.durationMs > 0;
+    seek.value = ended ? 100 : 0;
+  }
+}
+
 function pauseReplay(){ state.replay.paused=true; }
 function resumeReplay(){ state.replay.paused=false; state.replay.lastStamp=performance.now(); }
 function setSpeed(k){ state.replay.speed=Math.max(0.25,Math.min(3,k||1)); }
@@ -878,7 +920,7 @@ function setReplayTime(ms){
 }
 function tickReplay(now){ if(!state.replay.playing) return;
   if(!state.replay.paused){ const dt=Math.min(50,now-state.replay.lastStamp); const next=state.replay.timeMs+dt*state.replay.speed;
-    setReplayTime(next); state.replay.lastStamp=now; if(next>=state.replay.durationMs){ stopReplay(); return; } }
+    setReplayTime(next); state.replay.lastStamp=now; if(next>=state.replay.durationMs){ stopReplay(false); return; } }
   requestAnimationFrame(tickReplay);
 }
 // 包装 draw：回放时绘制飞行球
