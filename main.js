@@ -920,7 +920,7 @@ function setReplayTime(ms){
 }
 function tickReplay(now){ if(!state.replay.playing) return;
   if(!state.replay.paused){ const dt=Math.min(50,now-state.replay.lastStamp); const next=state.replay.timeMs+dt*state.replay.speed;
-    setReplayTime(next); state.replay.lastStamp=now; if(next>=state.replay.durationMs){ stopReplay(false); return; } }
+    setReplayTime(next); state.replay.lastStamp=now; if(next>=state.replay.durationMs){ stopReplay(true); return; } }
   requestAnimationFrame(tickReplay);
 }
 // 包装 draw：回放时绘制飞行球
