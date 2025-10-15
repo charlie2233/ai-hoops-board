@@ -1,22 +1,17 @@
 // service-worker.js
-// 版本号每次改动都要 +1，才能触发客户端更新
-const CACHE = 'ai-hoops-mvp-v15b';
-
+const CACHE = 'ai-hoops-mvp-v16';
 const ASSETS = [
   './',
   './index.html',
   './main.js',
+  './service-worker.js',
   './manifest.json',
   './assets/icon-192.png',
-  './assets/icon-512.png',
   './pages/library.html',
   './pages/drills.html',
-  // 新增：数据与预设
   './plays/plays.json',
-  './drills/drills.json',
   './plays/presets.js'
 ];
-
 
 self.addEventListener('install', (e) => {
   // 新 SW 安装时预缓存静态资源

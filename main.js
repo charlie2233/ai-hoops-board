@@ -106,30 +106,36 @@ $('load').onclick = () => {
   }
 };
 
-$('play').onclick = () => {//btnPlay.onclick = ()=>{
-  // 1) 未播放：可能是初始或“已结束待重播”
-  if(!state.replay.playing){
-    const ended = (state.replay.timeMs >= state.replay.durationMs) && state.replay.durationMs > 0;
-    if (ended) {               // 已结束 → 重播
-      setReplayTime(0);
-      startReplay();
-      btnPlay.textContent = '⏸ 暂停';
-      return;
-    }
-    // 初始播放
-    startReplay();
-    btnPlay.textContent = '⏸ 暂停';
-    return;
-  }
+// $('play').onclick = () => {//btnPlay.onclick = ()=>{
+//   // 1) 未播放：可能是初始或“已结束待重播”
+//   if(!state.replay.playing){
+//     const ended = (state.replay.timeMs >= state.replay.durationMs) && state.replay.durationMs > 0;
+//     if (ended) {               // 已结束 → 重播
+//       setReplayTime(0);
+//       startReplay();
+//       btnPlay.textContent = '⏸ 暂停';
+//       return;
+//     }
+//     // 初始播放
+//     startReplay();
+//     btnPlay.textContent = '⏸ 暂停';
+//     return;
+//   }
 
-  // 2) 播放中：切换 暂停/继续
-  if(state.replay.paused){
-    resumeReplay();
-    btnPlay.textContent = '⏸ 暂停';
-  }else{
-    pauseReplay();
-    btnPlay.textContent = '▶ 继续';
-  }
+//   // 2) 播放中：切换 暂停/继续
+//   if(state.replay.paused){
+//     resumeReplay();
+//     btnPlay.textContent = '⏸ 暂停';
+//   }else{
+//     pauseReplay();
+//     btnPlay.textContent = '▶ 继续';
+//   }
+// };
+
+$('play').onclick = () => {
+  // 统一用回放控制条的按钮逻辑，避免重复状态机和未定义变量
+  const bp = document.getElementById('btn-playpause');
+  if (bp) bp.click();
 };
 
 setMode('drag');
@@ -650,6 +656,9 @@ function redo(){
 }
 //导出png
 function exportPNG(opts = { bg:'court', hideDefense:false }){
+
+  // 显式打开平滑（尤其白底导出）
+  if (ctx && 'imageSmoothingEnabled' in ctx) ctx.imageSmoothingEnabled = true;
   // 用本次选择渲染一帧
   draw({ bg: opts.bg, hideDefense: opts.hideDefense });
 
@@ -849,21 +858,84 @@ function polyLerp(pts,u){if(!pts||!pts.length)return{x:0,y:0}; if(pts.length===1
   for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],seg=Math.hypot(b.x-a.x,b.y-a.y);
     if(d<=seg){const t=seg?d/seg:0;return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t}} d-=seg;} return pts.at(-1);}
 
+// ===== 路径避障 v0：对 RUN 轨迹做轻微侧移，减少“穿人” =====
+const PATHING_AVOIDANCE_KEY = 'pathingAvoidance';
+state.pathingAvoidance = (() => {
+  try { return JSON.parse(localStorage.getItem(PATHING_AVOIDANCE_KEY) || 'true'); }
+  catch(_) { return true; }
+})();
+function setPathingAvoidance(on){
+  state.pathingAvoidance = !!on;
+  try { localStorage.setItem(PATHING_AVOIDANCE_KEY, JSON.stringify(state.pathingAvoidance)); } catch(_){}
+}
+function adjustPathForTeammates(pts, player, teammates, minGapPx){
+  if (!state.pathingAvoidance) return pts;
+  if (!pts || pts.length < 2) return pts;
+  const out = pts.map(p => ({x:p.x, y:p.y}));
+  const R = Math.max(16, Math.min(canvas.clientWidth, canvas.clientHeight)*0.028);
+  const thr = Math.max(minGapPx || spacingThresholdPx()*0.65, R*1.2);
+
+  // 最多两轮轻量侧移，保证性能
+  for (let iter=0; iter<2; iter++){
+    for (let i=0; i<out.length; i++){
+      const p = out[i];
+      for (const tm of teammates){
+        if (tm.id === player.id) continue;
+        const d = Math.hypot(p.x - tm.x, p.y - tm.y);
+        if (d < thr){
+          const nx = (p.x - tm.x) / (d || 1), ny = (p.y - tm.y) / (d || 1);
+          const push = (thr - d) * 0.55;
+          p.x += nx * push;
+          p.y += ny * push;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+
 // 编译时间线（从 shapes 推出 runs/passes）
 function compileTimeline(){
   const runs=[],passes=[],O=state.players.filter(p=>p.team==='O');
-  const nearest=pt=>O.reduce((m,p)=>{const d=Math.hypot(pt.x-p.x,pt.y-p.y);return(!m||d<m.d)?{p,d}:m},null)?.p;
+
+  // 最近进攻球员匹配器（沿用你现有逻辑）
+  const nearest=pt=>O.reduce((m,p)=>{
+    const d=Math.hypot(pt.x-p.x,pt.y-p.y);
+    return(!m||d<m.d)?{p,d}:m
+  },null)?.p;
+
+  // RUN：样条平滑 → 可选避障 → 时长
   state.shapes.filter(s=>s.type==='run'&&s.pts?.length>=2).forEach(s=>{
-    const player=nearest(s.pts[0]); if(!player) return; const smooth=sampleSpline(s.pts,64);
-    const dur=Math.max(0.2,polyLength(smooth)/MOVE_SPEED); runs.push({player,pts:smooth,t0:0,t1:dur*1000});});
+    const player=nearest(s.pts[0]); if(!player) return;
+    const smooth=sampleSpline(s.pts,64);
+    // 基于当前帧队友位置做轻度避障
+    const teammates = O; // 以 O 队友为参照
+    const adjusted = adjustPathForTeammates(smooth, player, teammates);
+    const dur=Math.max(0.2,polyLength(adjusted)/MOVE_SPEED);
+    runs.push({player,pts:adjusted,t0:0,t1:dur*1000});
+  });
+
+  // PASS：按你的启发式生成
   let idx=0;
   state.shapes.filter(s=>s.type==='pass'&&s.pts?.length>=2).forEach(s=>{
     const a=s.pts[0],b=s.pts.at(-1),from=nearest(a),to=nearest(b); if(!from||!to) return;
-    const dist=Math.hypot(b.x-a.x,b.y-a.y),dur=Math.max(0.2,dist/PASS_SPEED),t0=BASE_DELAY+idx*300,arc=Math.max(28,Math.min(84,dist*0.18));
-    passes.push({from,to,p0:a,p1:b,t0,dur:dur*1000,arc}); idx++;});
-  const durationMs=Math.max(runs.reduce((m,r)=>Math.max(m,r.t1),0),passes.reduce((m,p)=>Math.max(m,p.t0+p.dur),0))||0;
+    const dist=Math.hypot(b.x-a.x,b.y-a.y);
+    const dur=Math.max(0.2,dist/PASS_SPEED);
+    const t0=BASE_DELAY+idx*300;
+    const arc=Math.max(28,Math.min(84,dist*0.18));
+    passes.push({from,to,p0:a,p1:b,t0,dur:dur*1000,arc});
+    idx++;
+  });
+
+  const durationMs=Math.max(
+    runs.reduce((m,r)=>Math.max(m,r.t1),0),
+    passes.reduce((m,p)=>Math.max(m,p.t0+p.dur),0)
+  )||0;
+
   return {runs,passes,durationMs};
 }
+
 
 // 控制与定位
 function startReplay(){
