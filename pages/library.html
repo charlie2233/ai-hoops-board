@@ -47,18 +47,22 @@
   <div class="list" id="list"></div>
 
 <script>
-let plays=[];
+let plays = [];
+
 async function load(){
-  const res = await fetch('../plays/plays.json'); 
+  // ✅ 加上时间戳 + no-store，确保每次拿到最新的 plays.json
+  const res = await fetch('../plays/plays.json?t=' + Date.now(), { cache: 'no-store' });
   plays = await res.json();
   render();
 }
+
 function match(p, q, t, v){
-  const qok = !q || (p.name+p.type+(p.vs||[]).join(',')).toLowerCase().includes(q.toLowerCase());
-  const tok = !t || p.type===t;
+  const qok = !q || (p.name + p.type + (p.vs||[]).join(',')).toLowerCase().includes(q.toLowerCase());
+  const tok = !t || p.type === t;
   const vok = !v || (p.vs||[]).includes(v);
   return qok && tok && vok;
 }
+
 function render(){
   const list = document.getElementById('list');
   const q = document.getElementById('q').value.trim();
@@ -71,21 +75,26 @@ function render(){
       <div style="font-size:12px;color:#64748B">口令：${(p.cues||[]).slice(0,2).join(' / ')}</div>
       <div class="row">
         <button class="btn" onclick="preview('${p.id}')">预览</button>
-        <button class="btn primary" onclick="apply('${p.id}')">应用到战术板</button>
+        <button class="btn primary" onclick="applyPlay('${p.id}')">应用到战术板</button>
       </div>
     </div>`).join('');
   list.innerHTML = rows || '<div style="color:#64748B">没有匹配项</div>';
 }
+
 function preview(id){
-  alert('预览占位：稍后做可视化。当前选择：'+id);
+  alert('预览占位：稍后做可视化。当前选择：' + id);
 }
-function apply(id){
-  localStorage.setItem('applyPlayId', id);
-  location.href = '../index.html';
+
+// ✅ 同时写 localStorage + URL 传参，双通道更稳
+function applyPlay(id){
+  try { localStorage.setItem('applyPlayId', id); } catch(_) {}
+  location.href = '../index.html?apply=' + encodeURIComponent(id);
 }
+
 document.getElementById('q').oninput = render;
 document.getElementById('fType').onchange = render;
 document.getElementById('fVs').onchange = render;
+
 load();
 </script>
 </body>

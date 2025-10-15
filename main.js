@@ -778,46 +778,78 @@ readAppliedPlay();   // 启动时尝试接收 Library 的“应用”指令
 
 
 async function readAppliedPlay(){
-  const id = localStorage.getItem('applyPlayId');
-  if (!id) return;
+  // 1) 读取来源：URL ?apply=XXX 优先，其次 localStorage
+  const urlId = new URLSearchParams(location.search).get('apply');
+  const lsId  = localStorage.getItem('applyPlayId');
+  const idRaw = (urlId || lsId || '').trim();
+  if (!idRaw) return;
+
+  // 可选：大小写/空白规整（保持原样匹配 + 降级匹配）
+  const norm = s => (s || '').toString().trim();
+  const same = (a,b) => norm(a) === norm(b);
 
   const applyFromGeometry = (geom, label) => {
     if (geom) {
       applyPlay(geom);
-      toast(`已应用：${applied.name}${label?`（${label}）`:''}`);
+      toast(`已应用：${applied.name}（${label}）`);
     } else {
-      toast('未找到战术预设，已保持当前布置');
+      toast('未找到战术几何，已保持当前布置');
     }
   };
 
   try {
-    const url = './plays/plays.json?t=' + Date.now();
+    const url = './plays/plays.json?t=' + Date.now(); // 防缓存
     const res = await fetch(url, { cache: 'no-store' });
     const list = await res.json();
-    const p = list.find(x=>x.id===id);
 
-    applied.id = id;
-    applied.name = p ? p.name : id;
-
-    // 1) 先尝试从 plays.json 直接拿几何（未来兼容）
-    let geom = null;
-    if (p) {
-      if (p.geometry) geom = p.geometry;                 // 未来：显式 geometry 字段
-      else if (p.offense || p.shapes) geom = p;          // 兼容：把条目本身当几何
+    // 2) 精确找 + 宽松找（id 完整匹配，找不到再尝试忽略大小写）
+    let p = list.find(x => same(x.id, idRaw));
+    if (!p) {
+      const idLower = idRaw.toLowerCase();
+      p = list.find(x => (x.id || '').toString().toLowerCase() === idLower);
     }
-    // 2) 没有的话，用预设；再没有退 fiveOut
-    if (!geom) geom = getPreset(id) || getPreset('fiveOut');
 
-    applyFromGeometry(geom, geom === getPreset('fiveOut') ? '预设兜底' : '预设');
+    applied.id = idRaw;
+    applied.name = (p && (p.name || p.id)) || idRaw;
+
+    // 3) 选择几何来源优先级：
+    //    JSON.geometry > JSON.(offense/shapes) > JSON.(preset|presetId|alias) > 预设(getPreset(id)) > fiveOut
+    let geom = null;
+
+    if (p) {
+      if (p.geometry) {
+        geom = p.geometry;
+      } else if (p.offense || p.shapes) {
+        geom = p; // 直接用条目本身当几何
+      } else if (p.preset || p.presetId || p.alias) {
+        const pid = p.preset || p.presetId || p.alias;
+        geom = getPreset(pid) || null;
+      }
+    }
+
+    if (!geom) geom = getPreset(idRaw) || null;        // 与 presets 名称直接对齐
+    if (!geom) geom = getPreset('fiveOut');            // 兜底
+
+    // 4) 应用 + 提示来源
+    const label = p
+      ? ( (geom === p) ? 'JSON几何' :
+          (p.geometry ? 'JSON.geometry' :
+           (p.offense||p.shapes) ? 'JSON(简化)' : '预设(preset)') )
+      : (geom === getPreset('fiveOut') ? '预设兜底' : '预设');
+
+    applyFromGeometry(geom, label);
+
   } catch(e){
-    // 离线/失败也可用预设
-    applied.id = id; applied.name = id;
-    const geom = getPreset(id) || getPreset('fiveOut');
+    // 网络/离线：预设兜底
+    applied.id   = idRaw;
+    applied.name = idRaw;
+    const geom = getPreset(idRaw) || getPreset('fiveOut');
     applyFromGeometry(geom, '离线预设');
+  } finally {
+    localStorage.removeItem('applyPlayId'); // 用一次即清，避免误复用
   }
-
-  localStorage.removeItem('applyPlayId'); // 用一次即清
 }
+
 
 
 
