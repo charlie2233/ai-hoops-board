@@ -867,27 +867,40 @@ function compileTimeline(){
 
 // 控制与定位
 function startReplay(){
-  state.replay.snapshot={players:JSON.parse(JSON.stringify(state.players)),ballOwnerId:state.players.find(p=>p.team==='O'&&p.ball)?.id||null};
+  state.replay.snapshot = {
+    players: JSON.parse(JSON.stringify(state.players)),
+    ballOwnerId: state.players.find(p=>p.team==='O'&&p.ball)?.id || null
+  };
   canvas.style.pointerEvents='none';
-  const tl=compileTimeline(); state.replay.runs=tl.runs; state.replay.passes=tl.passes; state.replay.durationMs=Math.max(100,tl.durationMs);
-  state.replay.timeMs=0; state.replay.playing=true; state.replay.paused=false;
-  state.replay.speed=parseFloat(document.getElementById('speed').value||'1');
-  state.replay.startStamp=performance.now(); state.replay.lastStamp=state.replay.startStamp; requestAnimationFrame(tickReplay);
-}
-function stopReplay(restore = true){
-  if(!state.replay.playing && !restore) {
-    // 已经停止且要求保留现场：只更新按钮文案
-    const btn = document.getElementById('btn-playpause');
-    if (btn) btn.textContent = '↻ 重播';
-    return;
-  }
 
+  const tl = compileTimeline();
+  state.replay.runs = tl.runs;
+  state.replay.passes = tl.passes;
+  state.replay.durationMs = Math.max(100, tl.durationMs);
+  state.replay.timeMs = 0;
+  state.replay.playing = true;
+  state.replay.paused  = false;
+
+  // 关键：默认 0.75×
+  const sel = document.getElementById('speed');
+  state.replay.speed = parseFloat((sel && sel.value) ? sel.value : '0.75');
+
+  state.replay.startStamp = performance.now();
+  state.replay.lastStamp  = state.replay.startStamp;
+
+  const btn = document.getElementById('btn-playpause');
+  if (btn) btn.textContent = '⏸ 暂停';
+
+  requestAnimationFrame(tickReplay);
+}
+
+function stopReplay(restore = true){
   state.replay.playing = false;
   state.replay.paused  = false;
   canvas.style.pointerEvents = 'auto';
 
   if (restore && state.replay.snapshot){
-    // 恢复到回放前
+    // 恢复到回放前的站位
     state.players = JSON.parse(JSON.stringify(state.replay.snapshot.players));
     state.players.forEach(p => p.ball = (p.team==='O' && p.id===state.replay.snapshot.ballOwnerId));
   }
@@ -896,14 +909,12 @@ function stopReplay(restore = true){
   draw();
 
   const btn = document.getElementById('btn-playpause');
-  if (btn) btn.textContent = restore ? '▶ 回放' : '↻ 重播';
-
+  if (btn) btn.textContent = '▶ 回放';         // 重置为“回放”
   const seek = document.getElementById('seek');
-  if (seek){
-    const ended = !restore && state.replay.durationMs > 0;
-    seek.value = ended ? 100 : 0;
-  }
+  if (seek) seek.value = 0;                     // 归零
+  state.replay.timeMs = 0;                      // 内部时间也归零
 }
+
 
 function pauseReplay(){ state.replay.paused=true; }
 function resumeReplay(){ state.replay.paused=false; state.replay.lastStamp=performance.now(); }
