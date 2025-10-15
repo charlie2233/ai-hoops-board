@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE = 'ai-hoops-mvp-v16';
+const CACHE = 'ai-hoops-mvp-v17';
 const ASSETS = [
   './',
   './index.html',
