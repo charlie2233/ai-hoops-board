@@ -377,6 +377,15 @@ function renderLanguageUI(){
   setText('link-drills', 'link_drills');
   setTitle('link-settings', 'link_settings');
   setText('toggle-court', 'toggle_court_short');
+  
+  // Update "More" button based on current state
+  const showAdvBtn = $('show-advanced');
+  const advToolbar = $('advanced-toolbar');
+  if(showAdvBtn && advToolbar) {
+    const isVisible = advToolbar.classList.contains('show');
+    showAdvBtn.textContent = isVisible ? t('show_less') : t('show_more');
+  }
+  
   setText('btn-stop', 'stop');
   setText('clear', 'clear');
   setText('save', 'save');
@@ -1963,7 +1972,7 @@ draw = function(opts={}){ _draw_replay_wrap(opts);
   if(showAdvBtn && advToolbar) {
     showAdvBtn.onclick = () => {
       const isVisible = advToolbar.classList.toggle('show');
-      showAdvBtn.textContent = isVisible ? '更多 ▲' : '更多 ▼';
+      showAdvBtn.textContent = isVisible ? t('show_less') : t('show_more');
     };
   }
   
