@@ -12,6 +12,8 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
     const s = localStorage.getItem('uiThemeStyleV1');
     if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
+    const l = localStorage.getItem('uiLangV1');
+    if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
   } catch (_) {}
 })();
 </script>
@@ -98,13 +100,16 @@
   h1{font:700 20px/1.1 var(--font-title);margin:0}
   .sub{font-size:12px;color:var(--muted);margin-top:2px}
 
-  .appbar-right{display:flex;align-items:center;gap:8px}
+  .appbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .theme-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
   .theme-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
   .theme-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
   .style-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
   .style-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
   .style-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
+  .lang-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
+  .lang-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .lang-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
 
   .filters{
     position:sticky;top:66px;z-index:19;
@@ -155,7 +160,7 @@
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
   @media (max-width:820px){
-    .theme-btn,.style-btn{min-width:44px;font-size:11px}
+    .theme-btn,.style-btn,.lang-btn{min-width:44px;font-size:11px}
     .sub{display:none}
     h1{font-size:18px}
     .filters{grid-template-columns:1fr}
@@ -171,9 +176,9 @@
 <body>
   <div class="appbar">
     <div>
-      <a href="../index.html">← 返回画板</a>
-      <h1>训练库</h1>
-      <div class="sub">Drill Library</div>
+      <a id="back-link" href="../index.html">← 返回画板</a>
+      <h1 id="page-title">训练库</h1>
+      <div class="sub" id="page-sub">Drill Library</div>
     </div>
     <div class="appbar-right">
       <div class="theme-switch" role="group" aria-label="主题切换">
@@ -183,6 +188,10 @@
       <div class="style-switch" role="group" aria-label="样式切换">
         <button class="style-btn" id="style-classic" aria-pressed="false">经典</button>
         <button class="style-btn" id="style-vivid" aria-pressed="false">动感</button>
+      </div>
+      <div class="lang-switch" role="group" aria-label="语言切换">
+        <button class="lang-btn" id="lang-zh" aria-pressed="false">中文</button>
+        <button class="lang-btn" id="lang-en" aria-pressed="false">EN</button>
       </div>
     </div>
   </div>
@@ -210,6 +219,7 @@
 <script>
 const THEME_KEY = 'uiThemeV1';
 const THEME_STYLE_KEY = 'uiThemeStyleV1';
+const LANG_KEY = 'uiLangV1';
 const RECENTS_KEY = 'playRecentsV1';
 const themeButtons = {
   light: document.getElementById('theme-light'),
@@ -219,7 +229,63 @@ const styleButtons = {
   classic: document.getElementById('style-classic'),
   vivid: document.getElementById('style-vivid')
 };
+const langButtons = {
+  zh: document.getElementById('lang-zh'),
+  en: document.getElementById('lang-en')
+};
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+let uiLang = 'zh';
+
+const I18N = {
+  zh: {
+    back: '← 返回画板',
+    title: '训练库',
+    sub: 'Drill Library',
+    theme_light: '浅色',
+    theme_dark: '深色',
+    style_classic: '经典',
+    style_vivid: '动感',
+    q_placeholder: '搜索训练/要点/标签…',
+    f_play: '关联战术',
+    player_title_idle: '训练视频',
+    player_open: '在 YouTube 打开',
+    player_close: '关闭',
+    meta_link: '关联',
+    meta_tags: '标签',
+    meta_notes: '要点',
+    btn_play: '播放',
+    btn_apply: '应用关联战术',
+    empty: '没有匹配的训练',
+    playing_now: '正在播放：{title}',
+    playing_default: '正在播放训练视频',
+    invalid_video: '视频 ID 无效，请检查 drills.json 的 youtubeId',
+    thumb_placeholder: '占位缩略图'
+  },
+  en: {
+    back: '← Back to Board',
+    title: 'Drill Library',
+    sub: 'Drill Library',
+    theme_light: 'Light',
+    theme_dark: 'Dark',
+    style_classic: 'Classic',
+    style_vivid: 'Vivid',
+    q_placeholder: 'Search drills/notes/tags…',
+    f_play: 'Linked Play',
+    player_title_idle: 'Drill Video',
+    player_open: 'Open on YouTube',
+    player_close: 'Close',
+    meta_link: 'Linked',
+    meta_tags: 'Tags',
+    meta_notes: 'Notes',
+    btn_play: 'Play',
+    btn_apply: 'Apply Linked Play',
+    empty: 'No matching drills',
+    playing_now: 'Now Playing: {title}',
+    playing_default: 'Now playing drill video',
+    invalid_video: 'Invalid video ID. Check youtubeId in drills.json',
+    thumb_placeholder: 'Thumbnail placeholder'
+  }
+};
 
 function normalizeTheme(theme){
   return theme === 'dark' ? 'dark' : 'light';
@@ -227,6 +293,16 @@ function normalizeTheme(theme){
 
 function normalizeStyle(style){
   return style === 'vivid' ? 'vivid' : 'classic';
+}
+
+function normalizeLang(lang){
+  return lang === 'en' ? 'en' : 'zh';
+}
+
+function t(key, vars = {}){
+  const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
+  const base = dict[key] ?? I18N.zh[key] ?? key;
+  return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 }
 
 function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
@@ -259,6 +335,16 @@ function refreshStyleButtons(style){
   });
 }
 
+function refreshLangButtons(lang){
+  const l = normalizeLang(lang);
+  Object.entries(langButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === l;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
 function applyTheme(theme, persist = true){
   const t = normalizeTheme(theme);
   document.documentElement.setAttribute('data-theme', t);
@@ -279,19 +365,64 @@ function applyThemeStyle(style, persist = true){
   }
 }
 
+function renderLanguageUI(){
+  document.title = t('title');
+  const setText = (id, key) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = t(key);
+  };
+  setText('back-link', 'back');
+  setText('page-title', 'title');
+  setText('page-sub', 'sub');
+  setText('theme-light', 'theme_light');
+  setText('theme-dark', 'theme_dark');
+  setText('style-classic', 'style_classic');
+  setText('style-vivid', 'style_vivid');
+  setText('player-open', 'player_open');
+  setText('player-close', 'player_close');
+
+  const q = document.getElementById('q');
+  if (q) q.placeholder = t('q_placeholder');
+
+  const fPlay = document.getElementById('fPlay');
+  if (fPlay && fPlay.options[0]) fPlay.options[0].textContent = t('f_play');
+
+  if (!activeVideoId){
+    const titleEl = document.getElementById('player-title');
+    if (titleEl) titleEl.textContent = t('player_title_idle');
+  }
+}
+
+function applyLanguage(lang, persist = true){
+  uiLang = normalizeLang(lang);
+  document.documentElement.setAttribute('data-lang', uiLang);
+  document.documentElement.lang = uiLang === 'en' ? 'en' : 'zh-CN';
+  refreshLangButtons(uiLang);
+  renderLanguageUI();
+  if (persist){
+    try { localStorage.setItem(LANG_KEY, uiLang); } catch (_) {}
+  }
+}
+
 function initThemeSwitch(){
   let savedTheme = null;
   let savedStyle = null;
+  let savedLang = null;
   try {
     savedTheme = localStorage.getItem(THEME_KEY);
     savedStyle = localStorage.getItem(THEME_STYLE_KEY);
+    savedLang = localStorage.getItem(LANG_KEY);
   } catch (_) {}
   applyTheme(savedTheme || document.documentElement.getAttribute('data-theme') || 'light', false);
   applyThemeStyle(savedStyle || document.documentElement.getAttribute('data-style') || 'classic', false);
+  applyLanguage(savedLang || document.documentElement.getAttribute('data-lang') || 'zh', false);
   if (themeButtons.light) themeButtons.light.onclick = () => applyTheme('light');
   if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
   if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
   if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
+  if (langButtons.zh) langButtons.zh.onclick = () => { applyLanguage('zh'); render(); };
+  if (langButtons.en) langButtons.en.onclick = () => { applyLanguage('en'); render(); };
 }
 
 let drills = [];
@@ -352,40 +483,41 @@ function render(){
     return `
       <div class="card" style="--d:${idx % 10}">
         <div class="thumb">
-          ${thumb ? `<img src="${thumb}" alt="" style="width:100%;height:100%;object-fit:cover"/>` : '占位缩略图'}
+          ${thumb ? `<img src="${thumb}" alt="" style="width:100%;height:100%;object-fit:cover"/>` : escapeHtml(t('thumb_placeholder'))}
         </div>
         <div style="flex:1">
           <div class="title">${escapeHtml(d.title)}</div>
-          <div class="meta">${escapeHtml(d.duration || '')} · 关联：${escapeHtml(playName)} · 标签：${escapeHtml((d.tags || []).join('/'))}</div>
-          <div class="meta">要点：${escapeHtml(d.notes || '')}</div>
+          <div class="meta">${escapeHtml(d.duration || '')} · ${escapeHtml(t('meta_link'))}：${escapeHtml(playName)} · ${escapeHtml(t('meta_tags'))}：${escapeHtml((d.tags || []).join('/'))}</div>
+          <div class="meta">${escapeHtml(t('meta_notes'))}：${escapeHtml(d.notes || '')}</div>
           <div class="row">
             <button class="btn play js-play"
               data-video-id="${encodeAttr(d.youtubeId || '')}"
-              data-title="${encodeAttr(d.title || '')}">播放</button>
+              data-title="${encodeAttr(d.title || '')}">${escapeHtml(t('btn_play'))}</button>
             <button class="btn apply js-apply-play"
-              data-play-id="${encodeAttr(d.playId || '')}">应用关联战术</button>
+              data-play-id="${encodeAttr(d.playId || '')}">${escapeHtml(t('btn_apply'))}</button>
           </div>
         </div>
       </div>`;
   }).join('');
 
-  list.innerHTML = html || '<div class="empty">没有匹配的训练</div>';
+  list.innerHTML = html || `<div class="empty">${escapeHtml(t('empty'))}</div>`;
 }
 
 function closePlayer(){
   const frame = document.getElementById('player-frame');
   frame.src = 'about:blank';
   activeVideoId = '';
+  document.getElementById('player-title').textContent = t('player_title_idle');
   document.getElementById('player').hidden = true;
 }
 
 function playVideo(id, title){
   if (!id || id.startsWith('VIDEO_ID_')){
-    alert('占位ID，请替换为真实的 YouTube 视频ID');
+    alert(t('invalid_video'));
     return;
   }
   activeVideoId = id;
-  document.getElementById('player-title').textContent = title ? ('正在播放：' + title) : '正在播放训练视频';
+  document.getElementById('player-title').textContent = title ? t('playing_now', { title }) : t('playing_default');
   document.getElementById('player-frame').src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
   document.getElementById('player').hidden = false;
 }
@@ -429,6 +561,12 @@ document.getElementById('list').addEventListener('click', (e) => {
   if (applyBtn){
     const playId = decodeAttr(applyBtn.dataset.playId);
     applyPlay(playId);
+  }
+});
+window.addEventListener('storage', (e) => {
+  if (e.key === LANG_KEY){
+    applyLanguage(e.newValue || 'zh', false);
+    render();
   }
 });
 

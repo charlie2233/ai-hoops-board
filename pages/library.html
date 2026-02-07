@@ -12,6 +12,8 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
     const s = localStorage.getItem('uiThemeStyleV1');
     if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
+    const l = localStorage.getItem('uiLangV1');
+    if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
   } catch (_) {}
 })();
 </script>
@@ -102,13 +104,16 @@
   h1{font:700 20px/1.1 var(--font-title);margin:0}
   .sub{font-size:12px;color:var(--muted);margin-top:2px}
 
-  .appbar-right{display:flex;align-items:center;gap:8px}
+  .appbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .theme-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
   .theme-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
   .theme-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
   .style-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
   .style-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
   .style-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
+  .lang-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
+  .lang-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .lang-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
 
   .filters{
     position:sticky;top:66px;z-index:19;
@@ -172,7 +177,7 @@
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
   @media (max-width:780px){
-    .theme-btn,.style-btn{min-width:44px;font-size:11px}
+    .theme-btn,.style-btn,.lang-btn{min-width:44px;font-size:11px}
     .sub{display:none}
     h1{font-size:18px}
     .filters{grid-template-columns:1fr 1fr}
@@ -185,9 +190,9 @@
 <body>
   <div class="appbar">
     <div>
-      <a href="../index.html">← 返回画板</a>
-      <h1>战术库</h1>
-      <div class="sub">Play Library</div>
+      <a id="back-link" href="../index.html">← 返回画板</a>
+      <h1 id="page-title">战术库</h1>
+      <div class="sub" id="page-sub">Play Library</div>
     </div>
     <div class="appbar-right">
       <div class="theme-switch" role="group" aria-label="主题切换">
@@ -197,6 +202,10 @@
       <div class="style-switch" role="group" aria-label="样式切换">
         <button class="style-btn" id="style-classic" aria-pressed="false">经典</button>
         <button class="style-btn" id="style-vivid" aria-pressed="false">动感</button>
+      </div>
+      <div class="lang-switch" role="group" aria-label="语言切换">
+        <button class="lang-btn" id="lang-zh" aria-pressed="false">中文</button>
+        <button class="lang-btn" id="lang-en" aria-pressed="false">EN</button>
       </div>
     </div>
   </div>
@@ -251,6 +260,7 @@
 <script>
 const THEME_KEY = 'uiThemeV1';
 const THEME_STYLE_KEY = 'uiThemeStyleV1';
+const LANG_KEY = 'uiLangV1';
 const FAVORITES_KEY = 'playFavoritesV1';
 const RECENTS_KEY = 'playRecentsV1';
 const themeButtons = {
@@ -261,9 +271,87 @@ const styleButtons = {
   classic: document.getElementById('style-classic'),
   vivid: document.getElementById('style-vivid')
 };
+const langButtons = {
+  zh: document.getElementById('lang-zh'),
+  en: document.getElementById('lang-en')
+};
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 let favorites = new Set();
 let recents = [];
+let uiLang = 'zh';
+
+const I18N = {
+  zh: {
+    back: '← 返回画板',
+    title: '战术库',
+    sub: 'Play Library',
+    theme_light: '浅色',
+    theme_dark: '深色',
+    style_classic: '经典',
+    style_vivid: '动感',
+    q_placeholder: '搜索名称/标签…',
+    f_type_all: '类型',
+    f_vs_all: 'Vs 防守',
+    f_scope_all: '范围',
+    f_scope_fav: '仅收藏',
+    f_scope_recent: '最近使用',
+    f_sort_all: '默认排序',
+    f_sort_name: '按名称',
+    f_sort_fav: '收藏优先',
+    f_sort_recent: '最近优先',
+    stats: '共 {total} 条 · 当前 {shown} 条 · 收藏 {fav} 条 · 最近 {recent} 条',
+    line_cues: '口令：{text}',
+    preview: '预览',
+    apply: '应用到战术板',
+    fav_on: '取消收藏',
+    fav_off: '收藏',
+    pill_fav: '收藏',
+    pill_recent: '最近',
+    empty: '没有匹配项',
+    pv_default: '战术预览',
+    close: '关闭',
+    cues: '口令：{text}',
+    errors: '常见错误：{text}',
+    pv_apply: '应用到战术板',
+    not_found: '未找到战术：{id}',
+    type_fallback: '战术'
+  },
+  en: {
+    back: '← Back to Board',
+    title: 'Play Library',
+    sub: 'Play Library',
+    theme_light: 'Light',
+    theme_dark: 'Dark',
+    style_classic: 'Classic',
+    style_vivid: 'Vivid',
+    q_placeholder: 'Search name/tags…',
+    f_type_all: 'Type',
+    f_vs_all: 'Vs Defense',
+    f_scope_all: 'Scope',
+    f_scope_fav: 'Favorites',
+    f_scope_recent: 'Recent',
+    f_sort_all: 'Default Sort',
+    f_sort_name: 'By Name',
+    f_sort_fav: 'Favorites First',
+    f_sort_recent: 'Recent First',
+    stats: 'Total {total} · Showing {shown} · Favorites {fav} · Recent {recent}',
+    line_cues: 'Cues: {text}',
+    preview: 'Preview',
+    apply: 'Apply to Board',
+    fav_on: 'Unfavorite',
+    fav_off: 'Favorite',
+    pill_fav: 'Favorite',
+    pill_recent: 'Recent',
+    empty: 'No matches',
+    pv_default: 'Play Preview',
+    close: 'Close',
+    cues: 'Cues: {text}',
+    errors: 'Common mistakes: {text}',
+    pv_apply: 'Apply to Board',
+    not_found: 'Play not found: {id}',
+    type_fallback: 'Play'
+  }
+};
 
 function normalizeTheme(theme){
   return theme === 'dark' ? 'dark' : 'light';
@@ -271,6 +359,16 @@ function normalizeTheme(theme){
 
 function normalizeStyle(style){
   return style === 'vivid' ? 'vivid' : 'classic';
+}
+
+function normalizeLang(lang){
+  return lang === 'en' ? 'en' : 'zh';
+}
+
+function t(key, vars = {}){
+  const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
+  const base = dict[key] ?? I18N.zh[key] ?? key;
+  return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 }
 
 function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
@@ -303,6 +401,16 @@ function refreshStyleButtons(style){
   });
 }
 
+function refreshLangButtons(lang){
+  const l = normalizeLang(lang);
+  Object.entries(langButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === l;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
 function applyTheme(theme, persist = true){
   const t = normalizeTheme(theme);
   document.documentElement.setAttribute('data-theme', t);
@@ -323,19 +431,78 @@ function applyThemeStyle(style, persist = true){
   }
 }
 
+function renderLanguageUI(){
+  document.title = t('title');
+  const setText = (id, key) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = t(key);
+  };
+  setText('back-link', 'back');
+  setText('page-title', 'title');
+  setText('page-sub', 'sub');
+  setText('theme-light', 'theme_light');
+  setText('theme-dark', 'theme_dark');
+  setText('style-classic', 'style_classic');
+  setText('style-vivid', 'style_vivid');
+  setText('pv-title', 'pv_default');
+  setText('pv-close', 'close');
+  setText('pv-apply', 'pv_apply');
+
+  const q = document.getElementById('q');
+  if (q) q.placeholder = t('q_placeholder');
+
+  const fType = document.getElementById('fType');
+  if (fType && fType.options[0]) fType.options[0].textContent = t('f_type_all');
+
+  const fVs = document.getElementById('fVs');
+  if (fVs && fVs.options[0]) fVs.options[0].textContent = t('f_vs_all');
+
+  const fScope = document.getElementById('fScope');
+  if (fScope){
+    if (fScope.options[0]) fScope.options[0].textContent = t('f_scope_all');
+    if (fScope.options[1]) fScope.options[1].textContent = t('f_scope_fav');
+    if (fScope.options[2]) fScope.options[2].textContent = t('f_scope_recent');
+  }
+
+  const fSort = document.getElementById('fSort');
+  if (fSort){
+    if (fSort.options[0]) fSort.options[0].textContent = t('f_sort_all');
+    if (fSort.options[1]) fSort.options[1].textContent = t('f_sort_name');
+    if (fSort.options[2]) fSort.options[2].textContent = t('f_sort_fav');
+    if (fSort.options[3]) fSort.options[3].textContent = t('f_sort_recent');
+  }
+}
+
+function applyLanguage(lang, persist = true){
+  uiLang = normalizeLang(lang);
+  document.documentElement.setAttribute('data-lang', uiLang);
+  document.documentElement.lang = uiLang === 'en' ? 'en' : 'zh-CN';
+  refreshLangButtons(uiLang);
+  renderLanguageUI();
+  if (persist){
+    try { localStorage.setItem(LANG_KEY, uiLang); } catch (_) {}
+  }
+}
+
 function initThemeSwitch(){
   let savedTheme = null;
   let savedStyle = null;
+  let savedLang = null;
   try {
     savedTheme = localStorage.getItem(THEME_KEY);
     savedStyle = localStorage.getItem(THEME_STYLE_KEY);
+    savedLang = localStorage.getItem(LANG_KEY);
   } catch (_) {}
   applyTheme(savedTheme || document.documentElement.getAttribute('data-theme') || 'light', false);
   applyThemeStyle(savedStyle || document.documentElement.getAttribute('data-style') || 'classic', false);
+  applyLanguage(savedLang || document.documentElement.getAttribute('data-lang') || 'zh', false);
   if (themeButtons.light) themeButtons.light.onclick = () => applyTheme('light');
   if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
   if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
   if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
+  if (langButtons.zh) langButtons.zh.onclick = () => { applyLanguage('zh'); render(); };
+  if (langButtons.en) langButtons.en.onclick = () => { applyLanguage('en'); render(); };
 }
 
 let plays = [];
@@ -482,7 +649,7 @@ function render(){
   const filtered = plays.filter(p => match(p, q, t, v, scope));
 
   if (sort === 'name'){
-    filtered.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hans-CN'));
+    filtered.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), uiLang === 'en' ? 'en' : 'zh-Hans-CN'));
   } else if (sort === 'fav'){
     filtered.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
   } else if (sort === 'recent'){
@@ -501,26 +668,26 @@ function render(){
     <div class="card" style="--d:${idx % 10}">
       <div class="card-head">
         <div class="name">${escapeHtml(p.name)}</div>
-        <button class="fav-btn js-fav ${fav ? 'active' : ''}" data-id="${encodeAttr(pid)}" aria-label="${fav ? '取消收藏' : '收藏'}">${fav ? '★' : '☆'}</button>
+        <button class="fav-btn js-fav ${fav ? 'active' : ''}" data-id="${encodeAttr(pid)}" aria-label="${fav ? t('fav_on') : t('fav_off')}">${fav ? '★' : '☆'}</button>
       </div>
       <div class="tags">${escapeHtml(p.type)} · Vs ${escapeHtml((p.vs||[]).join('/') || '-')}</div>
-      <div class="line">口令：${escapeHtml((p.cues||[]).slice(0,2).join(' / ') || '—')}</div>
+      <div class="line">${escapeHtml(t('line_cues', { text: (p.cues||[]).slice(0,2).join(' / ') || '—' }))}</div>
       <div>
         <span class="pill">${escapeHtml(p.id || 'play')}</span>
-        ${fav ? '<span class="pill fav">收藏</span>' : ''}
-        ${recent ? '<span class="pill recent">最近</span>' : ''}
+        ${fav ? `<span class="pill fav">${escapeHtml(t('pill_fav'))}</span>` : ''}
+        ${recent ? `<span class="pill recent">${escapeHtml(t('pill_recent'))}</span>` : ''}
       </div>
       <div class="row">
-        <button class="btn js-preview" data-id="${encodeAttr(p.id)}">预览</button>
-        <button class="btn primary js-apply" data-id="${encodeAttr(p.id)}">应用到战术板</button>
+        <button class="btn js-preview" data-id="${encodeAttr(p.id)}">${escapeHtml(t('preview'))}</button>
+        <button class="btn primary js-apply" data-id="${encodeAttr(p.id)}">${escapeHtml(t('apply'))}</button>
       </div>
     </div>`;
   }).join('');
 
   if (stats){
-    stats.textContent = `共 ${plays.length} 条 · 当前 ${filtered.length} 条 · 收藏 ${favorites.size} 条 · 最近 ${recents.length} 条`;
+    stats.textContent = t('stats', { total: plays.length, shown: filtered.length, fav: favorites.size, recent: recents.length });
   }
-  list.innerHTML = rows || '<div class="empty">没有匹配项</div>';
+  list.innerHTML = rows || `<div class="empty">${escapeHtml(t('empty'))}</div>`;
 }
 
 function applyPlay(id){
@@ -645,14 +812,14 @@ function drawPreview(geom){
 
 async function preview(id){
   const p = plays.find(x => x.id === id);
-  if (!p){ alert('未找到战术：' + id); return; }
+  if (!p){ alert(t('not_found', { id })); return; }
   const geom = await resolveGeometry(p);
   previewPlayId = id;
 
-  document.getElementById('pv-title').textContent = p.name || p.id || '战术预览';
-  document.getElementById('pv-meta').textContent = `${p.type || '战术'} · Vs ${(p.vs||[]).join('/') || '-'}`;
-  document.getElementById('pv-cues').textContent = '口令：' + ((p.cues||[]).slice(0, 3).join(' / ') || '—');
-  document.getElementById('pv-errors').textContent = '常见错误：' + ((p.errors||[]).slice(0, 2).join(' / ') || '—');
+  document.getElementById('pv-title').textContent = p.name || p.id || t('pv_default');
+  document.getElementById('pv-meta').textContent = `${p.type || t('type_fallback')} · Vs ${(p.vs||[]).join('/') || '-'}`;
+  document.getElementById('pv-cues').textContent = t('cues', { text: (p.cues||[]).slice(0, 3).join(' / ') || '—' });
+  document.getElementById('pv-errors').textContent = t('errors', { text: (p.errors||[]).slice(0, 2).join(' / ') || '—' });
   drawPreview(geom);
   document.getElementById('preview-modal').hidden = false;
 }
@@ -688,6 +855,10 @@ document.getElementById('pv-apply').onclick = () => {
 window.addEventListener('storage', (e) => {
   if (e.key === FAVORITES_KEY || e.key === RECENTS_KEY){
     refreshCollections();
+    render();
+  }
+  if (e.key === LANG_KEY){
+    applyLanguage(e.newValue || 'zh', false);
     render();
   }
 });

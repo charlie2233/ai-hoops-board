@@ -14,6 +14,8 @@
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         const s = localStorage.getItem('uiThemeStyleV1');
         if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
+        const l = localStorage.getItem('uiLangV1');
+        if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
       } catch (_) {}
     })();
   </script>
@@ -173,6 +175,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .badge {
@@ -233,6 +237,33 @@
     }
 
     .style-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
+    }
+
+    .lang-switch {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 86%, transparent);
+    }
+
+    .lang-btn {
+      height: 30px;
+      min-width: 52px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .lang-btn.active {
       color: #fff;
       background: linear-gradient(135deg, var(--accent), var(--accent-soft));
       box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
@@ -431,7 +462,7 @@
 
     @media (max-width: 860px) {
       .badge { display: none; }
-      .theme-btn, .style-btn { min-width: 44px; font-size: 11px; }
+      .theme-btn, .style-btn, .lang-btn { min-width: 44px; font-size: 11px; }
       .app-sub { display: none; }
       .appbar h1 { font-size: 17px; }
       canvas { height: calc(100vh - 66px - var(--tap) - 58px - var(--ai-h) - 126px); }
@@ -441,11 +472,11 @@
 <body>
   <div class="appbar">
     <div>
-      <h1>AI 战术板 · MVP</h1>
-      <div class="app-sub">Basketball Play Designer</div>
+      <h1 id="app-title">AI 战术板 · MVP</h1>
+      <div class="app-sub" id="app-sub">Basketball Play Designer</div>
     </div>
     <div class="appbar-right">
-      <div class="badge">Step 1</div>
+      <div class="badge" id="badge-step">Step 1</div>
       <div class="theme-switch" role="group" aria-label="主题切换">
         <button class="theme-btn" id="theme-light" aria-pressed="false">浅色</button>
         <button class="theme-btn" id="theme-dark" aria-pressed="false">深色</button>
@@ -453,6 +484,10 @@
       <div class="style-switch" role="group" aria-label="样式切换">
         <button class="style-btn" id="style-classic" aria-pressed="false">经典</button>
         <button class="style-btn" id="style-vivid" aria-pressed="false">动感</button>
+      </div>
+      <div class="lang-switch" role="group" aria-label="语言切换">
+        <button class="lang-btn" id="lang-zh" aria-pressed="false">中文</button>
+        <button class="lang-btn" id="lang-en" aria-pressed="false">EN</button>
       </div>
     </div>
   </div>
@@ -477,8 +512,8 @@
     <button class="btn" id="play">回放</button>
     <button class="btn" id="erase">橡皮擦</button>
     <button class="btn" id="reset-view">重置视图</button>
-    <a class="btn" href="pages/library.html">战术库</a>
-    <a class="btn" href="pages/drills.html">训练</a>
+    <a class="btn" id="link-library" href="pages/library.html">战术库</a>
+    <a class="btn" id="link-drills" href="pages/drills.html">训练</a>
   </div>
 
   <div class="replaybar">
@@ -497,7 +532,7 @@
 
   <div class="board-wrap">
     <canvas id="board" width="1080" height="1600"></canvas>
-    <div class="hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；双指可缩放/平移画板；支持撤销/重做与导出 PNG。</div>
+    <div class="hint" id="board-hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；双指可缩放/平移画板；支持撤销/重做与导出 PNG。</div>
   </div>
 
   <div class="bottombar">

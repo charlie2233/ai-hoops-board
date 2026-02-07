@@ -14,6 +14,7 @@ let downPt = null;
 const LONG_PRESS_MS = 600;   // 0.6s 触发
 const THEME_KEY = 'uiThemeV1';
 const THEME_STYLE_KEY = 'uiThemeStyleV1';
+const LANG_KEY = 'uiLangV1';
 const PLAY_FAVORITES_KEY = 'playFavoritesV1';
 const PLAY_RECENTS_KEY = 'playRecentsV1';
 const PLAY_RECENTS_LIMIT = 12;
@@ -53,7 +54,8 @@ const state = {
     idx: 0,
     signature: '',
     timer: null
-  }
+  },
+  uiLang: 'zh'
 };
 
 // 放在 state 定义后
@@ -80,6 +82,10 @@ const styleButtons = {
   classic: $('style-classic'),
   vivid: $('style-vivid')
 };
+const langButtons = {
+  zh: $('lang-zh'),
+  en: $('lang-en')
+};
 const themeColorMeta = document.querySelector('meta[name=\"theme-color\"]');
 const offenseSelect = $('offense-player');
 const quickPlaySelect = $('quick-play');
@@ -87,12 +93,320 @@ const randomPlayBtn = $('random-play');
 let playsCatalog = [];
 let playsCatalogLoaded = false;
 
+const I18N = {
+  zh: {
+    app_title: 'AI 战术板 · MVP',
+    app_sub: 'Basketball Play Designer',
+    badge_step: 'Step 1',
+    theme_light: '浅色',
+    theme_dark: '深色',
+    style_classic: '经典',
+    style_vivid: '动感',
+    lang_zh: '中文',
+    lang_en: 'EN',
+    mode_drag: '拖拽',
+    mode_run: '跑位线',
+    mode_pass: '传球箭头',
+    ball_handler_opt: '持球人：{n}',
+    quick_play_pick: '快速战术：选择',
+    random_play: '随机战术',
+    undo: '撤销',
+    redo: '重做',
+    play: '回放',
+    erase: '橡皮擦',
+    reset_view: '重置视图',
+    link_library: '战术库',
+    link_drills: '训练',
+    stop: '停止',
+    speed_half: '0.5×',
+    speed_default: '0.75× 默认',
+    speed_1: '1×',
+    speed_2: '2×',
+    ai_loading: 'AI 提示：正在分析当前站位…',
+    board_hint: '手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；双指可缩放/平移画板；支持撤销/重做与导出 PNG。',
+    clear: '清空',
+    toggle_court: '切换：半场/全场',
+    save: '保存',
+    load: '载入',
+    export_png: '导出 PNG',
+    aria_ball_handler: '持球人选择',
+    aria_quick_play: '快速战术',
+    replay_pause: '⏸ 暂停',
+    replay_resume: '▶ 继续',
+    replay_replay: '▶ 回放',
+    toast_view_reset: '视图已重置',
+    toast_erased_last: '已删除最近一条线',
+    toast_saved: '已保存到本地',
+    toast_no_saved: '没有可载入的本地保存',
+    toast_loaded: '载入完成',
+    toast_load_corrupt: '载入失败：数据损坏',
+    toast_cleared_saved: '已清除本地保存',
+    toast_no_geom: '未找到战术几何，已保持当前布置',
+    toast_applied: '已应用：{name}（{src}{kind}）',
+    toast_no_plays: '战术库为空',
+    toast_ball_handler: '持球人：{id}',
+    toast_applied_offline: '已应用：{id}（离线预设）',
+    source_quick: '快速选择',
+    source_random: '随机',
+    source_random_fav: '随机(收藏)',
+    source_link: '链接应用',
+    geom_json: 'JSON.geometry',
+    geom_simple: 'JSON(简化)',
+    geom_preset_alias: '预设(preset)',
+    geom_preset: '预设',
+    geom_fallback: '预设兜底',
+    group_favorites: '收藏',
+    group_recent: '最近使用',
+    group_all: '全部战术',
+    spacing_alert: '拉开',
+    ai_no_tip: 'AI 提示：当前没有建议，继续绘制即可。',
+    ai_prefix_one: 'AI 提示：',
+    ai_prefix_multi: 'AI 提示（{i}/{n}）：',
+    ai_close_pair: '{a} 与 {b} 过近，建议一人拉到 45° 或底角。',
+    ai_first_action: '先画第 1 个动作：为持球人添加跑位线或传球箭头。',
+    ai_need_pass: '已有跑位线但没有传球箭头，补 1 次传导把优势转化成出手。',
+    ai_need_run: '只有传球没有无球移动，建议补 1 条跑位线避免站桩。',
+    ai_good_shape: '线路已成型，可点击“回放”检查先后时序与接应点。',
+    ai_ball_handler_now: '当前持球人为 {id} 号，切到“跑位线”可更快标出第一拍。',
+    ai_cues: '战术口令：{text}',
+    ai_errors: '常见错误：{text}。',
+    ai_full_court: '全场模式建议先标推进传球，再落位执行半场动作。',
+    export_title: '导出选项',
+    export_bg: '背景',
+    export_bg_court: '球场背景（默认）',
+    export_bg_white: '白底（适合讲解/打印）',
+    export_vis: '显示内容',
+    export_vis_all: '进攻 + 防守（默认）',
+    export_vis_offense: '仅进攻（隐藏 X1–X5）',
+    cancel: '取消',
+    export: '导出',
+    export_play_named: '战术：{name}',
+    export_play_unnamed: '战术：未命名',
+    court_half: '半场',
+    court_full: '全场',
+    watermark: 'AI 战术板'
+  },
+  en: {
+    app_title: 'AI Hoops Board · MVP',
+    app_sub: 'Basketball Play Designer',
+    badge_step: 'Step 1',
+    theme_light: 'Light',
+    theme_dark: 'Dark',
+    style_classic: 'Classic',
+    style_vivid: 'Vivid',
+    lang_zh: '中文',
+    lang_en: 'EN',
+    mode_drag: 'Drag',
+    mode_run: 'Run Line',
+    mode_pass: 'Pass Arrow',
+    ball_handler_opt: 'Ball Handler: {n}',
+    quick_play_pick: 'Quick Play: Select',
+    random_play: 'Random Play',
+    undo: 'Undo',
+    redo: 'Redo',
+    play: 'Replay',
+    erase: 'Eraser',
+    reset_view: 'Reset View',
+    link_library: 'Play Library',
+    link_drills: 'Drills',
+    stop: 'Stop',
+    speed_half: '0.5x',
+    speed_default: '0.75x Default',
+    speed_1: '1x',
+    speed_2: '2x',
+    ai_loading: 'AI Tip: analyzing current spacing...',
+    board_hint: 'Drag circles to move players. Draw in Run Line/Pass Arrow mode. Pinch to zoom and pan. Supports undo/redo and PNG export.',
+    clear: 'Clear',
+    toggle_court: 'Toggle: Half/Full',
+    save: 'Save',
+    load: 'Load',
+    export_png: 'Export PNG',
+    aria_ball_handler: 'Ball handler selection',
+    aria_quick_play: 'Quick play',
+    replay_pause: '⏸ Pause',
+    replay_resume: '▶ Resume',
+    replay_replay: '▶ Replay',
+    toast_view_reset: 'View reset',
+    toast_erased_last: 'Removed the last line',
+    toast_saved: 'Saved locally',
+    toast_no_saved: 'No local save found',
+    toast_loaded: 'Load complete',
+    toast_load_corrupt: 'Load failed: corrupted data',
+    toast_cleared_saved: 'Local save cleared',
+    toast_no_geom: 'Play geometry not found; kept current layout',
+    toast_applied: 'Applied: {name} ({src}{kind})',
+    toast_no_plays: 'Play library is empty',
+    toast_ball_handler: 'Ball handler: {id}',
+    toast_applied_offline: 'Applied: {id} (offline preset)',
+    source_quick: 'Quick Select',
+    source_random: 'Random',
+    source_random_fav: 'Random (Favorites)',
+    source_link: 'Link Apply',
+    geom_json: 'JSON.geometry',
+    geom_simple: 'JSON(simple)',
+    geom_preset_alias: 'Preset(alias)',
+    geom_preset: 'Preset',
+    geom_fallback: 'Preset fallback',
+    group_favorites: 'Favorites',
+    group_recent: 'Recent',
+    group_all: 'All Plays',
+    spacing_alert: 'Space',
+    ai_no_tip: 'AI Tip: no suggestions right now, keep drawing.',
+    ai_prefix_one: 'AI Tip:',
+    ai_prefix_multi: 'AI Tip ({i}/{n}):',
+    ai_close_pair: '{a} and {b} are too close. Move one to slot or corner.',
+    ai_first_action: 'Draw the first action: add a run line or a pass arrow.',
+    ai_need_pass: 'You have run lines but no pass arrow. Add one pass to convert the advantage.',
+    ai_need_run: 'You have pass arrows but no off-ball movement. Add one run line.',
+    ai_good_shape: 'Sequence looks good. Press replay to verify timing and catch points.',
+    ai_ball_handler_now: 'Current ball handler is #{id}. Switch to Run Line for first action mapping.',
+    ai_cues: 'Cues: {text}',
+    ai_errors: 'Common mistake: {text}.',
+    ai_full_court: 'In full-court mode, map advance pass first, then flow into half-court action.',
+    export_title: 'Export Options',
+    export_bg: 'Background',
+    export_bg_court: 'Court Background (default)',
+    export_bg_white: 'White Background (for teaching/printing)',
+    export_vis: 'Visibility',
+    export_vis_all: 'Offense + Defense (default)',
+    export_vis_offense: 'Offense Only (hide X1-X5)',
+    cancel: 'Cancel',
+    export: 'Export',
+    export_play_named: 'Play: {name}',
+    export_play_unnamed: 'Play: Untitled',
+    court_half: 'Half Court',
+    court_full: 'Full Court',
+    watermark: 'AI Hoops Board'
+  }
+};
+
 function normalizeTheme(theme){
   return theme === 'dark' ? 'dark' : 'light';
 }
 
 function normalizeStyle(style){
   return style === 'vivid' ? 'vivid' : 'classic';
+}
+
+function normalizeLang(lang){
+  return lang === 'en' ? 'en' : 'zh';
+}
+
+function t(key, vars = {}){
+  const lang = normalizeLang(state.uiLang);
+  const dict = I18N[lang] || I18N.zh;
+  const base = dict[key] ?? I18N.zh[key] ?? key;
+  return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+}
+
+function refreshLangButtons(lang){
+  const l = normalizeLang(lang);
+  Object.entries(langButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === l;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function updateReplayButtonLabel(){
+  const bp = document.getElementById('btn-playpause');
+  if (!bp) return;
+  if (!state.replay || !state.replay.playing){
+    bp.textContent = t('replay_replay');
+    return;
+  }
+  bp.textContent = state.replay.paused ? t('replay_resume') : t('replay_pause');
+}
+
+function renderLanguageUI(){
+  document.title = t('app_title');
+  const setText = (id, key, vars = null) => {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = vars ? t(key, vars) : t(key);
+  };
+
+  setText('app-title', 'app_title');
+  setText('app-sub', 'app_sub');
+  setText('badge-step', 'badge_step');
+  setText('theme-light', 'theme_light');
+  setText('theme-dark', 'theme_dark');
+  setText('style-classic', 'style_classic');
+  setText('style-vivid', 'style_vivid');
+  setText('lang-zh', 'lang_zh');
+  setText('lang-en', 'lang_en');
+  setText('mode-drag', 'mode_drag');
+  setText('mode-run', 'mode_run');
+  setText('mode-pass', 'mode_pass');
+  setText('random-play', 'random_play');
+  setText('undo', 'undo');
+  setText('redo', 'redo');
+  setText('play', 'play');
+  setText('erase', 'erase');
+  setText('reset-view', 'reset_view');
+  setText('link-library', 'link_library');
+  setText('link-drills', 'link_drills');
+  setText('btn-stop', 'stop');
+  setText('clear', 'clear');
+  setText('toggle-court', 'toggle_court');
+  setText('save', 'save');
+  setText('load', 'load');
+  setText('export', 'export_png');
+  setText('board-hint', 'board_hint');
+
+  const speed = $('speed');
+  if (speed){
+    const o05 = speed.querySelector('option[value="0.5"]');
+    const o075 = speed.querySelector('option[value="0.75"]');
+    const o1 = speed.querySelector('option[value="1"]');
+    const o2 = speed.querySelector('option[value="2"]');
+    if (o05) o05.textContent = t('speed_half');
+    if (o075) o075.textContent = t('speed_default');
+    if (o1) o1.textContent = t('speed_1');
+    if (o2) o2.textContent = t('speed_2');
+  }
+
+  if (offenseSelect){
+    offenseSelect.setAttribute('aria-label', t('aria_ball_handler'));
+    for (let i = 1; i <= 5; i++){
+      const op = offenseSelect.querySelector(`option[value="${i}"]`);
+      if (op) op.textContent = t('ball_handler_opt', { n: i });
+    }
+  }
+  if (quickPlaySelect){
+    quickPlaySelect.setAttribute('aria-label', t('aria_quick_play'));
+  }
+
+  if (!state.ai?.tips?.length && aiStrip){
+    aiStrip.textContent = t('ai_loading');
+  }
+
+  updateReplayButtonLabel();
+}
+
+function applyLanguage(lang, opts = {}){
+  const l = normalizeLang(lang);
+  state.uiLang = l;
+  document.documentElement.setAttribute('data-lang', l);
+  document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
+  refreshLangButtons(l);
+  renderLanguageUI();
+  refreshQuickPlayOptions();
+  refreshAITips(true);
+  if (state.players.length) draw();
+  if (opts.persist !== false){
+    try { localStorage.setItem(LANG_KEY, l); } catch(_) {}
+  }
+}
+
+function initLanguageControls(){
+  let saved = null;
+  try { saved = localStorage.getItem(LANG_KEY); } catch(_) {}
+  const current = document.documentElement.getAttribute('data-lang');
+  applyLanguage(saved || current || 'zh', { persist: false });
+  if (langButtons.zh) langButtons.zh.onclick = () => applyLanguage('zh');
+  if (langButtons.en) langButtons.en.onclick = () => applyLanguage('en');
 }
 
 function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
@@ -173,7 +487,7 @@ $('undo').onclick=()=>undo();
 $('redo').onclick=()=>redo();
 $('clear').onclick=()=>{ pushUndo(); state.shapes=[]; draw(); };
 $('toggle-court').onclick=()=>{ state.court = (state.court==='half'?'full':'half'); layoutPlayers(); draw(); };
-$('reset-view').onclick=()=>{ resetView(); draw(); toast('视图已重置'); };
+$('reset-view').onclick=()=>{ resetView(); draw(); toast(t('toast_view_reset')); };
 if (offenseSelect){
   offenseSelect.onchange = (e) => setBallHandlerById((e.target && e.target.value) || '1');
 }
@@ -181,7 +495,7 @@ if (quickPlaySelect){
   quickPlaySelect.onchange = async (e) => {
     const id = (e.target && e.target.value) || '';
     if (!id) return;
-    await applyPlayById(id, { source: '快速选择' });
+    await applyPlayById(id, { sourceKey: 'source_quick' });
     e.target.value = '';
   };
 }
@@ -202,7 +516,7 @@ $('erase').onclick = () => {
   pushUndo();
   state.shapes.pop();
   draw();
-  toast('已删除最近一条线');
+  toast(t('toast_erased_last'));
 };
 
 
@@ -215,14 +529,14 @@ $('save').onclick = () => {
     schema: SAVE_SCHEMA
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
-  toast('已保存到本地');
+  toast(t('toast_saved'));
 };
 
 
 
 $('load').onclick = () => {
   const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) { toast('没有可载入的本地保存'); return; }
+  if (!raw) { toast(t('toast_no_saved')); return; }
   try {
     const data = JSON.parse(raw);
     pushUndo();
@@ -231,9 +545,9 @@ $('load').onclick = () => {
     state.shapes = data.shapes  ?? [];
     //layoutPlayers(); // 兼容旧结构
     draw();
-    toast('载入完成');
+    toast(t('toast_loaded'));
   } catch(e){
-    toast('载入失败：数据损坏');
+    toast(t('toast_load_corrupt'));
   }
 };
 
@@ -270,10 +584,14 @@ $('play').onclick = () => {
 };
 
 initThemeControls();
+initLanguageControls();
 setMode('drag');
 window.addEventListener('storage', (e) => {
   if (e.key === PLAY_FAVORITES_KEY || e.key === PLAY_RECENTS_KEY) {
     refreshQuickPlayOptions();
+  }
+  if (e.key === LANG_KEY){
+    applyLanguage((e.newValue || 'zh'), { persist: false });
   }
 });
 
@@ -317,7 +635,7 @@ function bindLongPressClearSave(){
   const start = () => {
     timer = setTimeout(() => {
       localStorage.removeItem(SAVE_KEY);
-      toast('已清除本地保存');
+      toast(t('toast_cleared_saved'));
     }, 800); // 长按 0.8s 触发
   };
   const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
@@ -383,7 +701,7 @@ function refreshQuickPlayOptions(){
 
   const first = document.createElement('option');
   first.value = '';
-  first.textContent = '快速战术：选择';
+  first.textContent = t('quick_play_pick');
   quickPlaySelect.appendChild(first);
 
   const favorites = readStoredIds(PLAY_FAVORITES_KEY, 200)
@@ -395,7 +713,7 @@ function refreshQuickPlayOptions(){
   const all = playsCatalog
     .filter((p) => p && p.id)
     .slice()
-    .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hans-CN'));
+    .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), state.uiLang === 'en' ? 'en' : 'zh-Hans-CN'));
 
   const appendGroup = (label, items, prefix = '') => {
     if (!items.length) return;
@@ -413,9 +731,9 @@ function refreshQuickPlayOptions(){
     quickPlaySelect.appendChild(group);
   };
 
-  appendGroup('收藏', favorites, '★ ');
-  appendGroup('最近使用', recents, '• ');
-  appendGroup('全部战术', all);
+  appendGroup(t('group_favorites'), favorites, '★ ');
+  appendGroup(t('group_recent'), recents, '• ');
+  appendGroup(t('group_all'), all);
 
   if (keep && Array.from(quickPlaySelect.options).some(op => op.value === keep)) {
     quickPlaySelect.value = keep;
@@ -437,21 +755,21 @@ async function ensurePlaysCatalog(force = false){
 }
 
 function resolvePlayGeometry(play, rawId){
-  if (play && play.geometry) return { geom: play.geometry, source: 'JSON.geometry' };
-  if (play && (play.offense || play.shapes || play.defense)) return { geom: play, source: 'JSON(简化)' };
+  if (play && play.geometry) return { geom: play.geometry, sourceKey: 'geom_json' };
+  if (play && (play.offense || play.shapes || play.defense)) return { geom: play, sourceKey: 'geom_simple' };
 
   if (play){
     const pid = play.preset || play.presetId || play.alias || play.id;
     if (pid){
       const byPreset = getPreset(pid);
-      if (byPreset) return { geom: byPreset, source: '预设(preset)' };
+      if (byPreset) return { geom: byPreset, sourceKey: 'geom_preset_alias' };
     }
   }
 
   const byId = getPreset(rawId);
-  if (byId) return { geom: byId, source: '预设' };
+  if (byId) return { geom: byId, sourceKey: 'geom_preset' };
 
-  return { geom: getPreset('fiveOut'), source: '预设兜底' };
+  return { geom: getPreset('fiveOut'), sourceKey: 'geom_fallback' };
 }
 
 function syncAppliedMeta(play, rawId){
@@ -480,7 +798,7 @@ async function applyPlayById(rawId, opts = {}){
   syncAppliedMeta(play, id);
   const resolved = resolvePlayGeometry(play, id);
   if (!resolved.geom){
-    toast('未找到战术几何，已保持当前布置');
+    toast(t('toast_no_geom'));
     return false;
   }
 
@@ -490,8 +808,8 @@ async function applyPlayById(rawId, opts = {}){
   refreshQuickPlayOptions();
 
   if (opts.toast !== false){
-    const src = opts.source ? `${opts.source} · ` : '';
-    toast(`已应用：${applied.name}（${src}${resolved.source}）`);
+    const src = opts.sourceKey ? `${t(opts.sourceKey)} · ` : '';
+    toast(t('toast_applied', { name: applied.name, src, kind: t(resolved.sourceKey) }));
   }
   return true;
 }
@@ -503,11 +821,11 @@ async function applyRandomPlay(){
   const fullPool = playsCatalog.map((p) => String(p?.id || '').trim()).filter(Boolean);
   const pool = favoritePool.length ? favoritePool : fullPool;
   if (!pool.length){
-    toast('战术库为空');
+    toast(t('toast_no_plays'));
     return;
   }
   const id = pool[Math.floor(Math.random() * pool.length)];
-  await applyPlayById(id, { source: favoritePool.length ? '随机(收藏)' : '随机' });
+  await applyPlayById(id, { sourceKey: favoritePool.length ? 'source_random_fav' : 'source_random' });
 }
 
 function currentBallHandlerId(){
@@ -527,7 +845,7 @@ function setBallHandlerById(id, opts = {}){
   target.ball = true;
   syncOffenseSelect();
   if (opts.redraw !== false) draw();
-  if (!opts.silent) toast('持球人：' + target.id);
+  if (!opts.silent) toast(t('toast_ball_handler', { id: target.id }));
   return true;
 }
 
@@ -756,7 +1074,7 @@ function drawSpacingAlerts(){
         ctx.fillStyle = '#B91C1C';
         ctx.font = 'bold 12px system-ui';
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('拉开', midx, midy);
+        ctx.fillText(t('spacing_alert'), midx, midy);
         ctx.restore();
       }
     }
@@ -797,36 +1115,36 @@ function buildAITips(){
   const close = findClosestOffensePair();
   const thr = spacingThresholdPx();
   if (close && close.d < thr){
-    tips.push(`${close.a.id} 与 ${close.b.id} 过近，建议一人拉到 45° 或底角。`);
+    tips.push(t('ai_close_pair', { a: close.a.id, b: close.b.id }));
   }
 
   if (!state.shapes.length){
-    tips.push('先画第 1 个动作：为持球人添加跑位线或传球箭头。');
+    tips.push(t('ai_first_action'));
   } else {
     if (runCount >= 2 && passCount === 0){
-      tips.push('已有跑位线但没有传球箭头，补 1 次传导把优势转化成出手。');
+      tips.push(t('ai_need_pass'));
     }
     if (passCount >= 1 && runCount === 0){
-      tips.push('只有传球没有无球移动，建议补 1 条跑位线避免站桩。');
+      tips.push(t('ai_need_run'));
     }
     if (runCount > 0 && passCount > 0){
-      tips.push('线路已成型，可点击“回放”检查先后时序与接应点。');
+      tips.push(t('ai_good_shape'));
     }
   }
 
   if (ball && state.mode === 'drag' && state.shapes.length < 2){
-    tips.push(`当前持球人为 ${ball.id} 号，切到“跑位线”可更快标出第一拍。`);
+    tips.push(t('ai_ball_handler_now', { id: ball.id }));
   }
 
   if (applied.meta?.cues?.length){
-    tips.push(`战术口令：${applied.meta.cues.slice(0, 2).join(' / ')}`);
+    tips.push(t('ai_cues', { text: applied.meta.cues.slice(0, 2).join(' / ') }));
   }
   if (applied.meta?.errors?.length){
-    tips.push(`常见错误：${applied.meta.errors[0]}。`);
+    tips.push(t('ai_errors', { text: applied.meta.errors[0] }));
   }
 
   if (state.court === 'full' && state.shapes.length){
-    tips.push('全场模式建议先标推进传球，再落位执行半场动作。');
+    tips.push(t('ai_full_court'));
   }
 
   return dedupeStrings(tips).slice(0, 6);
@@ -835,11 +1153,13 @@ function buildAITips(){
 function renderAITip(){
   if (!aiStrip) return;
   if (!state.ai.tips.length){
-    aiStrip.textContent = 'AI 提示：当前没有建议，继续绘制即可。';
+    aiStrip.textContent = t('ai_no_tip');
     return;
   }
   const idx = Math.max(0, Math.min(state.ai.idx, state.ai.tips.length - 1));
-  const prefix = state.ai.tips.length > 1 ? `AI 提示（${idx + 1}/${state.ai.tips.length}）：` : 'AI 提示：';
+  const prefix = state.ai.tips.length > 1
+    ? t('ai_prefix_multi', { i: idx + 1, n: state.ai.tips.length })
+    : t('ai_prefix_one');
   aiStrip.textContent = `${prefix}${state.ai.tips[idx]}`;
 }
 
@@ -1227,8 +1547,10 @@ function exportPNG(opts = { bg:'court', hideDefense:false }){
   ctx.save();
 
   // ===== 左上角标题块 & 右下水印（保留你现有的样式）=====
-  const title = applied.name ? `战术：${applied.name}` : '战术：未命名';
-  const meta  = `${state.court==='half'?'半场':'全场'} · ${new Date().toLocaleString()}`;
+  const title = applied.name
+    ? t('export_play_named', { name: applied.name })
+    : t('export_play_unnamed');
+  const meta  = `${state.court==='half' ? t('court_half') : t('court_full')} · ${new Date().toLocaleString()}`;
 
   ctx.font = 'bold 14px system-ui';
   const tW = ctx.measureText(title).width;
@@ -1246,7 +1568,7 @@ function exportPNG(opts = { bg:'court', hideDefense:false }){
   ctx.font = '12px system-ui';      ctx.fillText(meta,  pad + 12, pad + 36);
 
   ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.font = 'bold 14px system-ui';
-  ctx.fillText(`AI 战术板 • ${new Date().toLocaleString()}`, W - 220, H - 12);
+  ctx.fillText(`${t('watermark')} • ${new Date().toLocaleString()}`, W - 220, H - 12);
 
   ctx.restore();
 
@@ -1290,31 +1612,31 @@ function promptExportOptions(){
       width: min(92vw, 420px); background:#fff; border:1px solid #E5E7EB; border-radius:14px;
       box-shadow: 0 20px 60px rgba(0,0,0,.18); font:14px/1.5 system-ui; color:#0F172A;`;
     box.innerHTML = `
-      <div style="padding:14px 16px; border-bottom:1px solid #E5E7EB; font-weight:700;">导出选项</div>
+      <div style="padding:14px 16px; border-bottom:1px solid #E5E7EB; font-weight:700;">${t('export_title')}</div>
       <div style="padding:16px;">
-        <div style="margin-bottom:12px; font-weight:600;">背景</div>
+        <div style="margin-bottom:12px; font-weight:600;">${t('export_bg')}</div>
         <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
           <input type="radio" name="bg" value="court" checked>
-          <span>球场背景（默认）</span>
+          <span>${t('export_bg_court')}</span>
         </label>
         <label style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
           <input type="radio" name="bg" value="white">
-          <span>白底（适合讲解/打印）</span>
+          <span>${t('export_bg_white')}</span>
         </label>
 
-        <div style="margin-bottom:12px; font-weight:600;">显示内容</div>
+        <div style="margin-bottom:12px; font-weight:600;">${t('export_vis')}</div>
         <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
           <input type="radio" name="vis" value="all" checked>
-          <span>进攻 + 防守（默认）</span>
+          <span>${t('export_vis_all')}</span>
         </label>
         <label style="display:flex;gap:8px;align-items:center;">
           <input type="radio" name="vis" value="atk">
-          <span>仅进攻（隐藏 X1–X5）</span>
+          <span>${t('export_vis_offense')}</span>
         </label>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #E5E7EB;">
-        <button data-act="cancel" style="height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:10px;background:#fff;">取消</button>
-        <button data-act="ok"     style="height:40px;padding:0 16px;border:0;border-radius:10px;background:#FF7A1A;color:#fff;font-weight:700;">导出</button>
+        <button data-act="cancel" style="height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:10px;background:#fff;">${t('cancel')}</button>
+        <button data-act="ok"     style="height:40px;padding:0 16px;border:0;border-radius:10px;background:#FF7A1A;color:#fff;font-weight:700;">${t('export')}</button>
       </div>
     `;
     ov.appendChild(box);
@@ -1345,7 +1667,7 @@ async function readAppliedPlay(){
   if (!idRaw) return;
 
   try {
-    await applyPlayById(idRaw, { source: '链接应用' });
+    await applyPlayById(idRaw, { sourceKey: 'source_link' });
   } catch (_) {
     const fallback = getPreset(idRaw) || getPreset('fiveOut');
     if (fallback){
@@ -1355,9 +1677,9 @@ async function readAppliedPlay(){
       applyPlay(fallback);
       markPlayRecent(idRaw);
       refreshQuickPlayOptions();
-      toast(`已应用：${idRaw}（离线预设）`);
+      toast(t('toast_applied_offline', { id: idRaw }));
     } else {
-      toast('未找到战术几何，已保持当前布置');
+      toast(t('toast_no_geom'));
     }
   } finally {
     localStorage.removeItem('applyPlayId');
@@ -1370,7 +1692,7 @@ async function readAppliedPlay(){
 function toastAppliedIfAny(){
   if(!applied.id) return;
   const bar = document.createElement('div');
-  bar.textContent = `已选择战术：${applied.name}（预览占位）`;
+  bar.textContent = t('toast_applied', { name: applied.name, src: '', kind: t('geom_simple') });
   bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:999;background:#FFEDD5;color:#9A3412;padding:8px 12px;text-align:center;border-bottom:1px solid #FED7AA';
   document.body.appendChild(bar);
   setTimeout(()=>bar.remove(), 4000);
@@ -1506,8 +1828,7 @@ function startReplay(){
   state.replay.startStamp = performance.now();
   state.replay.lastStamp  = state.replay.startStamp;
 
-  const btn = document.getElementById('btn-playpause');
-  if (btn) btn.textContent = '⏸ 暂停';
+  updateReplayButtonLabel();
 
   requestAnimationFrame(tickReplay);
 }
@@ -1526,8 +1847,7 @@ function stopReplay(restore = true){
 
   draw();
 
-  const btn = document.getElementById('btn-playpause');
-  if (btn) btn.textContent = '▶ 回放';         // 重置为“回放”
+  updateReplayButtonLabel();
   const seek = document.getElementById('seek');
   if (seek) seek.value = 0;                     // 归零
   state.replay.timeMs = 0;                      // 内部时间也归零
@@ -1560,8 +1880,8 @@ draw = function(opts={}){ _draw_replay_wrap(opts);
 // 绑定 UI
 (function(){ const $=id=>document.getElementById(id);
   const bp=$('btn-playpause'), bs=$('btn-stop'), seek=$('seek'), spd=$('speed');
-  if(bp){ bp.onclick=()=>{ if(!state.replay.playing){ startReplay(); bp.textContent='⏸ 暂停'; return; }
-    if(state.replay.paused){ resumeReplay(); bp.textContent='⏸ 暂停'; } else { pauseReplay(); bp.textContent='▶ 继续'; }};}
+  if(bp){ bp.onclick=()=>{ if(!state.replay.playing){ startReplay(); updateReplayButtonLabel(); return; }
+    if(state.replay.paused){ resumeReplay(); } else { pauseReplay(); } updateReplayButtonLabel(); };}
   if(bs){ bs.onclick=()=>stopReplay(); }
   if(seek){ seek.oninput=e=>{ if(!state.replay.playing){ const tl=compileTimeline(); state.replay.runs=tl.runs; state.replay.passes=tl.passes; state.replay.durationMs=Math.max(100,tl.durationMs); }
     setReplayTime((parseFloat(e.target.value||'0')/100)*state.replay.durationMs); }; }
