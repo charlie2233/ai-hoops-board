@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>设置 · AI 战术板</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#f4f7ff"/>
+  <link rel="apple-touch-icon" href="../assets/icon-192.png">
+  <script>
+    (() => {
+      try {
+        const t = localStorage.getItem('uiThemeV1');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        const s = localStorage.getItem('uiThemeStyleV1');
+        if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
+        const l = localStorage.getItem('uiLangV1');
+        if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
+      } catch (_) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #f4f7ff;
+      --bg-soft: #eef2ff;
+      --panel: rgba(255,255,255,.74);
+      --panel-strong: rgba(255,255,255,.88);
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #d7dff3;
+      --line-strong: #c1cae4;
+      --accent: #ea580c;
+      --accent-soft: #fb923c;
+      --tap: 48px;
+      --radius: 14px;
+      --shadow: 0 14px 34px rgba(15,23,42,.08);
+      --font-main: "Avenir Next", "Trebuchet MS", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+      --font-title: "Avenir Next Condensed", "Trebuchet MS", "PingFang SC", sans-serif;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-soft: #111a2d;
+      --panel: rgba(15,23,42,.72);
+      --panel-strong: rgba(15,23,42,.9);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --line: #25324d;
+      --line-strong: #3a4a6b;
+      --accent: #fb923c;
+      --accent-soft: #f97316;
+      --shadow: 0 18px 42px rgba(2,6,23,.44);
+    }
+
+    :root[data-style="vivid"] {
+      --bg: #fff8ef;
+      --bg-soft: #ffe9d6;
+      --panel: rgba(255,250,243,.8);
+      --panel-strong: rgba(255,250,243,.93);
+      --text: #1f2937;
+      --muted: #7c5c3d;
+      --line: #f2c7a7;
+      --line-strong: #e8a87f;
+      --accent: #0f766e;
+      --accent-soft: #14b8a6;
+      --shadow: 0 14px 34px rgba(15,118,110,.14);
+    }
+
+    :root[data-theme="dark"][data-style="vivid"] {
+      --bg: #0f172a;
+      --bg-soft: #111827;
+      --panel: rgba(17,24,39,.78);
+      --panel-strong: rgba(17,24,39,.92);
+      --text: #ecfeff;
+      --muted: #93c5fd;
+      --line: #234059;
+      --line-strong: #2f5f87;
+      --accent: #14b8a6;
+      --accent-soft: #2dd4bf;
+      --shadow: 0 18px 42px rgba(15,118,110,.3);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: var(--font-main);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 620px at -8% -15%, color-mix(in srgb, var(--accent-soft) 30%, transparent), transparent 65%),
+        radial-gradient(980px 560px at 110% -20%, color-mix(in srgb, #22c55e 20%, transparent), transparent 70%),
+        linear-gradient(165deg, var(--bg), var(--bg-soft));
+      background-attachment: fixed;
+    }
+
+    .appbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+      backdrop-filter: blur(8px);
+    }
+
+    .appbar h1 {
+      margin: 0;
+      font: 700 19px/1.1 var(--font-title);
+      letter-spacing: .2px;
+    }
+
+    .back-btn {
+      height: var(--tap);
+      min-width: 100px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 16px;
+      box-shadow: var(--shadow);
+      transition: transform .18s ease, border-color .18s ease;
+    }
+
+    .back-btn:hover {
+      border-color: var(--line-strong);
+      transform: translateY(-1px);
+    }
+
+    .content {
+      max-width: 800px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .section {
+      margin-bottom: 32px;
+      padding: 20px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    .section h2 {
+      margin: 0 0 16px 0;
+      font: 700 18px/1.2 var(--font-title);
+      color: var(--text);
+    }
+
+    .section-desc {
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .control-group:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .control-group:first-child {
+      padding-top: 0;
+    }
+
+    .control-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .theme-switch, .style-switch, .lang-switch {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 86%, transparent);
+    }
+
+    .theme-btn, .style-btn, .lang-btn {
+      height: 36px;
+      min-width: 64px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+
+    .theme-btn.active, .style-btn.active, .lang-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
+    }
+
+    .info-text {
+      margin-top: 12px;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      border-radius: 10px;
+      border: 1px dashed var(--line);
+      background: color-mix(in srgb, var(--panel) 85%, transparent);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="appbar">
+    <h1 id="page-title">设置</h1>
+    <a href="../index.html" class="back-btn">← 返回画板</a>
+  </div>
+
+  <div class="content">
+    <div class="section">
+      <h2 id="section-theme">主题设置</h2>
+      <p class="section-desc" id="desc-theme">选择您喜欢的视觉主题和样式</p>
+      
+      <div class="control-group">
+        <div class="control-label" id="label-color-theme">颜色主题</div>
+        <div class="theme-switch" role="group" aria-label="主题切换">
+          <button class="theme-btn" id="theme-light">浅色</button>
+          <button class="theme-btn" id="theme-dark">深色</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label" id="label-style">样式变体</div>
+        <div class="style-switch" role="group" aria-label="样式切换">
+          <button class="style-btn" id="style-classic">经典</button>
+          <button class="style-btn" id="style-vivid">动感</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 id="section-language">语言设置</h2>
+      <p class="section-desc" id="desc-language">切换界面显示语言</p>
+      
+      <div class="control-group">
+        <div class="control-label" id="label-lang">界面语言</div>
+        <div class="lang-switch" role="group" aria-label="语言切换">
+          <button class="lang-btn" id="lang-zh">中文</button>
+          <button class="lang-btn" id="lang-en">EN</button>
+        </div>
+      </div>
+
+      <div class="info-text" id="info-lang">
+        语言设置会应用到所有页面，包括主画板、战术库和训练页面。
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 id="section-about">关于</h2>
+      <div class="info-text">
+        <strong>AI 战术板 · Step 1 MVP</strong><br>
+        Basketball Play Designer<br><br>
+        由 <a href="https://atrak.dev" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none; font-weight: 700;">Atrak Student Tech Team</a> 创建
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const THEME_KEY = 'uiThemeV1';
+    const THEME_STYLE_KEY = 'uiThemeStyleV1';
+    const LANG_KEY = 'uiLangV1';
+
+    // Theme controls
+    const themeButtons = {
+      light: document.getElementById('theme-light'),
+      dark: document.getElementById('theme-dark')
+    };
+    const styleButtons = {
+      classic: document.getElementById('style-classic'),
+      vivid: document.getElementById('style-vivid')
+    };
+    const langButtons = {
+      zh: document.getElementById('lang-zh'),
+      en: document.getElementById('lang-en')
+    };
+
+    // Initialize theme state
+    function initTheme() {
+      const theme = localStorage.getItem(THEME_KEY) || 'light';
+      Object.keys(themeButtons).forEach(k => {
+        themeButtons[k].classList.toggle('active', k === theme);
+        themeButtons[k].setAttribute('aria-pressed', k === theme);
+      });
+      
+      const style = localStorage.getItem(THEME_STYLE_KEY) || 'classic';
+      Object.keys(styleButtons).forEach(k => {
+        styleButtons[k].classList.toggle('active', k === style);
+        styleButtons[k].setAttribute('aria-pressed', k === style);
+      });
+      
+      const lang = localStorage.getItem(LANG_KEY) || 'zh';
+      Object.keys(langButtons).forEach(k => {
+        langButtons[k].classList.toggle('active', k === lang);
+        langButtons[k].setAttribute('aria-pressed', k === lang);
+      });
+      
+      updateLanguage(lang);
+    }
+
+    // Theme switchers
+    Object.keys(themeButtons).forEach(theme => {
+      themeButtons[theme].addEventListener('click', () => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem(THEME_KEY, theme);
+        Object.keys(themeButtons).forEach(k => {
+          themeButtons[k].classList.toggle('active', k === theme);
+          themeButtons[k].setAttribute('aria-pressed', k === theme);
+        });
+      });
+    });
+
+    Object.keys(styleButtons).forEach(style => {
+      styleButtons[style].addEventListener('click', () => {
+        document.documentElement.setAttribute('data-style', style);
+        localStorage.setItem(THEME_STYLE_KEY, style);
+        Object.keys(styleButtons).forEach(k => {
+          styleButtons[k].classList.toggle('active', k === style);
+          styleButtons[k].setAttribute('aria-pressed', k === style);
+        });
+      });
+    });
+
+    Object.keys(langButtons).forEach(lang => {
+      langButtons[lang].addEventListener('click', () => {
+        document.documentElement.setAttribute('data-lang', lang);
+        localStorage.setItem(LANG_KEY, lang);
+        Object.keys(langButtons).forEach(k => {
+          langButtons[k].classList.toggle('active', k === lang);
+          langButtons[k].setAttribute('aria-pressed', k === lang);
+        });
+        updateLanguage(lang);
+      });
+    });
+
+    // Language translations
+    const I18N = {
+      zh: {
+        page_title: '设置',
+        back_btn: '← 返回画板',
+        section_theme: '主题设置',
+        desc_theme: '选择您喜欢的视觉主题和样式',
+        label_color_theme: '颜色主题',
+        label_style: '样式变体',
+        theme_light: '浅色',
+        theme_dark: '深色',
+        style_classic: '经典',
+        style_vivid: '动感',
+        section_language: '语言设置',
+        desc_language: '切换界面显示语言',
+        label_lang: '界面语言',
+        lang_zh: '中文',
+        lang_en: 'EN',
+        info_lang: '语言设置会应用到所有页面，包括主画板、战术库和训练页面。',
+        section_about: '关于'
+      },
+      en: {
+        page_title: 'Settings',
+        back_btn: '← Back to Board',
+        section_theme: 'Theme Settings',
+        desc_theme: 'Choose your preferred visual theme and style',
+        label_color_theme: 'Color Theme',
+        label_style: 'Style Variant',
+        theme_light: 'Light',
+        theme_dark: 'Dark',
+        style_classic: 'Classic',
+        style_vivid: 'Vivid',
+        section_language: 'Language Settings',
+        desc_language: 'Switch interface display language',
+        label_lang: 'Interface Language',
+        lang_zh: '中文',
+        lang_en: 'EN',
+        info_lang: 'Language settings apply to all pages, including the main board, play library, and training pages.',
+        section_about: 'About'
+      }
+    };
+
+    function updateLanguage(lang) {
+      const t = I18N[lang] || I18N.zh;
+      document.getElementById('page-title').textContent = t.page_title;
+      document.querySelector('.back-btn').textContent = t.back_btn;
+      document.getElementById('section-theme').textContent = t.section_theme;
+      document.getElementById('desc-theme').textContent = t.desc_theme;
+      document.getElementById('label-color-theme').textContent = t.label_color_theme;
+      document.getElementById('label-style').textContent = t.label_style;
+      document.getElementById('theme-light').textContent = t.theme_light;
+      document.getElementById('theme-dark').textContent = t.theme_dark;
+      document.getElementById('style-classic').textContent = t.style_classic;
+      document.getElementById('style-vivid').textContent = t.style_vivid;
+      document.getElementById('section-language').textContent = t.section_language;
+      document.getElementById('desc-language').textContent = t.desc_language;
+      document.getElementById('label-lang').textContent = t.label_lang;
+      document.getElementById('lang-zh').textContent = t.lang_zh;
+      document.getElementById('lang-en').textContent = t.lang_en;
+      document.getElementById('info-lang').textContent = t.info_lang;
+      document.getElementById('section-about').textContent = t.section_about;
+    }
+
+    initTheme();
+  </script>
+</body>
+</html>

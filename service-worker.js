@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE = 'ai-hoops-mvp-v24';
+const CACHE = 'ai-hoops-mvp-v25';
 
 // ✅ 不要把 plays.json 放进预缓存，避免读到旧表
 const ASSETS = [
@@ -11,6 +11,7 @@ const ASSETS = [
   './assets/icon-192.png',
   './pages/library.html',
   './pages/drills.html',
+  './pages/settings.html',
   // './plays/plays.json',  // ← 移除
   './plays/presets.js'
 ];
