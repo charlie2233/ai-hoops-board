@@ -1,68 +1,258 @@
 [
   {
     "playId": "spain",
-    "title": "背掩护时机与沟通",
-    "youtubeId": "VIDEO_ID_1",
-    "duration": "4:32",
-    "notes": "背掩后外弹接应；顺下延迟0.3s",
-    "tags": [
-      "背掩",
-      "顺下"
-    ]
+    "title": "Spain PnR 基础读防训练",
+    "youtubeId": "voTAC74NxD8",
+    "duration": "3:40",
+    "notes": "讲解 Spain 挡拆的站位、背掩时机和第一拍阅读。",
+    "tags": ["Spain", "PnR", "基础"]
   },
   {
     "playId": "spain",
-    "title": "短顺与弧顶分球",
-    "youtubeId": "VIDEO_ID_2",
-    "duration": "3:55",
-    "notes": "短顺站位在罚球线附近",
-    "tags": [
-      "短顺",
-      "分球"
-    ]
+    "title": "Pick and Roll Progression 进阶",
+    "youtubeId": "tQE39YRhnbk",
+    "duration": "1:21",
+    "notes": "用递进式练习强化持球人和顺下人的配合节奏。",
+    "tags": ["PnR", "进阶", "节奏"]
+  },
+  {
+    "playId": "double_drag",
+    "title": "Double Drag Screen 细节",
+    "youtubeId": "2-8GjS4okIQ",
+    "duration": "5:04",
+    "notes": "双掩护先后顺序与持球路线选择。",
+    "tags": ["Double Drag", "掩护", "外线"]
+  },
+  {
+    "playId": "double_drag",
+    "title": "Double Drag 转换进攻训练",
+    "youtubeId": "od_z9bwUs4c",
+    "duration": "0:15",
+    "notes": "强调转换阶段的双掩护跑位与落位速度。",
+    "tags": ["转换", "Double Drag", "快攻"]
+  },
+  {
+    "playId": "ghost",
+    "title": "Ghost Screen 决策训练",
+    "youtubeId": "X2TiARz26t8",
+    "duration": "0:17",
+    "notes": "虚掩护后外弹/内切两种选择，训练防守误判。",
+    "tags": ["Ghost", "决策", "外弹"]
+  },
+  {
+    "playId": "ghost",
+    "title": "Ghost Screen 半场得分套路",
+    "youtubeId": "BOu-6JYnBes",
+    "duration": "3:16",
+    "notes": "通过 ghost 动作制造错位与空位三分。",
+    "tags": ["Ghost", "半场", "错位"]
   },
   {
     "playId": "floppy",
-    "title": "绕双掩脚步与接球即投",
-    "youtubeId": "VIDEO_ID_3",
-    "duration": "5:01",
-    "notes": "肩贴掩护人；脚步稳定后起跳",
-    "tags": [
-      "脚步",
-      "接投"
-    ]
+    "title": "Floppy 无球绕掩脚步",
+    "youtubeId": "leZfPWnoLmY",
+    "duration": "2:00",
+    "notes": "强调绕掩时肩位、刹停和接球出手连贯性。",
+    "tags": ["Floppy", "脚步", "接投"]
   },
   {
     "playId": "floppy",
-    "title": "假走真反切训练",
-    "youtubeId": "VIDEO_ID_4",
-    "duration": "4:10",
-    "notes": "读防守追身改线",
-    "tags": [
-      "反切",
-      "阅读"
-    ]
+    "title": "Mix Floppy 变化跑位",
+    "youtubeId": "fh4eaqH1ntc",
+    "duration": "2:52",
+    "notes": "同一站位下切换绕掩方向，提升对防守追身的阅读。",
+    "tags": ["Floppy", "变化", "阅读"]
+  },
+  {
+    "playId": "chicago",
+    "title": "Chicago Action + DHO + PnR",
+    "youtubeId": "HBv686s3kCc",
+    "duration": "3:41",
+    "notes": "Chicago 组合动作中 handoff 与二次挡拆连接。",
+    "tags": ["Chicago", "DHO", "PnR"]
+  },
+  {
+    "playId": "chicago",
+    "title": "Chicago 口袋动作拆解",
+    "youtubeId": "XBFapfYrweE",
+    "duration": "2:51",
+    "notes": "从 Floppy 进入 Chicago，练习接球后第一步处理。",
+    "tags": ["Chicago", "无球", "处理球"]
+  },
+  {
+    "playId": "elevator",
+    "title": "Elevator Doors 射手训练",
+    "youtubeId": "dvc2XbuqwCc",
+    "duration": "1:09",
+    "notes": "双人关门掩护后定点接球出手。",
+    "tags": ["Elevator", "射手", "掩护"]
+  },
+  {
+    "playId": "elevator",
+    "title": "Elevator Play 读防选项",
+    "youtubeId": "xzhT4iFOUfY",
+    "duration": "7:07",
+    "notes": "包括第一选择三分和被抢位后的反切变化。",
+    "tags": ["Elevator", "变化", "读防"]
   },
   {
     "playId": "hammer",
-    "title": "弱侧底角 Hammer 掩护角",
-    "youtubeId": "VIDEO_ID_5",
-    "duration": "3:58",
-    "notes": "掩护人脚尖朝底角，避免犯规",
-    "tags": [
-      "掩护角",
-      "底角3"
-    ]
+    "title": "Hammer 底角投射训练",
+    "youtubeId": "IpR7z4eXyhk",
+    "duration": "4:16",
+    "notes": "Hammer 掩护角度、传球时机与底角脚步。",
+    "tags": ["Hammer", "底角", "投射"]
   },
   {
     "playId": "hammer",
-    "title": "底角定点 + 延伸突破",
-    "youtubeId": "VIDEO_ID_6",
-    "duration": "4:20",
-    "notes": "底角保持 45°接应线",
-    "tags": [
-      "底角",
-      "定点"
-    ]
+    "title": "Hammer 进攻武器详解",
+    "youtubeId": "zERZ-J0RZWQ",
+    "duration": "4:00",
+    "notes": "训练突破吸引协防后弱侧掩护的执行细节。",
+    "tags": ["Hammer", "突破分球", "弱侧"]
+  },
+  {
+    "playId": "princeton",
+    "title": "Princeton 3v2 读防练习",
+    "youtubeId": "I-ErrvzDjg0",
+    "duration": "2:53",
+    "notes": "三打二环境下练习 backdoor 与高位手递手。",
+    "tags": ["Princeton", "3v2", "Backdoor"]
+  },
+  {
+    "playId": "princeton",
+    "title": "Princeton Point Elbow Drill",
+    "youtubeId": "t8BDxPSzmXM",
+    "duration": "1:47",
+    "notes": "肘区接应、反跑与二次传导的固定训练。",
+    "tags": ["Princeton", "Elbow", "传导"]
+  },
+  {
+    "playId": "pistol",
+    "title": "Pistol Offense 快速触发",
+    "youtubeId": "-62TOKx8mfA",
+    "duration": "4:25",
+    "notes": "推进到侧翼后马上进入 handoff + ball screen。",
+    "tags": ["Pistol", "推进", "Handoff"]
+  },
+  {
+    "playId": "pistol",
+    "title": "Pistol 分解训练包",
+    "youtubeId": "AuRxPSafAZI",
+    "duration": "2:44",
+    "notes": "后卫与内线分组打磨 pistol 的起手线路。",
+    "tags": ["Pistol", "分解", "后卫"]
+  },
+  {
+    "playId": "zoom_action",
+    "title": "Zoom Action Drive-Kick-Swing",
+    "youtubeId": "hPdJf4GAFkE",
+    "duration": "8:10",
+    "notes": "利用 zoom 动作连续制造突破分球优势。",
+    "tags": ["Zoom", "DriveKick", "连续进攻"]
+  },
+  {
+    "playId": "zoom_action",
+    "title": "Zoom Action 三组实战化练习",
+    "youtubeId": "rTVDgsR5cV0",
+    "duration": "4:36",
+    "notes": "从脚步到传球点位，覆盖 zoom 的完整教学节奏。",
+    "tags": ["Zoom", "实战", "脚步"]
+  },
+  {
+    "playId": "flex_cut",
+    "title": "Flex Cut 接球终结训练",
+    "youtubeId": "YVJBX3ZfZgs",
+    "duration": "0:13",
+    "notes": "弱侧 flex cut 后的接球抛投和篮下终结。",
+    "tags": ["Flex", "Cut", "终结"]
+  },
+  {
+    "playId": "flex_cut",
+    "title": "Scramble to Flex Drill",
+    "youtubeId": "MsbUAPWwsnA",
+    "duration": "2:56",
+    "notes": "防守压力下完成 flex 起手与二次外弹。",
+    "tags": ["Flex", "对抗", "二次进攻"]
+  },
+  {
+    "playId": "delay_5out",
+    "title": "5-Out Motion 高阶动作",
+    "youtubeId": "CsBOkhWjH9Q",
+    "duration": "3:54",
+    "notes": "5-out delay 中的 chase、drift、replace 三种常见配合。",
+    "tags": ["5-out", "Delay", "高阶"]
+  },
+  {
+    "playId": "delay_5out",
+    "title": "5-Out 对联防破解",
+    "youtubeId": "WoF1Ojcnslc",
+    "duration": "5:33",
+    "notes": "用 5-out spacing 拉开联防并建立外线传导。",
+    "tags": ["5-out", "联防", "Spacing"]
+  },
+  {
+    "playId": "stack_pnr",
+    "title": "Stack Spain PnR 执行",
+    "youtubeId": "UsD5IKlimIA",
+    "duration": "1:36",
+    "notes": "上层外弹与下层顺下的时序练习。",
+    "tags": ["Stack", "Spain", "PnR"]
+  },
+  {
+    "playId": "stack_pnr",
+    "title": "Stack Push Roll 动作拆分",
+    "youtubeId": "ByU6EKUQWNQ",
+    "duration": "0:13",
+    "notes": "stack 阵型下推进、掩护、顺下连续动作。",
+    "tags": ["Stack", "PushRoll", "连续动作"]
+  },
+  {
+    "playId": "blob_box",
+    "title": "BLOB 基础发边线组合",
+    "youtubeId": "inFPi2LMky0",
+    "duration": "5:00",
+    "notes": "箱型站位下的基础 BLOB 口令与掩护路线。",
+    "tags": ["BLOB", "Box", "边线球"]
+  },
+  {
+    "playId": "blob_lob",
+    "title": "BLOB 纵向空接套路",
+    "youtubeId": "EDbghDC9BqM",
+    "duration": "6:25",
+    "notes": "底线球中常见 lob 机会与掩护掩体搭建。",
+    "tags": ["BLOB", "Lob", "空接"]
+  },
+  {
+    "playId": "slob_zipper",
+    "title": "SLOB 常用边线发球",
+    "youtubeId": "QJ8onqztKNc",
+    "duration": "10:34",
+    "notes": "覆盖 sideline inbound 常见三分和内切线路。",
+    "tags": ["SLOB", "Zipper", "边线球"]
+  },
+  {
+    "playId": "slob_hammer",
+    "title": "SLOB Hammer 终结",
+    "youtubeId": "abVWxTcDS-Y",
+    "duration": "4:03",
+    "notes": "边线球发起后衔接弱侧 hammer 的执行训练。",
+    "tags": ["SLOB", "Hammer", "终结"]
+  },
+  {
+    "playId": "horns_flare_L",
+    "title": "Horns Flare 左侧执行",
+    "youtubeId": "efkxH9sAq5Q",
+    "duration": "1:33",
+    "notes": "左侧肘区 flare 掩护与外线接应配合。",
+    "tags": ["Horns", "Flare", "左侧"]
+  },
+  {
+    "playId": "horns_flare_R",
+    "title": "Horns Flare 右侧执行",
+    "youtubeId": "OIEfjh50r0o",
+    "duration": "1:01",
+    "notes": "右侧 horns up 到 flare 的镜像动作练习。",
+    "tags": ["Horns", "Flare", "右侧"]
   }
 ]

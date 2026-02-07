@@ -11,7 +11,7 @@
 ```
 /app (合并到根，见本包文件)
 /plays/plays.json    # 21 张战术（可扩充）
-/drills/drills.json  # 训练元数据（占位 videoId）
+/drills/drills.json  # 训练元数据（真实 YouTube drill 视频）
 /assets/icon-*.png   # PWA 图标
 index.html
 main.js
@@ -40,6 +40,7 @@ README.md
 - 战术库收藏/最近使用（筛选 + 排序）
 - 画板顶部快速战术选择（收藏/最近/全部）+ 随机战术
 - 训练页内嵌播放器（YouTube iframe）+ 一键应用关联战术
+- 训练库扩展为 32 条真实 drill 视频（按战术 playId 关联）
 
 ## 待办（下一步）
 - 回放导出为 GIF/视频（可选）
