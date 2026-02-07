@@ -102,19 +102,10 @@ const toggleDefenseBtn = $('toggle-defense');
 const toolbarEl = $('toolbar');
 const bottombarEl = $('bottombar');
 const immersiveQuickbarEl = $('immersive-quickbar');
-const quickDockEl = $('kami-dock');
 const nativeFullscreenBtn = $('native-fullscreen');
 const immersiveToggleBtn = $('toggle-immersive');
 const immersiveExitBtn = $('immersive-exit');
 const immersiveSideBtn = $('immersive-side-toggle');
-const dockButtons = {
-  drag: $('dock-drag'),
-  run: $('dock-run'),
-  pass: $('dock-pass'),
-  erase: $('dock-erase'),
-  undo: $('dock-undo'),
-  redo: $('dock-redo')
-};
 const immersiveRailMoveIds = ['btn-playpause', 'btn-stop', 'seek', 'speed', 'native-fullscreen', 'show-advanced'];
 const immersiveQuickbarMoveIds = ['immersive-side-toggle', 'immersive-exit'];
 const immersiveRailState = { marker: null, moved: false };
@@ -173,7 +164,6 @@ const I18N = {
     save: '保存',
     load: '载入',
     export_png: '导出 PNG',
-    aria_quick_tools: '快速工具栏',
     aria_ball_handler: '持球人选择',
     aria_quick_play: '快速战术',
     aria_toggle_defense: '移除或恢复防守球员',
@@ -284,7 +274,6 @@ const I18N = {
     save: 'Save',
     load: 'Load',
     export_png: 'Export PNG',
-    aria_quick_tools: 'Quick tools',
     aria_ball_handler: 'Ball handler selection',
     aria_quick_play: 'Quick play',
     aria_toggle_defense: 'Remove or restore defenders',
@@ -444,12 +433,6 @@ function renderLanguageUI(){
   setIconText('immersive-link-settings', '⚙️', 'link_settings');
   setIconText('immersive-link-library', '📚', 'link_library');
   setIconText('immersive-link-drills', '🎯', 'link_drills');
-  setIconText('dock-drag', '✋', 'mode_drag');
-  setIconText('dock-run', '🛣', 'mode_run');
-  setIconText('dock-pass', '🏀', 'mode_pass');
-  setIconText('dock-erase', '🧽', 'erase');
-  setIconText('dock-undo', '↶', 'undo');
-  setIconText('dock-redo', '↷', 'redo');
   setTitle('toggle-immersive', state.immersive.enabled ? 'immersive_exit' : 'immersive_enter');
   setText('immersive-exit', 'immersive_exit');
   setText('toggle-court', 'toggle_court_short');
@@ -494,11 +477,7 @@ function renderLanguageUI(){
   if (toggleDefenseBtn){
     toggleDefenseBtn.setAttribute('aria-label', t('aria_toggle_defense'));
   }
-  if (quickDockEl){
-    quickDockEl.setAttribute('aria-label', t('aria_quick_tools'));
-  }
   updateDefenseToggleButton();
-  refreshDockModeButtons();
 
   if (!state.ai?.tips?.length && aiStrip){
     aiStrip.textContent = t('ai_loading');
@@ -665,16 +644,6 @@ function setImmersiveRailBalance(enabled){
   }
   immersiveRailState.marker = null;
   immersiveRailState.moved = false;
-}
-
-function refreshDockModeButtons(){
-  Object.entries({ drag: 'drag', run: 'run', pass: 'pass' }).forEach(([btnKey, mode]) => {
-    const el = dockButtons[btnKey];
-    if (!el) return;
-    const active = state.mode === mode;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
 }
 
 function setImmersiveQuickbarDock(){
@@ -860,18 +829,12 @@ function initImmersiveControls(){
 function setMode(m){
   state.mode = m;
   for (const k in modeButtons) modeButtons[k].classList.toggle('active', k===m);
-  refreshDockModeButtons();
 }
 modeButtons.drag.onclick=()=>setMode('drag');
 modeButtons.run.onclick=()=>setMode('run');
 modeButtons.pass.onclick=()=>setMode('pass');
-if (dockButtons.drag) dockButtons.drag.onclick = () => setMode('drag');
-if (dockButtons.run) dockButtons.run.onclick = () => setMode('run');
-if (dockButtons.pass) dockButtons.pass.onclick = () => setMode('pass');
 $('undo').onclick=()=>undo();
 $('redo').onclick=()=>redo();
-if (dockButtons.undo) dockButtons.undo.onclick = () => { $('undo')?.click(); };
-if (dockButtons.redo) dockButtons.redo.onclick = () => { $('redo')?.click(); };
 $('clear').onclick=()=>{ pushUndo(); state.shapes=[]; draw(); };
 $('toggle-court').onclick=()=>{ state.court = (state.court==='half'?'full':'half'); updateCanvasAspect(); resizeForDPI(); layoutPlayers(); draw(); };
 $('reset-view').onclick=()=>{ resetView(); draw(); toast(t('toast_view_reset')); };
@@ -910,7 +873,6 @@ $('erase').onclick = () => {
   draw();
   toast(t('toast_erased_last'));
 };
-if (dockButtons.erase) dockButtons.erase.onclick = () => { $('erase')?.click(); };
 
 
 $('save').onclick = () => {

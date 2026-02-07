@@ -226,68 +226,6 @@
       flex: 0 0 auto;
     }
 
-    .kami-dock {
-      position: fixed;
-      z-index: 23;
-      top: 118px;
-      left: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 8px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: color-mix(in srgb, var(--panel-strong) 96%, transparent);
-      backdrop-filter: blur(8px);
-      box-shadow: var(--shadow);
-      max-height: calc(100vh - 220px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      scrollbar-width: thin;
-    }
-
-    .dock-btn {
-      min-width: 112px;
-      min-height: 36px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel) 92%, transparent);
-      color: var(--btn-text);
-      font-size: 12px;
-      font-weight: 700;
-      text-align: left;
-      padding: 0 10px;
-      cursor: pointer;
-      transition: transform .16s ease, border-color .16s ease, background .16s ease;
-    }
-
-    .dock-btn:hover {
-      transform: translateY(-1px);
-      border-color: var(--line-strong);
-    }
-
-    .dock-btn.active {
-      border-color: var(--accent-soft);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-soft) 28%, transparent);
-      background: color-mix(in srgb, var(--accent-soft) 16%, var(--panel));
-    }
-
-    body.immersive .kami-dock {
-      left: 12px;
-      top: 12px;
-      max-height: calc(100vh - 24px);
-    }
-
-    body.immersive[data-immersive-side="left"] .kami-dock {
-      left: calc(var(--immersive-rail-w) + (var(--immersive-gap) * 2) + 8px);
-    }
-
-    body.immersive.immersive-fullcourt .kami-dock {
-      top: 56px;
-      left: 12px;
-      max-height: calc(100vh - 132px);
-    }
-
     .immersive-rail-head {
       display: none;
       width: 100%;
@@ -711,7 +649,6 @@
       .app-sub { display: none; }
       .appbar h1 { font-size: 17px; }
       #seek { flex-basis: 150px; width: 150px; }
-      .kami-dock { display: none; }
       :root { --immersive-rail-w: 188px; }
     }
 
@@ -749,15 +686,6 @@
       <a class="btn icon-btn" id="link-drills" href="pages/drills.html" title="训练">🎯</a>
     </div>
   </div>
-
-  <aside class="kami-dock" id="kami-dock" aria-label="快速工具栏">
-    <button class="dock-btn active" id="dock-drag">✋ 拖拽</button>
-    <button class="dock-btn" id="dock-run">🛣 跑位线</button>
-    <button class="dock-btn" id="dock-pass">🏀 传球箭头</button>
-    <button class="dock-btn" id="dock-erase">🧽 橡皮擦</button>
-    <button class="dock-btn" id="dock-undo">↶ 撤销</button>
-    <button class="dock-btn" id="dock-redo">↷ 重做</button>
-  </aside>
 
   <div class="immersive-quickbar">
     <button class="btn" id="immersive-side-toggle" type="button">移到左侧</button>
