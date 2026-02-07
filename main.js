@@ -126,8 +126,8 @@ const I18N = {
     show_less: '更多 ▲',
     toggle_court_short: '切换半场/全场',
     stop: '停止',
-    speed_half: '0.5×',
-    speed_default: '0.75× 默认',
+    speed_half: '0.5× 默认',
+    speed_default: '0.75×',
     speed_1: '1×',
     speed_2: '2×',
     ai_loading: 'AI 提示：正在分析当前站位…',
@@ -228,8 +228,8 @@ const I18N = {
     show_less: 'More ▲',
     toggle_court_short: 'Toggle Half/Full',
     stop: 'Stop',
-    speed_half: '0.5x',
-    speed_default: '0.75x Default',
+    speed_half: '0.5x Default',
+    speed_default: '0.75x',
     speed_1: '1x',
     speed_2: '2x',
     ai_loading: 'AI Tip: analyzing current spacing...',
@@ -1983,7 +1983,7 @@ function toast(msg){
 state.replay = { playing:false, paused:false, speed:1, startStamp:0, lastStamp:0,
   timeMs:0, durationMs:0, runs:[], passes:[], snapshot:null, flightBall:null };
 
-const MOVE_SPEED = 320, PASS_SPEED = 900, BASE_DELAY = 600;
+const MOVE_SPEED = 220, PASS_SPEED = 620, BASE_DELAY = 900;
 
 // Catmull-Rom 样条 & 折线工具
 function catmullRom(a,b,c,d,t){const t2=t*t,t3=t2*t;return{
@@ -2093,9 +2093,9 @@ function startReplay(){
   state.replay.playing = true;
   state.replay.paused  = false;
 
-  // 关键：默认 0.75×
+  // 关键：默认 0.5×
   const sel = document.getElementById('speed');
-  state.replay.speed = parseFloat((sel && sel.value) ? sel.value : '0.75');
+  state.replay.speed = parseFloat((sel && sel.value) ? sel.value : '0.5');
 
   state.replay.startStamp = performance.now();
   state.replay.lastStamp  = state.replay.startStamp;
