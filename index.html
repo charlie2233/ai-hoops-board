@@ -405,6 +405,8 @@
       display: none;
       position: fixed;
       top: var(--immersive-gap);
+      left: 50%;
+      transform: translateX(-50%);
       z-index: 31;
       gap: 8px;
     }
@@ -429,8 +431,10 @@
       position: fixed;
       z-index: 28;
       width: var(--immersive-rail-w);
-      left: auto;
-      right: var(--immersive-gap);
+      top: var(--immersive-gap);
+      bottom: var(--immersive-gap);
+      left: var(--immersive-gap);
+      right: auto;
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 10px;
@@ -446,13 +450,11 @@
     }
 
     body.immersive .toolbar {
-      top: var(--immersive-gap);
-      bottom: 236px;
       border-bottom: 1px solid var(--line);
     }
 
     body.immersive .bottombar {
-      top: auto;
+      top: var(--immersive-gap);
       bottom: var(--immersive-gap);
       left: auto;
       right: var(--immersive-gap);
@@ -487,7 +489,7 @@
       width: auto;
       height: calc(100vh - 30px);
       max-height: calc(100vh - 30px);
-      max-width: calc(100vw - var(--immersive-rail-w) - (var(--immersive-gap) * 3));
+      max-width: calc(100vw - (var(--immersive-rail-w) * 2) - (var(--immersive-gap) * 4));
     }
 
     body.immersive .hint {
@@ -496,27 +498,25 @@
 
     body.immersive .immersive-quickbar {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
     }
 
-    body.immersive[data-immersive-side="right"] .toolbar,
-    body.immersive[data-immersive-side="right"] .bottombar {
+    body.immersive[data-immersive-side="right"] .toolbar {
       right: var(--immersive-gap);
       left: auto;
     }
 
-    body.immersive[data-immersive-side="left"] .toolbar,
+    body.immersive[data-immersive-side="right"] .bottombar {
+      left: var(--immersive-gap);
+      right: auto;
+    }
+
+    body.immersive[data-immersive-side="left"] .toolbar {
+      left: var(--immersive-gap);
+      right: auto;
+    }
+
     body.immersive[data-immersive-side="left"] .bottombar {
-      left: var(--immersive-gap);
-      right: auto;
-    }
-
-    body.immersive[data-immersive-side="right"] .immersive-quickbar {
-      left: var(--immersive-gap);
-      right: auto;
-    }
-
-    body.immersive[data-immersive-side="left"] .immersive-quickbar {
       right: var(--immersive-gap);
       left: auto;
     }
@@ -526,8 +526,7 @@
       .app-sub { display: none; }
       .appbar h1 { font-size: 17px; }
       #seek { flex-basis: 150px; width: 150px; }
-      :root { --immersive-rail-w: 210px; }
-      body.immersive .toolbar { bottom: 216px; }
+      :root { --immersive-rail-w: 188px; }
     }
 
     @media (min-width: 861px) and (max-width: 1024px) {
@@ -543,10 +542,9 @@
     }
 
     @media (max-width: 640px) {
-      :root { --immersive-rail-w: 178px; }
-      body.immersive .toolbar { bottom: 204px; }
+      :root { --immersive-rail-w: 150px; }
       .immersive-quickbar .btn {
-        min-width: 106px;
+        min-width: 94px;
         font-size: 12px;
       }
     }
@@ -559,7 +557,7 @@
       <div class="app-sub" id="app-sub">Basketball Play Designer</div>
     </div>
     <div class="appbar-right">
-      <button class="btn icon-btn" id="toggle-immersive" type="button" title="全屏模式" aria-pressed="false">⛶</button>
+      <button class="btn icon-btn" id="toggle-immersive" type="button" title="沉浸模式" aria-pressed="false">⛶</button>
       <a class="btn icon-btn" id="link-settings" href="pages/settings.html" title="设置">⚙️</a>
       <a class="btn icon-btn" id="link-library" href="pages/library.html" title="战术库">📚</a>
       <a class="btn icon-btn" id="link-drills" href="pages/drills.html" title="训练">🎯</a>

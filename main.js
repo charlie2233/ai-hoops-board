@@ -130,8 +130,8 @@ const I18N = {
     link_library: '战术库',
     link_drills: '训练',
     link_settings: '设置',
-    immersive_enter: '全屏模式',
-    immersive_exit: '退出全屏',
+    immersive_enter: '沉浸模式',
+    immersive_exit: '退出沉浸',
     immersive_side_left: '控件在左侧',
     immersive_side_right: '控件在右侧',
     immersive_side_to_left: '移到左侧',
@@ -238,8 +238,8 @@ const I18N = {
     link_library: 'Play Library',
     link_drills: 'Drills',
     link_settings: 'Settings',
-    immersive_enter: 'Fullscreen',
-    immersive_exit: 'Exit Fullscreen',
+    immersive_enter: 'Immersive Mode',
+    immersive_exit: 'Exit Immersive',
     immersive_side_left: 'Controls Left',
     immersive_side_right: 'Controls Right',
     immersive_side_to_left: 'Move Left',
@@ -575,9 +575,8 @@ function setImmersiveSide(side, opts = {}){
   }
 }
 
-async function applyImmersiveMode(enabled, opts = {}){
+function applyImmersiveMode(enabled){
   const next = !!enabled;
-  const syncFullscreen = opts.syncFullscreen !== false;
   state.immersive.enabled = next;
   document.body.classList.toggle('immersive', next);
   document.body.setAttribute('data-immersive-side', normalizeImmersiveSide(state.immersive.side));
@@ -592,16 +591,6 @@ async function applyImmersiveMode(enabled, opts = {}){
   }
 
   updateImmersiveButtons();
-
-  if (syncFullscreen && document.fullscreenEnabled){
-    try {
-      if (next && !document.fullscreenElement){
-        await document.documentElement.requestFullscreen();
-      } else if (!next && document.fullscreenElement){
-        await document.exitFullscreen();
-      }
-    } catch (_) {}
-  }
 
   resizeForDPI();
   draw();
@@ -625,15 +614,6 @@ function initImmersiveControls(){
       setImmersiveSide(nextSide);
     };
   }
-
-  document.addEventListener('fullscreenchange', () => {
-    const inFullscreen = !!document.fullscreenElement;
-    if (state.immersive.enabled && !inFullscreen){
-      applyImmersiveMode(false, { syncFullscreen: false });
-    } else if (!state.immersive.enabled && inFullscreen){
-      applyImmersiveMode(true, { syncFullscreen: false });
-    }
-  });
 }
 
 function setMode(m){
