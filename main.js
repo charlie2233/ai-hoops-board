@@ -986,84 +986,220 @@ function layoutPlayers(){
   }
 }
 
+function playerRadiusPx(){
+  return Math.max(18, Math.min(canvas.clientWidth, canvas.clientHeight) * 0.034);
+}
+
+function courtPalette(){
+  const theme = normalizeTheme(document.documentElement.getAttribute('data-theme'));
+  const style = normalizeStyle(document.documentElement.getAttribute('data-style'));
+  if (theme === 'dark' && style === 'vivid'){
+    return {
+      surfaceA: '#063640',
+      surfaceB: '#0b2137',
+      grain: 'rgba(148, 231, 221, 0.08)',
+      lines: '#eaf4ff',
+      keyFill: 'rgba(45, 212, 191, 0.14)',
+      centerFill: 'rgba(45, 212, 191, 0.12)',
+      rim: '#fb923c',
+      board: '#f8fafc'
+    };
+  }
+  if (theme === 'dark'){
+    return {
+      surfaceA: '#05142c',
+      surfaceB: '#0a1f3f',
+      grain: 'rgba(148, 163, 184, 0.08)',
+      lines: '#e5edf8',
+      keyFill: 'rgba(96, 165, 250, 0.14)',
+      centerFill: 'rgba(96, 165, 250, 0.10)',
+      rim: '#fb923c',
+      board: '#f8fafc'
+    };
+  }
+  if (style === 'vivid'){
+    return {
+      surfaceA: '#fff7ed',
+      surfaceB: '#ffe7cf',
+      grain: 'rgba(124, 92, 61, 0.11)',
+      lines: '#334155',
+      keyFill: 'rgba(15, 118, 110, 0.12)',
+      centerFill: 'rgba(15, 118, 110, 0.10)',
+      rim: '#ea580c',
+      board: '#334155'
+    };
+  }
+  return {
+    surfaceA: '#f8fbff',
+    surfaceB: '#e9f1ff',
+    grain: 'rgba(100, 116, 139, 0.10)',
+    lines: '#334155',
+    keyFill: 'rgba(37, 99, 235, 0.10)',
+    centerFill: 'rgba(37, 99, 235, 0.08)',
+    rim: '#ea580c',
+    board: '#334155'
+  };
+}
+
 function drawCourt(){
   const W = canvas.clientWidth;
   const H = canvas.clientHeight;
+  const m = Math.min(W, H) * 0.05;
+  const left = m;
+  const right = W - m;
+  const top = m;
+  const bottom = H - m;
+  const width = right - left;
+  const height = bottom - top;
+  const cx = W / 2;
+  const cy = H / 2;
+  const pal = courtPalette();
+
   ctx.save();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#E5E7EB';
+  const grad = ctx.createLinearGradient(left, top, right, bottom);
+  grad.addColorStop(0, pal.surfaceA);
+  grad.addColorStop(1, pal.surfaceB);
+  ctx.fillStyle = grad;
+  ctx.fillRect(left, top, width, height);
+
+  // Subtle grain for depth
+  ctx.save();
+  ctx.strokeStyle = pal.grain;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  for (let i = 1; i < 11; i++){
+    const y = top + (height * i) / 11;
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.strokeStyle = pal.lines;
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
   if (state.court==='half'){
-    // Half court: baseline at bottom, hoop at bottom center
-    const centerX = W/2;
-    // Outer boundary
-    ctx.strokeRect(W*0.05, H*0.05, W*0.90, H*0.90);
-    // Midline (top arc only for half)
+    const laneW = width * 0.24;
+    const laneH = height * 0.20;
+    const laneX = cx - laneW / 2;
+    const laneY = bottom - laneH;
+    const hoopY = bottom - height * 0.03;
+    const rimR = Math.max(8, Math.min(W, H) * 0.0105);
+    const boardY = hoopY - height * 0.03;
+
+    // Key fill
+    ctx.fillStyle = pal.keyFill;
+    ctx.fillRect(laneX, laneY, laneW, laneH);
+
+    // Boundary
+    ctx.strokeRect(left, top, width, height);
+
+    // Outer half arc near mid-court side
     ctx.beginPath();
-    ctx.arc(centerX, H*0.95, W*0.45, Math.PI, 0);
+    ctx.arc(cx, bottom, width * 0.5, Math.PI, 0);
     ctx.stroke();
-    // Three-point arc approx
+
+    // Three-point arc + corner lines
+    const cornerLeft = left + width * 0.13;
+    const cornerRight = right - width * 0.13;
+    const threeR = width * 0.405;
+    const threeTop = bottom - height * 0.36;
+    ctx.beginPath(); ctx.moveTo(cornerLeft, bottom); ctx.lineTo(cornerLeft, threeTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerRight, bottom); ctx.lineTo(cornerRight, threeTop); ctx.stroke();
     ctx.beginPath();
-    ctx.arc(centerX, H*0.85, W*0.38, Math.PI*0.9, Math.PI*0.1);
+    ctx.arc(cx, hoopY, threeR, Math.PI * 0.9, Math.PI * 0.1);
     ctx.stroke();
-    // Paint
-    ctx.strokeRect(centerX - W*0.12, H*0.72, W*0.24, H*0.18);
-    // Hoop
-    ctx.beginPath(); ctx.arc(centerX, H*0.92, 9, 0, Math.PI*2); ctx.stroke();
-    // Free throw circle
-    ctx.beginPath(); ctx.arc(centerX, H*0.72, W*0.12, 0, Math.PI*2); ctx.stroke();
+
+    // Paint + free throw
+    ctx.strokeRect(laneX, laneY, laneW, laneH);
+    ctx.fillStyle = pal.centerFill;
+    ctx.beginPath();
+    ctx.arc(cx, laneY, laneW / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, laneY, laneW / 2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Backboard + rim + restricted arc
+    ctx.strokeStyle = pal.board;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - laneW * 0.24, boardY);
+    ctx.lineTo(cx + laneW * 0.24, boardY);
+    ctx.stroke();
+    ctx.strokeStyle = pal.rim;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.arc(cx, hoopY, rimR, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = pal.lines;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(cx, hoopY, width * 0.065, Math.PI, 0);
+    ctx.stroke();
   }else {
-    // ------- Full court：左右方向 -------
-    const m = Math.min(W, H) * 0.05;
-    const left   = m, right  = W - m;
-    const top    = m, bottom = H - m;
-    const cx = W / 2, cy = H / 2;
+    // Full court
+    ctx.strokeRect(left, top, width, height);
 
-    // 外框
-    ctx.strokeRect(left, top, right - left, bottom - top);
-
-    // 中线 + 中圈
+    // Mid-court
     ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bottom); ctx.stroke();
+    ctx.fillStyle = pal.centerFill;
+    ctx.beginPath(); ctx.arc(cx, cy, Math.min(W, H) * 0.07, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(cx, cy, Math.min(W, H) * 0.07, 0, Math.PI * 2); ctx.stroke();
 
-    // 罚球区（左右各一个）
-    const laneLen = (right - left) * 0.19;     // 由边线向内的长度
-    const laneW   = (bottom - top) * 0.24;     // 罚球区宽度（竖向）
-    ctx.strokeRect(left,            cy - laneW/2, laneLen,           laneW);  // 左
-    ctx.strokeRect(right - laneLen, cy - laneW/2, laneLen,           laneW);  // 右
-    // 罚球圈（完整圆，简化处理）
-    ctx.beginPath(); ctx.arc(left  + laneLen,  cy, laneW/2, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(right - laneLen,  cy, laneW/2, 0, Math.PI*2); ctx.stroke();
+    // Lanes
+    const laneLen = width * 0.19;
+    const laneW = height * 0.24;
+    const leftLaneX = left;
+    const rightLaneX = right - laneLen;
+    const laneY = cy - laneW / 2;
+    ctx.fillStyle = pal.keyFill;
+    ctx.fillRect(leftLaneX, laneY, laneLen, laneW);
+    ctx.fillRect(rightLaneX, laneY, laneLen, laneW);
+    ctx.strokeRect(leftLaneX, laneY, laneLen, laneW);
+    ctx.strokeRect(rightLaneX, laneY, laneLen, laneW);
+    ctx.beginPath(); ctx.arc(left + laneLen, cy, laneW / 2, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(right - laneLen, cy, laneW / 2, 0, Math.PI * 2); ctx.stroke();
 
-    // 篮圈
-    const rimR = 9;
-    const hoopLx = left  + 18, hoopRx = right - 18;
-    ctx.beginPath(); ctx.arc(hoopLx, cy, rimR, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(hoopRx, cy, rimR, 0, Math.PI*2); ctx.stroke();
+    // Backboards + rims + restricted area
+    const boardHalf = laneW * 0.2;
+    const boardOffset = laneLen * 0.22;
+    const hoopOffset = laneLen * 0.34;
+    const hoopLx = left + hoopOffset;
+    const hoopRx = right - hoopOffset;
+    const rimR = Math.max(8, Math.min(W, H) * 0.0105);
+    ctx.strokeStyle = pal.board;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(left + boardOffset, cy - boardHalf); ctx.lineTo(left + boardOffset, cy + boardHalf); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(right - boardOffset, cy - boardHalf); ctx.lineTo(right - boardOffset, cy + boardHalf); ctx.stroke();
+    ctx.strokeStyle = pal.rim;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.arc(hoopLx, cy, rimR, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hoopRx, cy, rimR, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = pal.lines;
+    ctx.lineWidth = 2.2;
+    const restrictedR = width * 0.05;
+    ctx.beginPath(); ctx.arc(hoopLx, cy, restrictedR, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hoopRx, cy, restrictedR, Math.PI / 2, -Math.PI / 2, true); ctx.stroke();
 
-    // 三分线（近角直线 + 弧线）
-    const cornerXLeft  = left  + (right - left) * 0.13; // 可在 0.13~0.14 微调
-    const cornerXRight = right - (right - left) * 0.13;
-    
-    // 近角直线（上下两段）
-    ctx.beginPath(); ctx.moveTo(cornerXLeft, top);          ctx.lineTo(cornerXLeft, cy - laneW/2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXLeft, cy + laneW/2); ctx.lineTo(cornerXLeft, bottom);       ctx.stroke();
-    
-    ctx.beginPath(); ctx.moveTo(cornerXRight, top);          ctx.lineTo(cornerXRight, cy - laneW/2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXRight, cy + laneW/2); ctx.lineTo(cornerXRight, bottom);       ctx.stroke();
-    
-    // 弧线：用 acos(dx/r3) 计算夹角，避免 NaN
-    const r3 = (right - left) * 0.39; // 三分弧半径（可在 0.37~0.41 微调）
+    // 3pt lines (corners + arcs)
+    const cornerXLeft  = left + width * 0.13;
+    const cornerXRight = right - width * 0.13;
+    ctx.beginPath(); ctx.moveTo(cornerXLeft, top); ctx.lineTo(cornerXLeft, cy - laneW / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXLeft, cy + laneW / 2); ctx.lineTo(cornerXLeft, bottom); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXRight, top); ctx.lineTo(cornerXRight, cy - laneW / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cornerXRight, cy + laneW / 2); ctx.lineTo(cornerXRight, bottom); ctx.stroke();
+
+    const r3 = width * 0.39;
     function arcByCorner(hoopX, hoopY, cornerX, side /* 'L' | 'R' */){
       const dx = Math.abs(cornerX - hoopX);
-      const R  = Math.max(r3, dx + 1);  // 防止 dx>R
-      const theta = Math.acos(dx / R);  // 0~π/2
+      const R = Math.max(r3, dx + 1);
+      const theta = Math.acos(dx / R);
       ctx.beginPath();
       if (side === 'L'){
-        // 以左筐为圆心，朝右开口：-θ → +θ
         ctx.arc(hoopX, hoopY, R, -theta, theta);
       } else {
-        // 以右筐为圆心，朝左开口：π-θ → π+θ
         ctx.arc(hoopX, hoopY, R, Math.PI - theta, Math.PI + theta);
       }
       ctx.stroke();
@@ -1078,8 +1214,7 @@ function drawCourt(){
 
 function drawPlayers(opts = {}){
   const hideDefense = !!opts.hideDefense;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  const R = Math.max(16, Math.min(W,H)*0.028);
+  const R = playerRadiusPx();
   state.players.forEach(p=>{
     if (p.hidden) return;
     if (hideDefense && p.team === 'D') return;
@@ -1138,7 +1273,7 @@ function drawSpacingAlerts(){
       const a = O[i], b = O[j];
       const d = Math.hypot(a.x-b.x, a.y-b.y);
       if (d < thr){
-        const R = Math.max(16, Math.min(canvas.clientWidth, canvas.clientHeight)*0.028);
+        const R = playerRadiusPx();
         const midx = (a.x+b.x)/2, midy = (a.y+b.y)/2;
         [a,b].forEach(p=>{
           ctx.save();
@@ -1480,7 +1615,7 @@ function normToPx(pt){
 
 function nearestPlayer(pt){
   let hit=null, min=1e9;
-  const R = Math.max(16, Math.min(canvas.clientWidth, canvas.clientHeight)*0.028);
+  const R = playerRadiusPx();
   state.players.forEach(p=>{
     if (p.hidden) return;
     const d = Math.hypot(p.x-pt.x, p.y-pt.y);
@@ -1819,7 +1954,7 @@ function adjustPathForTeammates(pts, player, teammates, minGapPx){
   if (!state.pathingAvoidance) return pts;
   if (!pts || pts.length < 2) return pts;
   const out = pts.map(p => ({x:p.x, y:p.y}));
-  const R = Math.max(16, Math.min(canvas.clientWidth, canvas.clientHeight)*0.028);
+  const R = playerRadiusPx();
   const thr = Math.max(minGapPx || spacingThresholdPx()*0.65, R*1.2);
 
   // 最多两轮轻量侧移，保证性能
