@@ -578,6 +578,68 @@
       left: auto;
     }
 
+    body.immersive.immersive-fullcourt .immersive-rail-head {
+      display: none !important;
+    }
+
+    body.immersive.immersive-fullcourt .toolbar,
+    body.immersive.immersive-fullcourt .bottombar {
+      position: fixed;
+      top: auto;
+      bottom: auto;
+      left: var(--immersive-gap);
+      right: var(--immersive-gap);
+      width: auto;
+      height: auto;
+      flex-direction: row;
+      align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      padding: 8px 10px;
+    }
+
+    body.immersive.immersive-fullcourt .toolbar {
+      top: var(--immersive-gap);
+    }
+
+    body.immersive.immersive-fullcourt .bottombar {
+      bottom: var(--immersive-gap);
+    }
+
+    body.immersive.immersive-fullcourt .toolbar .btn,
+    body.immersive.immersive-fullcourt .toolbar .player-select,
+    body.immersive.immersive-fullcourt .toolbar #seek,
+    body.immersive.immersive-fullcourt .toolbar #speed,
+    body.immersive.immersive-fullcourt .bottombar .btn,
+    body.immersive.immersive-fullcourt .bottombar #seek,
+    body.immersive.immersive-fullcourt .bottombar #speed {
+      width: auto;
+      flex: 0 0 auto;
+    }
+
+    body.immersive.immersive-fullcourt .board-wrap {
+      margin: 8px;
+      min-height: calc(100vh - 128px);
+    }
+
+    body.immersive.immersive-fullcourt canvas {
+      height: calc(100vh - 152px);
+      max-height: calc(100vh - 152px);
+      max-width: calc(100vw - (var(--immersive-gap) * 2));
+    }
+
+    body.immersive.immersive-fullcourt .immersive-quickbar {
+      top: 62px;
+      right: var(--immersive-gap);
+      left: auto;
+      transform: none;
+    }
+
+    body.immersive.immersive-fullcourt #immersive-side-toggle {
+      display: none;
+    }
+
     @media (max-width: 860px) {
       .badge { display: none; }
       .app-sub { display: none; }

@@ -643,6 +643,16 @@ function setImmersiveRailBalance(enabled){
   immersiveRailState.moved = false;
 }
 
+function isFullCourtImmersiveStack(){
+  return !!(state.immersive.enabled && state.court === 'full');
+}
+
+function syncImmersiveLayoutByCourt(){
+  const fullCourtStack = isFullCourtImmersiveStack();
+  document.body.classList.toggle('immersive-fullcourt', fullCourtStack);
+  setImmersiveRailBalance(state.immersive.enabled && !fullCourtStack);
+}
+
 function updateNativeFullscreenButton(){
   if (!nativeFullscreenBtn) return;
   const supported = !!document.fullscreenEnabled;
@@ -681,6 +691,7 @@ function updateImmersiveButtons(){
 function setImmersiveSide(side, opts = {}){
   state.immersive.side = normalizeImmersiveSide(side);
   updateImmersiveButtons();
+  syncImmersiveLayoutByCourt();
   if (opts.persist !== false){
     try { localStorage.setItem(IMMERSIVE_SIDE_KEY, state.immersive.side); } catch(_) {}
   }
@@ -699,7 +710,7 @@ function applyImmersiveMode(enabled, opts = {}){
   state.immersive.enabled = next;
   document.body.classList.toggle('immersive', next);
   document.body.setAttribute('data-immersive-side', normalizeImmersiveSide(state.immersive.side));
-  setImmersiveRailBalance(next);
+  syncImmersiveLayoutByCourt();
 
   const advToolbar = $('advanced-toolbar');
   if (next && advToolbar && advToolbar.classList.contains('show')){
@@ -1194,6 +1205,7 @@ function updateCanvasAspect(){
   } else {
     canvas.style.aspectRatio = '94 / 50';
   }
+  syncImmersiveLayoutByCourt();
 }
 
 function resizeForDPI(){
