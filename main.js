@@ -17,6 +17,7 @@ const THEME_STYLE_KEY = 'uiThemeStyleV1';
 const LANG_KEY = 'uiLangV1';
 const PLAYER_SIZE_KEY = 'uiPlayerSizeV1';
 const IMMERSIVE_SIDE_KEY = 'uiImmersiveSideV1';
+const LAYOUT_MODE_KEY = 'uiLayoutModeV1';
 const PLAY_FAVORITES_KEY = 'playFavoritesV1';
 const PLAY_RECENTS_KEY = 'playRecentsV1';
 const PLAY_RECENTS_LIMIT = 12;
@@ -138,7 +139,7 @@ const I18N = {
     link_drills: '训练',
     link_settings: '设置',
     immersive_enter: '沉浸模式',
-    immersive_exit: '退出沉浸',
+    immersive_exit: '原版布局',
     native_fullscreen_enter: '设备全屏',
     native_fullscreen_exit: '退出设备全屏',
     immersive_side_left: '控件在左侧',
@@ -248,7 +249,7 @@ const I18N = {
     link_drills: 'Drills',
     link_settings: 'Settings',
     immersive_enter: 'Immersive Mode',
-    immersive_exit: 'Exit Immersive',
+    immersive_exit: 'Original Layout',
     native_fullscreen_enter: 'Device Fullscreen',
     native_fullscreen_exit: 'Exit Device Fullscreen',
     immersive_side_left: 'Controls Left',
@@ -352,6 +353,10 @@ function normalizeImmersiveSide(side){
   return side === 'left' ? 'left' : 'right';
 }
 
+function normalizeLayoutMode(mode){
+  return mode === 'classic' ? 'classic' : 'immersive';
+}
+
 function t(key, vars = {}){
   const lang = normalizeLang(state.uiLang);
   const dict = I18N[lang] || I18N.zh;
@@ -386,6 +391,11 @@ function renderLanguageUI(){
     if (!el) return;
     el.textContent = vars ? t(key, vars) : t(key);
   };
+  const setIconText = (id, icon, key) => {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = `${icon} ${t(key)}`;
+  };
   
   const setTitle = (id, key) => {
     const el = $(id);
@@ -415,6 +425,11 @@ function renderLanguageUI(){
   setText('link-library', 'link_library');
   setText('link-drills', 'link_drills');
   setTitle('link-settings', 'link_settings');
+  setText('immersive-brand-title', 'app_title');
+  setText('immersive-brand-sub', 'app_sub');
+  setIconText('immersive-link-settings', '⚙️', 'link_settings');
+  setIconText('immersive-link-library', '📚', 'link_library');
+  setIconText('immersive-link-drills', '🎯', 'link_drills');
   setTitle('toggle-immersive', state.immersive.enabled ? 'immersive_exit' : 'immersive_enter');
   setText('immersive-exit', 'immersive_exit');
   setText('toggle-court', 'toggle_court_short');
@@ -677,9 +692,10 @@ function setImmersiveSide(side, opts = {}){
   }
 }
 
-function applyImmersiveMode(enabled){
+function applyImmersiveMode(enabled, opts = {}){
   const prevRect = snapshotCourtRect();
   const next = !!enabled;
+  const persist = opts.persist !== false;
   state.immersive.enabled = next;
   document.body.classList.toggle('immersive', next);
   document.body.setAttribute('data-immersive-side', normalizeImmersiveSide(state.immersive.side));
@@ -695,6 +711,9 @@ function applyImmersiveMode(enabled){
   }
 
   updateImmersiveButtons();
+  if (persist){
+    try { localStorage.setItem(LAYOUT_MODE_KEY, next ? 'immersive' : 'classic'); } catch(_) {}
+  }
 
   resizeForDPI();
   remapStateGeometryBetweenRects(prevRect, snapshotCourtRect());
@@ -702,11 +721,14 @@ function applyImmersiveMode(enabled){
 }
 
 function initImmersiveControls(){
+  let savedLayoutMode = null;
   let savedSide = null;
-  try { savedSide = localStorage.getItem(IMMERSIVE_SIDE_KEY); } catch(_) {}
+  try {
+    savedSide = localStorage.getItem(IMMERSIVE_SIDE_KEY);
+    savedLayoutMode = localStorage.getItem(LAYOUT_MODE_KEY);
+  } catch(_) {}
   setImmersiveSide(savedSide || 'right', { persist: false });
-  setImmersiveRailBalance(false);
-  updateImmersiveButtons();
+  applyImmersiveMode(normalizeLayoutMode(savedLayoutMode || 'immersive') === 'immersive', { persist: false });
   updateNativeFullscreenButton();
 
   if (immersiveToggleBtn){
@@ -860,6 +882,9 @@ window.addEventListener('storage', (e) => {
   }
   if (e.key === IMMERSIVE_SIDE_KEY){
     setImmersiveSide((e.newValue || 'right'), { persist: false });
+  }
+  if (e.key === LAYOUT_MODE_KEY){
+    applyImmersiveMode(normalizeLayoutMode(e.newValue || 'immersive') === 'immersive', { persist: false });
   }
 });
 

@@ -226,6 +226,49 @@
       flex: 0 0 auto;
     }
 
+    .immersive-rail-head {
+      display: none;
+      width: 100%;
+      padding: 0 0 8px;
+      margin: 0 0 4px;
+      border-bottom: 1px solid var(--line);
+      gap: 8px;
+      flex-direction: column;
+    }
+
+    .immersive-brand {
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 85%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    .immersive-brand-title {
+      font: 700 17px/1.1 var(--font-title);
+      color: var(--text);
+      letter-spacing: .2px;
+    }
+
+    .immersive-brand-sub {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .immersive-nav {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .immersive-nav .btn {
+      justify-content: flex-start;
+      width: 100%;
+      min-width: 0;
+      padding: 0 10px;
+    }
+
     .advanced-toolbar {
       position: sticky;
       top: 106px;
@@ -434,6 +477,10 @@
       display: none !important;
     }
 
+    body.immersive .immersive-rail-head {
+      display: flex;
+    }
+
     body.immersive .toolbar,
     body.immersive .bottombar {
       position: fixed;
@@ -576,10 +623,21 @@
 
   <div class="immersive-quickbar">
     <button class="btn" id="immersive-side-toggle" type="button">移到左侧</button>
-    <button class="btn" id="immersive-exit" type="button">退出全屏</button>
+    <button class="btn" id="immersive-exit" type="button">原版布局</button>
   </div>
 
   <div class="toolbar" id="toolbar">
+    <div class="immersive-rail-head" id="immersive-rail-head">
+      <div class="immersive-brand">
+        <div class="immersive-brand-title" id="immersive-brand-title">AI 战术板</div>
+        <div class="immersive-brand-sub" id="immersive-brand-sub">Basketball Play Designer</div>
+      </div>
+      <div class="immersive-nav">
+        <a class="btn" id="immersive-link-settings" href="pages/settings.html">⚙️ 设置</a>
+        <a class="btn" id="immersive-link-library" href="pages/library.html">📚 战术库</a>
+        <a class="btn" id="immersive-link-drills" href="pages/drills.html">🎯 训练</a>
+      </div>
+    </div>
     <button class="btn" id="mode-drag">拖拽</button>
     <button class="btn" id="mode-run">跑位线</button>
     <button class="btn" id="mode-pass">传球箭头</button>
