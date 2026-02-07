@@ -959,28 +959,31 @@ function seedPlayers(){
 }
 
 function layoutPlayers(){
-  const W = canvas.clientWidth;
-  const H = canvas.clientHeight;
+  const r = getCourtRect();
   if (state.court==='half'){
-    // Place offense top half, defense near paint
-    const ox = W*0.18, gap = W*0.13, y1 = H*0.65;
+    const gap = r.width * 0.15;
+    const ox = r.left + r.width/2 - 2*gap;
+    const oy = r.top + r.height * 0.35;
+    
     for (let i=0;i<5;i++){
       state.players[i].x = ox + i*gap;
-      state.players[i].y = y1 - (i%2)*H*0.08;
+      state.players[i].y = oy + (i%2)*r.height*0.05;
     }
-    const dx = W*0.18, dgap = W*0.13, y2 = H*0.35;
+    
+    const dy = r.top + r.height * 0.55;
     for (let i=0;i<5;i++){
-      state.players[5+i].x = dx + i*dgap;
-      state.players[5+i].y = y2 + (i%2)*H*0.08;
+      state.players[5+i].x = ox + i*gap;
+      state.players[5+i].y = dy + (i%2)*r.height*0.05;
     }
   } else {
     // Full court distributed
     const cols = 5;
-    const rowY = [H*0.28, H*0.72];
+    const rowY = [r.top + r.height*0.25, r.top + r.height*0.75];
+    const step = r.width / (cols+1);
     for (let i=0;i<5;i++){
-      state.players[i].x = (i+1)*(W/(cols+1));
+      state.players[i].x = r.left + (i+1)*step;
       state.players[i].y = rowY[1];
-      state.players[5+i].x = (i+1)*(W/(cols+1));
+      state.players[5+i].x = r.left + (i+1)*step;
       state.players[5+i].y = rowY[0];
     }
   }
@@ -1041,174 +1044,298 @@ function courtPalette(){
   };
 }
 
-function drawCourt(){
+function getCourtRect(){
   const W = canvas.clientWidth;
   const H = canvas.clientHeight;
   const m = Math.min(W, H) * 0.05;
-  const left = m;
-  const right = W - m;
-  const top = m;
-  const bottom = H - m;
-  const width = right - left;
-  const height = bottom - top;
-  const cx = W / 2;
-  const cy = H / 2;
-  const pal = courtPalette();
+  const availW = W - 2*m;
+  const availH = H - 2*m;
+  
+  const isHalf = state.court === 'half';
+  // NBA/Standard: 50x94. Half: 50x47.
+  const ratio = isHalf ? (50/47) : (50/94);
+  
+  let w, h;
+  if (availW / availH > ratio) {
+    h = availH;
+    w = h * ratio;
+  } else {
+    w = availW;
+    h = w / ratio;
+  }
+  
+  return {
+    left: m + (availW - w) / 2,
+    top: m + (availH - h) / 2,
+    width: w,
+    height: h,
+    right: m + (availW - w) / 2 + w,
+    bottom: m + (availH - h) / 2 + h
+  };
+}
 
+function drawCourt(){
+  const r = getCourtRect();
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  const pal = courtPalette();
+  
+  // Fill background
   ctx.save();
-  const grad = ctx.createLinearGradient(left, top, right, bottom);
+  const grad = ctx.createLinearGradient(r.left, r.top, r.right, r.bottom);
   grad.addColorStop(0, pal.surfaceA);
   grad.addColorStop(1, pal.surfaceB);
   ctx.fillStyle = grad;
-  ctx.fillRect(left, top, width, height);
-
-  // Subtle grain for depth
-  ctx.save();
+  ctx.fillRect(r.left, r.top, r.width, r.height);
+  
+  // Grain
   ctx.strokeStyle = pal.grain;
   ctx.lineWidth = 1;
-  ctx.setLineDash([]);
-  for (let i = 1; i < 11; i++){
-    const y = top + (height * i) / 11;
-    ctx.beginPath();
-    ctx.moveTo(left, y);
-    ctx.lineTo(right, y);
-    ctx.stroke();
+  ctx.beginPath();
+  for (let i=1; i<10; i++){
+    const y = r.top + (r.height * i) / 10;
+    ctx.moveTo(r.left, y);
+    ctx.lineTo(r.right, y);
   }
+  ctx.stroke();
   ctx.restore();
 
+  // Markings
+  ctx.save();
   ctx.strokeStyle = pal.lines;
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = 2.5; // slightly thicker
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  if (state.court==='half'){
-    const laneW = width * 0.24;
-    const laneH = height * 0.20;
-    const laneX = cx - laneW / 2;
-    const laneY = bottom - laneH;
-    const hoopY = bottom - height * 0.03;
-    const rimR = Math.max(8, Math.min(W, H) * 0.0105);
-    const boardY = hoopY - height * 0.03;
+  const ft = r.width / 50; // 1 foot in pixels
 
-    // Key fill
-    ctx.fillStyle = pal.keyFill;
-    ctx.fillRect(laneX, laneY, laneW, laneH);
-
+  if (state.court === 'half') {
+    // Vertical Half Court (Hoop at Bottom)
+    // Dimensions (from baseline up):
+    // Hoop center: 5.25 ft
+    // Backboard: 4 ft
+    // Free Throw: 19 ft
+    // Top of Key (Circle): 19+6 = 25 ft
+    // 3pt Arc: 23.75 ft radius (center at hoop)
+    // 3pt Line Max: 23.75 + 5.25 = 29 ft
+    // Corner 3pt: 22 ft from center line? No, 3ft from sideline -> 22ft from center.
+    // Court Width 50ft. Center 25ft. Sideline 25ft from center.
+    // 3pt straight line is 3ft from sideline. So 22ft from center.
+    
+    const cx = r.left + r.width / 2;
+    const baseY = r.bottom;
+    const topY = r.top;
+    
     // Boundary
-    ctx.strokeRect(left, top, width, height);
-
-    // Outer half arc near mid-court side
-    ctx.beginPath();
-    ctx.arc(cx, bottom, width * 0.5, Math.PI, 0);
-    ctx.stroke();
-
-    // Three-point arc + corner lines
-    const cornerLeft = left + width * 0.13;
-    const cornerRight = right - width * 0.13;
-    const threeR = width * 0.405;
-    const threeTop = bottom - height * 0.36;
-    ctx.beginPath(); ctx.moveTo(cornerLeft, bottom); ctx.lineTo(cornerLeft, threeTop); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerRight, bottom); ctx.lineTo(cornerRight, threeTop); ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, hoopY, threeR, Math.PI * 0.9, Math.PI * 0.1);
-    ctx.stroke();
-
-    // Paint + free throw
-    ctx.strokeRect(laneX, laneY, laneW, laneH);
-    ctx.fillStyle = pal.centerFill;
-    ctx.beginPath();
-    ctx.arc(cx, laneY, laneW / 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx, laneY, laneW / 2, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Backboard + rim + restricted arc
-    ctx.strokeStyle = pal.board;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(cx - laneW * 0.24, boardY);
-    ctx.lineTo(cx + laneW * 0.24, boardY);
-    ctx.stroke();
-    ctx.strokeStyle = pal.rim;
-    ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.arc(cx, hoopY, rimR, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = pal.lines;
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.arc(cx, hoopY, width * 0.065, Math.PI, 0);
-    ctx.stroke();
-  }else {
-    // Full court
-    ctx.strokeRect(left, top, width, height);
-
-    // Mid-court
-    ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bottom); ctx.stroke();
-    ctx.fillStyle = pal.centerFill;
-    ctx.beginPath(); ctx.arc(cx, cy, Math.min(W, H) * 0.07, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, cy, Math.min(W, H) * 0.07, 0, Math.PI * 2); ctx.stroke();
-
-    // Lanes
-    const laneLen = width * 0.19;
-    const laneW = height * 0.24;
-    const leftLaneX = left;
-    const rightLaneX = right - laneLen;
-    const laneY = cy - laneW / 2;
+    ctx.strokeRect(r.left, r.top, r.width, r.height);
+    
+    // Lane (16ft wide)
+    const laneW = 16 * ft;
+    const laneH = 19 * ft;
+    ctx.strokeRect(cx - laneW/2, baseY - laneH, laneW, laneH);
     ctx.fillStyle = pal.keyFill;
-    ctx.fillRect(leftLaneX, laneY, laneLen, laneW);
-    ctx.fillRect(rightLaneX, laneY, laneLen, laneW);
-    ctx.strokeRect(leftLaneX, laneY, laneLen, laneW);
-    ctx.strokeRect(rightLaneX, laneY, laneLen, laneW);
-    ctx.beginPath(); ctx.arc(left + laneLen, cy, laneW / 2, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(right - laneLen, cy, laneW / 2, 0, Math.PI * 2); ctx.stroke();
-
-    // Backboards + rims + restricted area
-    const boardHalf = laneW * 0.2;
-    const boardOffset = laneLen * 0.22;
-    const hoopOffset = laneLen * 0.34;
-    const hoopLx = left + hoopOffset;
-    const hoopRx = right - hoopOffset;
-    const rimR = Math.max(8, Math.min(W, H) * 0.0105);
+    ctx.fillRect(cx - laneW/2, baseY - laneH, laneW, laneH);
+    
+    // Free Throw Circle (6ft radius)
+    const ftR = 6 * ft;
+    const ftY = baseY - 19 * ft;
+    ctx.beginPath();
+    ctx.arc(cx, ftY, ftR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = pal.centerFill;
+    ctx.fill();
+    
+    // Hoop & Backboard
+    const hoopY = baseY - 5.25 * ft;
+    const boardY = baseY - 4 * ft;
+    
+    // Backboard (6ft wide)
     ctx.strokeStyle = pal.board;
     ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(left + boardOffset, cy - boardHalf); ctx.lineTo(left + boardOffset, cy + boardHalf); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(right - boardOffset, cy - boardHalf); ctx.lineTo(right - boardOffset, cy + boardHalf); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 3*ft, boardY);
+    ctx.lineTo(cx + 3*ft, boardY);
+    ctx.stroke();
+    
+    // Rim
     ctx.strokeStyle = pal.rim;
-    ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.arc(hoopLx, cy, rimR, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(hoopRx, cy, rimR, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, hoopY, 0.75 * ft, 0, Math.PI * 2); // 18 inch diameter = 0.75ft radius
+    ctx.stroke();
+    
+    // Restricted Area (4ft radius)
     ctx.strokeStyle = pal.lines;
-    ctx.lineWidth = 2.2;
-    const restrictedR = width * 0.05;
-    ctx.beginPath(); ctx.arc(hoopLx, cy, restrictedR, -Math.PI / 2, Math.PI / 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(hoopRx, cy, restrictedR, Math.PI / 2, -Math.PI / 2, true); ctx.stroke();
-
-    // 3pt lines (corners + arcs)
-    const cornerXLeft  = left + width * 0.13;
-    const cornerXRight = right - width * 0.13;
-    ctx.beginPath(); ctx.moveTo(cornerXLeft, top); ctx.lineTo(cornerXLeft, cy - laneW / 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXLeft, cy + laneW / 2); ctx.lineTo(cornerXLeft, bottom); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXRight, top); ctx.lineTo(cornerXRight, cy - laneW / 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cornerXRight, cy + laneW / 2); ctx.lineTo(cornerXRight, bottom); ctx.stroke();
-
-    const r3 = width * 0.39;
-    function arcByCorner(hoopX, hoopY, cornerX, side /* 'L' | 'R' */){
-      const dx = Math.abs(cornerX - hoopX);
-      const R = Math.max(r3, dx + 1);
-      const theta = Math.acos(dx / R);
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, hoopY, 4 * ft, 0, Math.PI, true); // Top half
+    ctx.stroke();
+    
+    // 3-Point Line
+    // Straight lines 3ft from sideline (width 50, so 22ft from center)
+    const cornerDist = 22 * ft;
+    const arcR = 23.75 * ft;
+    // The arc starts where the straight line meets the arc
+    // x = 22. y = ?
+    // x^2 + y^2 = r^2. 22^2 + y^2 = 23.75^2.
+    // y = sqrt(23.75^2 - 22^2) = sqrt(564 - 484) = sqrt(80) ≈ 8.94 ft (from hoop center)
+    const breakY = hoopY - 8.94 * ft;
+    
+    ctx.beginPath();
+    // Left Line
+    ctx.moveTo(cx - cornerDist, baseY);
+    ctx.lineTo(cx - cornerDist, breakY);
+    // Arc
+    // angle = asin(22/23.75) ≈ 67.8 deg = 1.18 rad
+    // Start angle: PI + asin... ?
+    // Let's use atan2.
+    // Vector from hoop to left break: (-22, -8.94).
+    const startAng = Math.atan2(-8.94, -22); // -2.7 rad
+    const endAng = Math.atan2(-8.94, 22);   // -0.4 rad
+    
+    ctx.arc(cx, hoopY, arcR, startAng, endAng);
+    // Right Line
+    ctx.lineTo(cx + cornerDist, baseY);
+    ctx.stroke();
+    
+    // Center Circle (at Top)
+    // Midcourt line is at r.top
+    ctx.beginPath();
+    ctx.arc(cx, topY, 6 * ft, 0, Math.PI); // Bottom half of circle
+    ctx.stroke();
+    
+  } else {
+    // Full Court (Vertical, 50x94)
+    // Or horizontal?
+    // If r.height / r.width > 1, it's vertical.
+    // Current ratio 50/94 = 0.53.
+    // Wait, getCourtRect logic:
+    // ratio = 50/94. 
+    // If we draw vertical full court, ratio is 0.53.
+    // If availW/availH > 0.53 (likely), then h = availH.
+    // So it draws a tall narrow court.
+    
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    
+    ctx.strokeRect(r.left, r.top, r.width, r.height);
+    
+    // Mid court line
+    ctx.beginPath();
+    ctx.moveTo(r.left, cy);
+    ctx.lineTo(r.right, cy);
+    ctx.stroke();
+    
+    // Center Circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6 * ft, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.fillStyle = pal.centerFill;
+    ctx.fill();
+    
+    // Draw both halves
+    // Top Half (Basket at Top)
+    const drawHalf = (isTop) => {
+      const baseY = isTop ? r.top : r.bottom;
+      const dir = isTop ? 1 : -1;
+      
+      const hoopY = baseY + dir * 5.25 * ft;
+      const boardY = baseY + dir * 4 * ft;
+      const ftY = baseY + dir * 19 * ft;
+      
+      // Lane
+      const laneW = 16 * ft;
+      const laneH = 19 * ft;
+      const laneY = isTop ? baseY : baseY - laneH;
+      ctx.strokeRect(cx - laneW/2, laneY, laneW, laneH);
+      ctx.fillStyle = pal.keyFill;
+      ctx.fillRect(cx - laneW/2, laneY, laneW, laneH);
+      
+      // FT Circle
       ctx.beginPath();
-      if (side === 'L'){
-        ctx.arc(hoopX, hoopY, R, -theta, theta);
-      } else {
-        ctx.arc(hoopX, hoopY, R, Math.PI - theta, Math.PI + theta);
-      }
+      ctx.arc(cx, ftY, 6 * ft, 0, Math.PI * 2);
       ctx.stroke();
-    }
-    arcByCorner(hoopLx, cy, cornerXLeft,  'L');
-    arcByCorner(hoopRx, cy, cornerXRight, 'R');
-
+      
+      // Board & Rim
+      ctx.strokeStyle = pal.board;
+      ctx.beginPath();
+      ctx.moveTo(cx - 3*ft, boardY);
+      ctx.lineTo(cx + 3*ft, boardY);
+      ctx.stroke();
+      
+      ctx.strokeStyle = pal.rim;
+      ctx.beginPath();
+      ctx.arc(cx, hoopY, 0.75 * ft, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Restricted
+      ctx.strokeStyle = pal.lines;
+      ctx.beginPath();
+      ctx.arc(cx, hoopY, 4 * ft, dir > 0 ? 0 : Math.PI, dir > 0 ? Math.PI : 0);
+      ctx.stroke();
+      
+      // 3pt
+      const cornerDist = 22 * ft;
+      const arcR = 23.75 * ft;
+      const breakY = hoopY + dir * 8.94 * ft;
+      
+      ctx.beginPath();
+      ctx.moveTo(cx - cornerDist, baseY);
+      ctx.lineTo(cx - cornerDist, breakY);
+      
+      const startAng = Math.atan2(dir * 8.94, -22);
+      const endAng = Math.atan2(dir * 8.94, 22);
+      
+      ctx.arc(cx, hoopY, arcR, startAng, endAng, isTop); // counterclockwise if Top? No.
+      // atan2(y, x).
+      // Top: y > 0. (-22, 8.94) -> ~2.7 rad. (22, 8.94) -> ~0.4 rad.
+      // We want arc from left to right.
+      // If clockwise: 2.7 -> ... -> 0.4.
+      // If we use arc(..., start, end), it draws clockwise by default.
+      // 2.7 to 0.4 (going through 0) is the BOTTOM part of circle.
+      // We want the TOP part.
+      // So we need counterclockwise?
+      // Wait, standard canvas arc is clockwise.
+      // 2.7 (158 deg) to 0.4 (22 deg).
+      // 158 -> 22 clockwise goes through 270 (Bottom).
+      // So yes, clockwise gives the arc facing "Down" (towards midcourt).
+      // Correct.
+      
+      // Bottom Half: y < 0. (-22, -8.94) -> ~-2.7. (22, -8.94) -> ~-0.4.
+      // We want arc facing "Up".
+      // Clockwise from -2.7 to -0.4 goes through -1.5 (Top).
+      // No, -2.7 (-158) to -0.4 (-22).
+      // Clockwise: -158 -> -180/180 -> ... -> -22.
+      // That is the TOP part. We want the BOTTOM part (facing midcourt).
+      // So Bottom Half needs counterclockwise? Or swap start/end?
+      
+      if (isTop) {
+         ctx.arc(cx, hoopY, arcR, Math.PI - 0.4, 0.4); 
+         // Math.PI - 0.4 is approx 2.74. 
+      } else {
+         // Bottom
+         // We want arc from Right to Left? No.
+         // moveTo Left Corner.
+         // Line to Left Break.
+         // Arc to Right Break.
+         // Line to Right Corner.
+         // Left Break is (-22, -8.94). Angle -2.7.
+         // Right Break is (22, -8.94). Angle -0.4.
+         // We want to draw from Left Break to Right Break via Top (Up, towards midcourt).
+         // -2.7 to -0.4.
+         // Clockwise: -2.7 -> -1.57 (Up) -> -0.4.
+         // This is correct.
+         ctx.arc(cx, hoopY, arcR, startAng, endAng);
+      }
+      
+      ctx.lineTo(cx + cornerDist, baseY);
+      ctx.stroke();
+    };
+    
+    drawHalf(true);
+    drawHalf(false);
   }
-
+  
   ctx.restore();
 }
 
@@ -1598,11 +1725,6 @@ function getPointerPos(e){
   return screenToWorld(getPointerScreenPos(e));
 }
 
-function getCourtRect(){
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  const m = Math.min(W, H) * 0.05; // 和 drawCourt 外框一致
-  return { left: m, top: m, right: W - m, bottom: H - m, width: W - 2*m, height: H - 2*m };
-}
 
 function normToPx(pt){
   const r = getCourtRect();
