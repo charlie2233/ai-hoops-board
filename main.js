@@ -96,7 +96,7 @@ let playsCatalogLoaded = false;
 
 const I18N = {
   zh: {
-    app_title: 'AI 战术板 · MVP',
+    app_title: 'AI 战术板',
     app_sub: 'Basketball Play Designer',
     creator_label: '制作团队：',
     badge_step: 'Step 1',
@@ -121,6 +121,10 @@ const I18N = {
     reset_view: '重置视图',
     link_library: '战术库',
     link_drills: '训练',
+    link_settings: '设置',
+    show_more: '更多 ▼',
+    show_less: '更多 ▲',
+    toggle_court_short: '切换半场/全场',
     stop: '停止',
     speed_half: '0.5×',
     speed_default: '0.75× 默认',
@@ -194,7 +198,7 @@ const I18N = {
     watermark: 'AI 战术板'
   },
   en: {
-    app_title: 'AI Hoops Board · MVP',
+    app_title: 'AI Hoops Board',
     app_sub: 'Basketball Play Designer',
     creator_label: 'Created by',
     badge_step: 'Step 1',
@@ -219,6 +223,10 @@ const I18N = {
     reset_view: 'Reset View',
     link_library: 'Play Library',
     link_drills: 'Drills',
+    link_settings: 'Settings',
+    show_more: 'More ▼',
+    show_less: 'More ▲',
+    toggle_court_short: 'Toggle Half/Full',
     stop: 'Stop',
     speed_half: '0.5x',
     speed_default: '0.75x Default',
@@ -339,6 +347,12 @@ function renderLanguageUI(){
     if (!el) return;
     el.textContent = vars ? t(key, vars) : t(key);
   };
+  
+  const setTitle = (id, key) => {
+    const el = $(id);
+    if (!el) return;
+    el.setAttribute('title', t(key));
+  };
 
   setText('app-title', 'app_title');
   setText('app-sub', 'app_sub');
@@ -361,9 +375,19 @@ function renderLanguageUI(){
   setText('reset-view', 'reset_view');
   setText('link-library', 'link_library');
   setText('link-drills', 'link_drills');
+  setTitle('link-settings', 'link_settings');
+  setText('toggle-court', 'toggle_court_short');
+  
+  // Update "More" button based on current state
+  const showAdvBtn = $('show-advanced');
+  const advToolbar = $('advanced-toolbar');
+  if(showAdvBtn && advToolbar) {
+    const isVisible = advToolbar.classList.contains('show');
+    showAdvBtn.textContent = isVisible ? t('show_less') : t('show_more');
+  }
+  
   setText('btn-stop', 'stop');
   setText('clear', 'clear');
-  setText('toggle-court', 'toggle_court');
   setText('save', 'save');
   setText('load', 'load');
   setText('export', 'export_png');
@@ -1941,4 +1965,33 @@ draw = function(opts={}){ _draw_replay_wrap(opts);
   if(seek){ seek.oninput=e=>{ if(!state.replay.playing){ const tl=compileTimeline(); state.replay.runs=tl.runs; state.replay.passes=tl.passes; state.replay.durationMs=Math.max(100,tl.durationMs); }
     setReplayTime((parseFloat(e.target.value||'0')/100)*state.replay.durationMs); }; }
   if(spd){ spd.onchange=e=>setSpeed(parseFloat(e.target.value||'1')); }
+  
+  // Advanced toolbar toggle
+  const showAdvBtn = $('show-advanced');
+  const advToolbar = $('advanced-toolbar');
+  if(showAdvBtn && advToolbar) {
+    showAdvBtn.onclick = () => {
+      const isVisible = advToolbar.classList.toggle('show');
+      showAdvBtn.textContent = isVisible ? t('show_less') : t('show_more');
+    };
+  }
+  
+  // Play button shows replay bar
+  const playBtn = $('play');
+  const replayBar = $('replaybar');
+  if(playBtn && replayBar) {
+    playBtn.onclick = () => {
+      replayBar.style.display = 'flex';
+      if(!state.replay.playing){ startReplay(); updateReplayButtonLabel(); }
+    };
+  }
+  
+  // Stop button hides replay bar
+  if(bs && replayBar) {
+    const originalStopHandler = bs.onclick;
+    bs.onclick = () => {
+      if(originalStopHandler) originalStopHandler();
+      replayBar.style.display = 'none';
+    };
+  }
 })();

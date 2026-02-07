@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>AI 战术板 · MVP</title>
+  <title>AI 战术板</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f4f7ff"/>
   <link rel="apple-touch-icon" href="assets/icon-192.png">
@@ -153,7 +153,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 12px 14px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--line);
       background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
       backdrop-filter: blur(8px);
@@ -161,31 +161,14 @@
 
     .appbar h1 {
       margin: 0;
-      font: 700 19px/1.1 var(--font-title);
+      font: 700 20px/1.1 var(--font-title);
       letter-spacing: .2px;
     }
 
     .app-sub {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 3px;
-    }
-
-    .app-credit {
-      margin-top: 3px;
       font-size: 11px;
       color: var(--muted);
-      line-height: 1.2;
-    }
-
-    .app-credit a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 700;
-    }
-
-    .app-credit a:hover {
-      text-decoration: underline;
+      margin-top: 2px;
     }
 
     .appbar-right {
@@ -205,93 +188,26 @@
       background: color-mix(in srgb, var(--panel) 78%, transparent);
     }
 
-    .theme-switch {
-      display: flex;
-      gap: 4px;
-      padding: 4px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel) 86%, transparent);
+    .icon-btn {
+      min-width: 44px !important;
+      font-size: 18px;
+      padding: 0 10px;
     }
 
-    .theme-btn {
-      height: 30px;
-      min-width: 52px;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
+    .more-btn {
+      min-width: 80px;
     }
 
-    .theme-btn.active {
-      color: #fff;
-      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
-    }
-
-    .style-switch {
-      display: flex;
-      gap: 4px;
-      padding: 4px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel) 86%, transparent);
-    }
-
-    .style-btn {
-      height: 30px;
-      min-width: 52px;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .style-btn.active {
-      color: #fff;
-      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
-    }
-
-    .lang-switch {
-      display: flex;
-      gap: 4px;
-      padding: 4px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel) 86%, transparent);
-    }
-
-    .lang-btn {
-      height: 30px;
-      min-width: 52px;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .lang-btn.active {
-      color: #fff;
-      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
+    .theme-switch, .style-switch, .lang-switch {
+      display: none;
     }
 
     .toolbar {
       position: sticky;
-      top: 66px;
+      top: 50px;
       z-index: 19;
       display: flex;
-      gap: 8px;
+      gap: 6px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--line);
       background: color-mix(in srgb, var(--panel) 90%, transparent);
@@ -308,10 +224,31 @@
       flex: 0 0 auto;
     }
 
+    .advanced-toolbar {
+      position: sticky;
+      top: 106px;
+      z-index: 18;
+      display: none;
+      gap: 6px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 85%, transparent);
+      backdrop-filter: blur(7px);
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+
+    .advanced-toolbar::-webkit-scrollbar { display: none; }
+
+    .advanced-toolbar.show {
+      display: flex;
+    }
+
     .btn,
     .player-select,
     #speed {
-      height: var(--tap);
+      height: 42px;
       border-radius: var(--radius);
       border: 1px solid var(--line);
       background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
@@ -322,13 +259,14 @@
     }
 
     .btn {
-      min-width: 106px;
+      min-width: 90px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
       padding: 0 12px;
       box-shadow: var(--shadow);
+      cursor: pointer;
     }
 
     a.btn {
@@ -377,7 +315,7 @@
 
     .replaybar {
       position: sticky;
-      top: calc(66px + var(--tap) + 1px);
+      top: 106px;
       z-index: 18;
       display: flex;
       align-items: center;
@@ -419,13 +357,13 @@
 
     .ai-strip {
       margin: 8px 12px 0;
-      min-height: var(--ai-h);
-      padding: 10px 12px;
+      min-height: 40px;
+      padding: 8px 12px;
       border-radius: var(--radius);
       border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
       background: var(--hint-bg);
       color: var(--hint-text);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       line-height: 1.35;
       box-shadow: var(--shadow);
@@ -434,8 +372,8 @@
     }
 
     .board-wrap {
-      margin: 10px 12px 0;
-      padding: 10px;
+      margin: 8px 12px 0;
+      padding: 8px;
       border: 1px solid var(--line);
       border-radius: 18px;
       background: color-mix(in srgb, var(--panel) 90%, transparent);
@@ -444,7 +382,9 @@
 
     canvas {
       width: 100%;
-      height: calc(100vh - 66px - var(--tap) - 58px - var(--ai-h) - 118px);
+      height: auto;
+      max-height: calc(100vh - 220px);
+      aspect-ratio: 1080 / 1600;
       border: 1px solid var(--line);
       border-radius: 14px;
       touch-action: none;
@@ -452,9 +392,9 @@
     }
 
     .hint {
-      margin-top: 8px;
-      padding: 8px 10px;
-      font-size: 12px;
+      margin-top: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
       color: var(--muted);
       border-radius: 10px;
       border: 1px dashed var(--line);
@@ -468,7 +408,7 @@
       right: 0;
       z-index: 22;
       display: flex;
-      gap: 8px;
+      gap: 6px;
       padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
       border-top: 1px solid var(--line);
       background: color-mix(in srgb, var(--panel-strong) 94%, transparent);
@@ -479,37 +419,33 @@
 
     @media (max-width: 860px) {
       .badge { display: none; }
-      .theme-btn, .style-btn, .lang-btn { min-width: 44px; font-size: 11px; }
       .app-sub { display: none; }
       .appbar h1 { font-size: 17px; }
-      canvas { height: calc(100vh - 66px - var(--tap) - 58px - var(--ai-h) - 126px); }
+    }
+
+    @media (min-width: 861px) and (max-width: 1024px) {
+      canvas { 
+        max-height: calc(100vh - 200px);
+      }
+    }
+
+    @media (min-width: 1025px) {
+      canvas { 
+        max-height: calc(100vh - 180px);
+      }
     }
   </style>
 </head>
 <body>
   <div class="appbar">
     <div>
-      <h1 id="app-title">AI 战术板 · MVP</h1>
+      <h1 id="app-title">AI 战术板</h1>
       <div class="app-sub" id="app-sub">Basketball Play Designer</div>
-      <div class="app-credit">
-        <span id="creator-label">制作团队：</span>
-        <a href="https://atrak.dev" target="_blank" rel="noopener noreferrer">Atrak Student Tech Team</a>
-      </div>
     </div>
     <div class="appbar-right">
-      <div class="badge" id="badge-step">Step 1</div>
-      <div class="theme-switch" role="group" aria-label="主题切换">
-        <button class="theme-btn" id="theme-light" aria-pressed="false">浅色</button>
-        <button class="theme-btn" id="theme-dark" aria-pressed="false">深色</button>
-      </div>
-      <div class="style-switch" role="group" aria-label="样式切换">
-        <button class="style-btn" id="style-classic" aria-pressed="false">经典</button>
-        <button class="style-btn" id="style-vivid" aria-pressed="false">动感</button>
-      </div>
-      <div class="lang-switch" role="group" aria-label="语言切换">
-        <button class="lang-btn" id="lang-zh" aria-pressed="false">中文</button>
-        <button class="lang-btn" id="lang-en" aria-pressed="false">EN</button>
-      </div>
+      <a class="btn icon-btn" id="link-settings" href="pages/settings.html" title="设置">⚙️</a>
+      <a class="btn icon-btn" id="link-library" href="pages/library.html" title="战术库">📚</a>
+      <a class="btn icon-btn" id="link-drills" href="pages/drills.html" title="训练">🎯</a>
     </div>
   </div>
 
@@ -517,6 +453,15 @@
     <button class="btn" id="mode-drag">拖拽</button>
     <button class="btn" id="mode-run">跑位线</button>
     <button class="btn" id="mode-pass">传球箭头</button>
+    <button class="btn" id="undo">撤销</button>
+    <button class="btn" id="redo">重做</button>
+    <button class="btn" id="erase">橡皮擦</button>
+    <button class="btn" id="toggle-court">切换半场/全场</button>
+    <button class="btn" id="toggle-defense" aria-pressed="false">移除防守</button>
+    <button class="btn more-btn" id="show-advanced">更多 ▼</button>
+  </div>
+
+  <div class="advanced-toolbar" id="advanced-toolbar">
     <select id="offense-player" class="player-select" aria-label="持球人选择">
       <option value="1">持球人：1</option>
       <option value="2">持球人：2</option>
@@ -528,17 +473,11 @@
       <option value="">快速战术：选择</option>
     </select>
     <button class="btn" id="random-play">随机战术</button>
-    <button class="btn" id="toggle-defense" aria-pressed="false">移除防守</button>
-    <button class="btn" id="undo">撤销</button>
-    <button class="btn" id="redo">重做</button>
-    <button class="btn" id="play">回放</button>
-    <button class="btn" id="erase">橡皮擦</button>
     <button class="btn" id="reset-view">重置视图</button>
-    <a class="btn" id="link-library" href="pages/library.html">战术库</a>
-    <a class="btn" id="link-drills" href="pages/drills.html">训练</a>
+    <button class="btn" id="play">回放</button>
   </div>
 
-  <div class="replaybar">
+  <div class="replaybar" id="replaybar" style="display: none;">
     <button class="btn" id="btn-playpause">回放</button>
     <button class="btn" id="btn-stop">停止</button>
     <input id="seek" type="range" min="0" max="100" step="0.1" value="0" />
@@ -559,7 +498,6 @@
 
   <div class="bottombar">
     <button class="btn" id="clear">清空</button>
-    <button class="btn" id="toggle-court">切换：半场/全场</button>
     <button class="btn" id="save">保存</button>
     <button class="btn" id="load">载入</button>
     <button class="btn primary" id="export">导出 PNG</button>
