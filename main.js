@@ -943,7 +943,7 @@ function updateCanvasAspect(){
   if (state.court === 'half'){
     canvas.style.aspectRatio = '50 / 47';
   } else {
-    canvas.style.aspectRatio = '50 / 94';
+    canvas.style.aspectRatio = '94 / 50';
   }
 }
 
@@ -992,15 +992,18 @@ function layoutPlayers(){
       state.players[5+i].y = dy + (i%2)*r.height*0.05;
     }
   } else {
-    // Full court distributed
-    const cols = 5;
-    const rowY = [r.top + r.height*0.25, r.top + r.height*0.75];
-    const step = r.width / (cols+1);
+    // Full court left-to-right: offense on right half, defense on left half
+    const rows = 5;
+    const stepY = r.height / (rows + 1);
+    const ox = r.left + r.width * 0.68;
+    const dx = r.left + r.width * 0.32;
     for (let i=0;i<5;i++){
-      state.players[i].x = r.left + (i+1)*step;
-      state.players[i].y = rowY[1];
-      state.players[5+i].x = r.left + (i+1)*step;
-      state.players[5+i].y = rowY[0];
+      const y = r.top + (i + 1) * stepY;
+      const jitter = ((i % 2) ? 1 : -1) * r.width * 0.015;
+      state.players[i].x = ox + jitter;
+      state.players[i].y = y;
+      state.players[5+i].x = dx - jitter;
+      state.players[5+i].y = y;
     }
   }
 }
@@ -1066,7 +1069,7 @@ function getCourtRect(){
   const pad = Math.min(W, H) * 0.04;
   const availW = W - 2 * pad;
   const availH = H - 2 * pad;
-  const ratio = state.court === 'half' ? (50 / 47) : (50 / 94);
+  const ratio = state.court === 'half' ? (50 / 47) : (94 / 50);
   let w, h;
   if (availW / availH > ratio) { h = availH; w = h * ratio; }
   else { w = availW; h = w / ratio; }
@@ -1078,8 +1081,9 @@ function getCourtRect(){
 function drawCourt(){
   const r = getCourtRect();
   const pal = courtPalette();
-  const ft = r.width / 50;
+  const ft = state.court === 'half' ? (r.width / 50) : (r.height / 50);
   const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
 
   ctx.save();
 
@@ -1235,6 +1239,125 @@ function drawCourt(){
     ctx.lineWidth = 2;
   };
 
+  // Full-court end for left/right orientation
+  const drawSideEnd = (baselineX, dir) => {
+    // dir = +1: left basket, court extends to the right
+    // dir = -1: right basket, court extends to the left
+    const hoopX = baselineX + dir * 5.25 * ft;
+    const boardX = baselineX + dir * 4 * ft;
+    const ftLineX = baselineX + dir * 19 * ft;
+
+    // Paint / lane (19 ft long x 16 ft wide)
+    const laneLen = 19 * ft;
+    const laneW = 16 * ft;
+    const laneX = dir > 0 ? baselineX : baselineX - laneLen;
+    const laneY = cy - laneW / 2;
+    ctx.fillStyle = pal.keyFill;
+    ctx.fillRect(laneX, laneY, laneLen, laneW);
+    ctx.strokeRect(laneX, laneY, laneLen, laneW);
+
+    // Lane tick marks
+    const tickW = 1 * ft;
+    const tickPositions = [7, 8, 11, 14];
+    ctx.lineWidth = 1.5;
+    tickPositions.forEach((d) => {
+      const tx = baselineX + dir * d * ft;
+      ctx.beginPath();
+      ctx.moveTo(tx, laneY - tickW);
+      ctx.lineTo(tx, laneY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(tx, laneY + laneW);
+      ctx.lineTo(tx, laneY + laneW + tickW);
+      ctx.stroke();
+    });
+    ctx.lineWidth = 2;
+
+    // Free throw circle
+    ctx.fillStyle = pal.centerFill;
+    ctx.beginPath();
+    ctx.arc(ftLineX, cy, 6 * ft, 0, Math.PI * 2);
+    ctx.fill();
+    if (dir > 0){
+      // solid half facing mid-court (right), dashed half facing baseline (left)
+      ctx.beginPath();
+      ctx.arc(ftLineX, cy, 6 * ft, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(ftLineX, cy, 6 * ft, Math.PI / 2, -Math.PI / 2);
+      ctx.stroke();
+    } else {
+      // solid half facing mid-court (left), dashed half facing baseline (right)
+      ctx.beginPath();
+      ctx.arc(ftLineX, cy, 6 * ft, Math.PI / 2, -Math.PI / 2, true);
+      ctx.stroke();
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(ftLineX, cy, 6 * ft, -Math.PI / 2, Math.PI / 2, true);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // 3pt lines + arc
+    const cornerDist = 22 * ft;
+    const arcR = 23.75 * ft;
+    const breakDist = Math.sqrt(arcR * arcR - cornerDist * cornerDist);
+    const breakX = hoopX + dir * breakDist;
+    ctx.beginPath();
+    ctx.moveTo(baselineX, cy - cornerDist);
+    ctx.lineTo(breakX, cy - cornerDist);
+    const startAng = Math.atan2(-cornerDist, dir * breakDist);
+    const endAng = Math.atan2(cornerDist, dir * breakDist);
+    ctx.arc(hoopX, cy, arcR, startAng, endAng, dir < 0);
+    ctx.lineTo(baselineX, cy + cornerDist);
+    ctx.stroke();
+
+    // Restricted area
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (dir > 0){
+      ctx.arc(hoopX, cy, 4 * ft, -Math.PI / 2, Math.PI / 2);
+    } else {
+      ctx.arc(hoopX, cy, 4 * ft, Math.PI / 2, -Math.PI / 2, true);
+    }
+    ctx.stroke();
+    ctx.lineWidth = 2;
+
+    // Backboard
+    ctx.strokeStyle = pal.board;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(boardX, cy - 3 * ft);
+    ctx.lineTo(boardX, cy + 3 * ft);
+    ctx.stroke();
+
+    // Rim
+    ctx.strokeStyle = pal.rim;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(hoopX, cy, 0.75 * ft, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Net suggestion
+    ctx.strokeStyle = pal.rim;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.4;
+    const netDir = -dir;
+    const netEndX = hoopX + netDir * 1.5 * ft;
+    for (let i = -2; i <= 2; i++){
+      ctx.beginPath();
+      ctx.moveTo(hoopX + netDir * 0.75 * ft, cy + i * 0.3 * ft);
+      ctx.lineTo(netEndX, cy + i * 0.2 * ft);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Reset styles
+    ctx.strokeStyle = pal.lines;
+    ctx.lineWidth = 2;
+  };
+
   if (state.court === 'half') {
     // Boundary
     ctx.strokeRect(r.left, r.top, r.width, r.height);
@@ -1248,13 +1371,12 @@ function drawCourt(){
     ctx.stroke();
 
   } else {
-    // Full court boundary
+    // Full court boundary (left-to-right orientation)
     ctx.strokeRect(r.left, r.top, r.width, r.height);
 
-    // Midcourt line
-    const cy = r.top + r.height / 2;
+    // Midcourt line (vertical)
     ctx.beginPath();
-    ctx.moveTo(r.left, cy); ctx.lineTo(r.right, cy);
+    ctx.moveTo(cx, r.top); ctx.lineTo(cx, r.bottom);
     ctx.stroke();
 
     // Center circle
@@ -1264,10 +1386,9 @@ function drawCourt(){
     ctx.fill();
     ctx.stroke();
 
-    // Top basket (baseline at top, court extends downward)
-    drawHalfEnd(r.top, 1);
-    // Bottom basket (baseline at bottom, court extends upward)
-    drawHalfEnd(r.bottom, -1);
+    // Left and right baskets
+    drawSideEnd(r.left, 1);
+    drawSideEnd(r.right, -1);
   }
 
   ctx.restore();
