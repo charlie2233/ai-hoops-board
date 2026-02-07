@@ -98,10 +98,14 @@ const offenseSelect = $('offense-player');
 const quickPlaySelect = $('quick-play');
 const randomPlayBtn = $('random-play');
 const toggleDefenseBtn = $('toggle-defense');
+const toolbarEl = $('toolbar');
+const bottombarEl = $('bottombar');
 const nativeFullscreenBtn = $('native-fullscreen');
 const immersiveToggleBtn = $('toggle-immersive');
 const immersiveExitBtn = $('immersive-exit');
 const immersiveSideBtn = $('immersive-side-toggle');
+const immersiveRailMoveIds = ['btn-playpause', 'btn-stop', 'seek', 'speed', 'native-fullscreen', 'show-advanced'];
+const immersiveRailState = { marker: null, moved: false };
 let playsCatalog = [];
 let playsCatalogLoaded = false;
 
@@ -574,6 +578,56 @@ function initPlayerSize(){
   applyPlayerSize(saved || 'normal', { persist: false, redraw: false });
 }
 
+function setImmersiveRailBalance(enabled){
+  if (!toolbarEl || !bottombarEl) return;
+  const shouldMove = !!enabled;
+  if (shouldMove){
+    if (immersiveRailState.moved) return;
+    const first = immersiveRailMoveIds
+      .map((id) => $(id))
+      .find((el) => el && el.parentElement === toolbarEl);
+    if (first && !immersiveRailState.marker){
+      immersiveRailState.marker = document.createComment('immersive-rail-balance');
+      toolbarEl.insertBefore(immersiveRailState.marker, first);
+    }
+    const frag = document.createDocumentFragment();
+    let movedCount = 0;
+    immersiveRailMoveIds.forEach((id) => {
+      const el = $(id);
+      if (!el || el.parentElement !== toolbarEl) return;
+      frag.appendChild(el);
+      movedCount++;
+    });
+    if (movedCount > 0){
+      bottombarEl.insertBefore(frag, bottombarEl.firstChild);
+    }
+    immersiveRailState.moved = movedCount > 0;
+    return;
+  }
+
+  if (!immersiveRailState.moved) return;
+  const frag = document.createDocumentFragment();
+  let restoredCount = 0;
+  immersiveRailMoveIds.forEach((id) => {
+    const el = $(id);
+    if (!el || el.parentElement !== bottombarEl) return;
+    frag.appendChild(el);
+    restoredCount++;
+  });
+  if (restoredCount > 0){
+    if (immersiveRailState.marker && immersiveRailState.marker.parentNode === toolbarEl){
+      toolbarEl.insertBefore(frag, immersiveRailState.marker);
+    } else {
+      toolbarEl.appendChild(frag);
+    }
+  }
+  if (immersiveRailState.marker){
+    immersiveRailState.marker.remove();
+  }
+  immersiveRailState.marker = null;
+  immersiveRailState.moved = false;
+}
+
 function updateNativeFullscreenButton(){
   if (!nativeFullscreenBtn) return;
   const supported = !!document.fullscreenEnabled;
@@ -629,6 +683,7 @@ function applyImmersiveMode(enabled){
   state.immersive.enabled = next;
   document.body.classList.toggle('immersive', next);
   document.body.setAttribute('data-immersive-side', normalizeImmersiveSide(state.immersive.side));
+  setImmersiveRailBalance(next);
 
   const advToolbar = $('advanced-toolbar');
   if (next && advToolbar && advToolbar.classList.contains('show')){
@@ -650,6 +705,7 @@ function initImmersiveControls(){
   let savedSide = null;
   try { savedSide = localStorage.getItem(IMMERSIVE_SIDE_KEY); } catch(_) {}
   setImmersiveSide(savedSide || 'right', { persist: false });
+  setImmersiveRailBalance(false);
   updateImmersiveButtons();
   updateNativeFullscreenButton();
 
