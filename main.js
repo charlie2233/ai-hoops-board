@@ -15,6 +15,7 @@ const LONG_PRESS_MS = 600;   // 0.6s 触发
 const THEME_KEY = 'uiThemeV1';
 const THEME_STYLE_KEY = 'uiThemeStyleV1';
 const LANG_KEY = 'uiLangV1';
+const IMMERSIVE_SIDE_KEY = 'uiImmersiveSideV1';
 const PLAY_FAVORITES_KEY = 'playFavoritesV1';
 const PLAY_RECENTS_KEY = 'playRecentsV1';
 const PLAY_RECENTS_LIMIT = 12;
@@ -55,7 +56,11 @@ const state = {
     signature: '',
     timer: null
   },
-  uiLang: 'zh'
+  uiLang: 'zh',
+  immersive: {
+    enabled: false,
+    side: 'right'
+  }
 };
 
 // 放在 state 定义后
@@ -91,6 +96,9 @@ const offenseSelect = $('offense-player');
 const quickPlaySelect = $('quick-play');
 const randomPlayBtn = $('random-play');
 const toggleDefenseBtn = $('toggle-defense');
+const immersiveToggleBtn = $('toggle-immersive');
+const immersiveExitBtn = $('immersive-exit');
+const immersiveSideBtn = $('immersive-side-toggle');
 let playsCatalog = [];
 let playsCatalogLoaded = false;
 
@@ -122,6 +130,12 @@ const I18N = {
     link_library: '战术库',
     link_drills: '训练',
     link_settings: '设置',
+    immersive_enter: '全屏模式',
+    immersive_exit: '退出全屏',
+    immersive_side_left: '控件在左侧',
+    immersive_side_right: '控件在右侧',
+    immersive_side_to_left: '移到左侧',
+    immersive_side_to_right: '移到右侧',
     show_more: '更多 ▼',
     show_less: '更多 ▲',
     toggle_court_short: '切换半场/全场',
@@ -224,6 +238,12 @@ const I18N = {
     link_library: 'Play Library',
     link_drills: 'Drills',
     link_settings: 'Settings',
+    immersive_enter: 'Fullscreen',
+    immersive_exit: 'Exit Fullscreen',
+    immersive_side_left: 'Controls Left',
+    immersive_side_right: 'Controls Right',
+    immersive_side_to_left: 'Move Left',
+    immersive_side_to_right: 'Move Right',
     show_more: 'More ▼',
     show_less: 'More ▲',
     toggle_court_short: 'Toggle Half/Full',
@@ -313,6 +333,10 @@ function normalizeLang(lang){
   return lang === 'en' ? 'en' : 'zh';
 }
 
+function normalizeImmersiveSide(side){
+  return side === 'left' ? 'left' : 'right';
+}
+
 function t(key, vars = {}){
   const lang = normalizeLang(state.uiLang);
   const dict = I18N[lang] || I18N.zh;
@@ -376,6 +400,8 @@ function renderLanguageUI(){
   setText('link-library', 'link_library');
   setText('link-drills', 'link_drills');
   setTitle('link-settings', 'link_settings');
+  setTitle('toggle-immersive', state.immersive.enabled ? 'immersive_exit' : 'immersive_enter');
+  setText('immersive-exit', 'immersive_exit');
   setText('toggle-court', 'toggle_court_short');
   
   // Update "More" button based on current state
@@ -425,6 +451,7 @@ function renderLanguageUI(){
   }
 
   updateReplayButtonLabel();
+  updateImmersiveButtons();
 }
 
 function applyLanguage(lang, opts = {}){
@@ -516,6 +543,97 @@ function initThemeControls(){
   if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
   if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
   if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
+}
+
+function updateImmersiveButtons(){
+  const side = normalizeImmersiveSide(state.immersive.side);
+  document.body.setAttribute('data-immersive-side', side);
+  if (immersiveToggleBtn){
+    immersiveToggleBtn.classList.toggle('active', !!state.immersive.enabled);
+    immersiveToggleBtn.setAttribute('aria-pressed', state.immersive.enabled ? 'true' : 'false');
+    immersiveToggleBtn.setAttribute('title', t(state.immersive.enabled ? 'immersive_exit' : 'immersive_enter'));
+  }
+  if (immersiveExitBtn){
+    immersiveExitBtn.textContent = t('immersive_exit');
+  }
+  if (immersiveSideBtn){
+    const toLeft = side === 'right';
+    immersiveSideBtn.textContent = t(toLeft ? 'immersive_side_to_left' : 'immersive_side_to_right');
+    immersiveSideBtn.setAttribute('title', t(side === 'left' ? 'immersive_side_left' : 'immersive_side_right'));
+  }
+}
+
+function setImmersiveSide(side, opts = {}){
+  state.immersive.side = normalizeImmersiveSide(side);
+  updateImmersiveButtons();
+  if (opts.persist !== false){
+    try { localStorage.setItem(IMMERSIVE_SIDE_KEY, state.immersive.side); } catch(_) {}
+  }
+  if (state.immersive.enabled){
+    resizeForDPI();
+    draw();
+  }
+}
+
+async function applyImmersiveMode(enabled, opts = {}){
+  const next = !!enabled;
+  const syncFullscreen = opts.syncFullscreen !== false;
+  state.immersive.enabled = next;
+  document.body.classList.toggle('immersive', next);
+  document.body.setAttribute('data-immersive-side', normalizeImmersiveSide(state.immersive.side));
+
+  const advToolbar = $('advanced-toolbar');
+  if (next && advToolbar && advToolbar.classList.contains('show')){
+    advToolbar.classList.remove('show');
+  }
+  const showAdvBtn = $('show-advanced');
+  if (showAdvBtn && advToolbar){
+    showAdvBtn.textContent = advToolbar.classList.contains('show') ? t('show_less') : t('show_more');
+  }
+
+  updateImmersiveButtons();
+
+  if (syncFullscreen && document.fullscreenEnabled){
+    try {
+      if (next && !document.fullscreenElement){
+        await document.documentElement.requestFullscreen();
+      } else if (!next && document.fullscreenElement){
+        await document.exitFullscreen();
+      }
+    } catch (_) {}
+  }
+
+  resizeForDPI();
+  draw();
+}
+
+function initImmersiveControls(){
+  let savedSide = null;
+  try { savedSide = localStorage.getItem(IMMERSIVE_SIDE_KEY); } catch(_) {}
+  setImmersiveSide(savedSide || 'right', { persist: false });
+  updateImmersiveButtons();
+
+  if (immersiveToggleBtn){
+    immersiveToggleBtn.onclick = () => { applyImmersiveMode(!state.immersive.enabled); };
+  }
+  if (immersiveExitBtn){
+    immersiveExitBtn.onclick = () => { applyImmersiveMode(false); };
+  }
+  if (immersiveSideBtn){
+    immersiveSideBtn.onclick = () => {
+      const nextSide = state.immersive.side === 'right' ? 'left' : 'right';
+      setImmersiveSide(nextSide);
+    };
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    const inFullscreen = !!document.fullscreenElement;
+    if (state.immersive.enabled && !inFullscreen){
+      applyImmersiveMode(false, { syncFullscreen: false });
+    } else if (!state.immersive.enabled && inFullscreen){
+      applyImmersiveMode(true, { syncFullscreen: false });
+    }
+  });
 }
 
 function setMode(m){
@@ -629,6 +747,7 @@ $('load').onclick = () => {
 
 initThemeControls();
 initLanguageControls();
+initImmersiveControls();
 setMode('drag');
 window.addEventListener('storage', (e) => {
   if (e.key === PLAY_FAVORITES_KEY || e.key === PLAY_RECENTS_KEY) {
@@ -636,6 +755,9 @@ window.addEventListener('storage', (e) => {
   }
   if (e.key === LANG_KEY){
     applyLanguage((e.newValue || 'zh'), { persist: false });
+  }
+  if (e.key === IMMERSIVE_SIDE_KEY){
+    setImmersiveSide((e.newValue || 'right'), { persist: false });
   }
 });
 

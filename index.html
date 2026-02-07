@@ -41,6 +41,8 @@
       --hint-text: #9a3412;
       --font-main: "Avenir Next", "Trebuchet MS", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
       --font-title: "Avenir Next Condensed", "Trebuchet MS", "PingFang SC", sans-serif;
+      --immersive-gap: 12px;
+      --immersive-rail-w: 248px;
     }
 
     :root[data-theme="dark"] {
@@ -399,11 +401,133 @@
 
     .bottombar .btn { min-width: 0; flex: 1; }
 
+    .immersive-quickbar {
+      display: none;
+      position: fixed;
+      top: var(--immersive-gap);
+      z-index: 31;
+      gap: 8px;
+    }
+
+    .immersive-quickbar .btn {
+      min-width: 120px;
+      height: 38px;
+    }
+
+    body.immersive {
+      overflow: hidden;
+    }
+
+    body.immersive .appbar,
+    body.immersive .advanced-toolbar,
+    body.immersive .ai-strip {
+      display: none !important;
+    }
+
+    body.immersive .toolbar,
+    body.immersive .bottombar {
+      position: fixed;
+      z-index: 28;
+      width: var(--immersive-rail-w);
+      left: auto;
+      right: var(--immersive-gap);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px;
+      background: color-mix(in srgb, var(--panel-strong) 94%, transparent);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      white-space: normal;
+      box-shadow: var(--shadow);
+    }
+
+    body.immersive .toolbar {
+      top: var(--immersive-gap);
+      bottom: 236px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    body.immersive .bottombar {
+      top: auto;
+      bottom: var(--immersive-gap);
+      left: auto;
+      right: var(--immersive-gap);
+      border-top: 1px solid var(--line);
+    }
+
+    body.immersive .toolbar .btn,
+    body.immersive .toolbar .player-select,
+    body.immersive .toolbar #seek,
+    body.immersive .toolbar #speed,
+    body.immersive .bottombar .btn {
+      width: 100%;
+      min-width: 0;
+      flex: 0 0 auto;
+    }
+
+    body.immersive #seek {
+      flex-basis: auto;
+      height: 38px;
+    }
+
+    body.immersive .board-wrap {
+      margin: 8px;
+      padding: 6px;
+      min-height: calc(100vh - 16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.immersive canvas {
+      width: auto;
+      height: calc(100vh - 30px);
+      max-height: calc(100vh - 30px);
+      max-width: calc(100vw - var(--immersive-rail-w) - (var(--immersive-gap) * 3));
+    }
+
+    body.immersive .hint {
+      display: none;
+    }
+
+    body.immersive .immersive-quickbar {
+      display: flex;
+      flex-direction: column;
+    }
+
+    body.immersive[data-immersive-side="right"] .toolbar,
+    body.immersive[data-immersive-side="right"] .bottombar {
+      right: var(--immersive-gap);
+      left: auto;
+    }
+
+    body.immersive[data-immersive-side="left"] .toolbar,
+    body.immersive[data-immersive-side="left"] .bottombar {
+      left: var(--immersive-gap);
+      right: auto;
+    }
+
+    body.immersive[data-immersive-side="right"] .immersive-quickbar {
+      left: var(--immersive-gap);
+      right: auto;
+    }
+
+    body.immersive[data-immersive-side="left"] .immersive-quickbar {
+      right: var(--immersive-gap);
+      left: auto;
+    }
+
     @media (max-width: 860px) {
       .badge { display: none; }
       .app-sub { display: none; }
       .appbar h1 { font-size: 17px; }
       #seek { flex-basis: 150px; width: 150px; }
+      :root { --immersive-rail-w: 210px; }
+      body.immersive .toolbar { bottom: 216px; }
     }
 
     @media (min-width: 861px) and (max-width: 1024px) {
@@ -417,6 +541,15 @@
         max-height: calc(100vh - 180px);
       }
     }
+
+    @media (max-width: 640px) {
+      :root { --immersive-rail-w: 178px; }
+      body.immersive .toolbar { bottom: 204px; }
+      .immersive-quickbar .btn {
+        min-width: 106px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -426,13 +559,19 @@
       <div class="app-sub" id="app-sub">Basketball Play Designer</div>
     </div>
     <div class="appbar-right">
+      <button class="btn icon-btn" id="toggle-immersive" type="button" title="全屏模式" aria-pressed="false">⛶</button>
       <a class="btn icon-btn" id="link-settings" href="pages/settings.html" title="设置">⚙️</a>
       <a class="btn icon-btn" id="link-library" href="pages/library.html" title="战术库">📚</a>
       <a class="btn icon-btn" id="link-drills" href="pages/drills.html" title="训练">🎯</a>
     </div>
   </div>
 
-  <div class="toolbar">
+  <div class="immersive-quickbar">
+    <button class="btn" id="immersive-side-toggle" type="button">移到左侧</button>
+    <button class="btn" id="immersive-exit" type="button">退出全屏</button>
+  </div>
+
+  <div class="toolbar" id="toolbar">
     <button class="btn" id="mode-drag">拖拽</button>
     <button class="btn" id="mode-run">跑位线</button>
     <button class="btn" id="mode-pass">传球箭头</button>
@@ -475,7 +614,7 @@
     <div class="hint" id="board-hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；可一键移除/恢复防守；双指可缩放/平移画板；支持撤销/重做与导出 PNG。</div>
   </div>
 
-  <div class="bottombar">
+  <div class="bottombar" id="bottombar">
     <button class="btn" id="clear">清空</button>
     <button class="btn" id="save">保存</button>
     <button class="btn" id="load">载入</button>
