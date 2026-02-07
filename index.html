@@ -339,6 +339,14 @@
       padding: 0 8px;
     }
 
+    #native-fullscreen {
+      display: none;
+    }
+
+    body.immersive #native-fullscreen {
+      display: inline-flex;
+    }
+
     .ai-strip {
       margin: 8px 12px 0;
       min-height: 40px;
@@ -587,6 +595,7 @@
       <option value="1">1×</option>
       <option value="2">2×</option>
     </select>
+    <button class="btn" id="native-fullscreen">设备全屏</button>
     <button class="btn more-btn" id="show-advanced">更多 ▼</button>
   </div>
 

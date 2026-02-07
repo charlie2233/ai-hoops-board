@@ -98,6 +98,7 @@ const offenseSelect = $('offense-player');
 const quickPlaySelect = $('quick-play');
 const randomPlayBtn = $('random-play');
 const toggleDefenseBtn = $('toggle-defense');
+const nativeFullscreenBtn = $('native-fullscreen');
 const immersiveToggleBtn = $('toggle-immersive');
 const immersiveExitBtn = $('immersive-exit');
 const immersiveSideBtn = $('immersive-side-toggle');
@@ -134,6 +135,8 @@ const I18N = {
     link_settings: '设置',
     immersive_enter: '沉浸模式',
     immersive_exit: '退出沉浸',
+    native_fullscreen_enter: '设备全屏',
+    native_fullscreen_exit: '退出设备全屏',
     immersive_side_left: '控件在左侧',
     immersive_side_right: '控件在右侧',
     immersive_side_to_left: '移到左侧',
@@ -242,6 +245,8 @@ const I18N = {
     link_settings: 'Settings',
     immersive_enter: 'Immersive Mode',
     immersive_exit: 'Exit Immersive',
+    native_fullscreen_enter: 'Device Fullscreen',
+    native_fullscreen_exit: 'Exit Device Fullscreen',
     immersive_side_left: 'Controls Left',
     immersive_side_right: 'Controls Right',
     immersive_side_to_left: 'Move Left',
@@ -457,6 +462,7 @@ function renderLanguageUI(){
   }
 
   updateReplayButtonLabel();
+  updateNativeFullscreenButton();
   updateImmersiveButtons();
 }
 
@@ -568,6 +574,23 @@ function initPlayerSize(){
   applyPlayerSize(saved || 'normal', { persist: false, redraw: false });
 }
 
+function updateNativeFullscreenButton(){
+  if (!nativeFullscreenBtn) return;
+  const supported = !!document.fullscreenEnabled;
+  if (!supported){
+    nativeFullscreenBtn.disabled = true;
+    nativeFullscreenBtn.setAttribute('aria-pressed', 'false');
+    nativeFullscreenBtn.textContent = t('native_fullscreen_enter');
+    nativeFullscreenBtn.title = t('native_fullscreen_enter');
+    return;
+  }
+  nativeFullscreenBtn.disabled = false;
+  const active = !!document.fullscreenElement;
+  nativeFullscreenBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  nativeFullscreenBtn.textContent = t(active ? 'native_fullscreen_exit' : 'native_fullscreen_enter');
+  nativeFullscreenBtn.title = nativeFullscreenBtn.textContent;
+}
+
 function updateImmersiveButtons(){
   const side = normalizeImmersiveSide(state.immersive.side);
   document.body.setAttribute('data-immersive-side', side);
@@ -593,12 +616,15 @@ function setImmersiveSide(side, opts = {}){
     try { localStorage.setItem(IMMERSIVE_SIDE_KEY, state.immersive.side); } catch(_) {}
   }
   if (state.immersive.enabled){
+    const prevRect = snapshotCourtRect();
     resizeForDPI();
+    remapStateGeometryBetweenRects(prevRect, snapshotCourtRect());
     draw();
   }
 }
 
 function applyImmersiveMode(enabled){
+  const prevRect = snapshotCourtRect();
   const next = !!enabled;
   state.immersive.enabled = next;
   document.body.classList.toggle('immersive', next);
@@ -616,6 +642,7 @@ function applyImmersiveMode(enabled){
   updateImmersiveButtons();
 
   resizeForDPI();
+  remapStateGeometryBetweenRects(prevRect, snapshotCourtRect());
   draw();
 }
 
@@ -624,6 +651,7 @@ function initImmersiveControls(){
   try { savedSide = localStorage.getItem(IMMERSIVE_SIDE_KEY); } catch(_) {}
   setImmersiveSide(savedSide || 'right', { persist: false });
   updateImmersiveButtons();
+  updateNativeFullscreenButton();
 
   if (immersiveToggleBtn){
     immersiveToggleBtn.onclick = () => { applyImmersiveMode(!state.immersive.enabled); };
@@ -637,6 +665,17 @@ function initImmersiveControls(){
       setImmersiveSide(nextSide);
     };
   }
+  if (nativeFullscreenBtn){
+    nativeFullscreenBtn.onclick = async () => {
+      if (!document.fullscreenEnabled) return;
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch (_) {}
+      updateNativeFullscreenButton();
+    };
+  }
+  document.addEventListener('fullscreenchange', updateNativeFullscreenButton);
 }
 
 function setMode(m){
@@ -1086,8 +1125,46 @@ function resizeForDPI(){
   clampView();
 }
 
+function snapshotCourtRect(){
+  const r = getCourtRect();
+  if (!r) return null;
+  if (!Number.isFinite(r.left) || !Number.isFinite(r.top) || !Number.isFinite(r.width) || !Number.isFinite(r.height)) return null;
+  if (r.width <= 0 || r.height <= 0) return null;
+  return { left:r.left, top:r.top, width:r.width, height:r.height, right:r.right, bottom:r.bottom };
+}
+
+function remapPointBetweenRects(pt, fromRect, toRect){
+  if (!pt || !fromRect || !toRect) return;
+  if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
+  const rx = (pt.x - fromRect.left) / fromRect.width;
+  const ry = (pt.y - fromRect.top) / fromRect.height;
+  pt.x = toRect.left + rx * toRect.width;
+  pt.y = toRect.top + ry * toRect.height;
+}
+
+function remapStateGeometryBetweenRects(fromRect, toRect){
+  if (!fromRect || !toRect) return;
+  if (fromRect.width <= 0 || fromRect.height <= 0 || toRect.width <= 0 || toRect.height <= 0) return;
+  state.players.forEach((p) => remapPointBetweenRects(p, fromRect, toRect));
+  state.shapes.forEach((s) => (s.pts || []).forEach((pt) => remapPointBetweenRects(pt, fromRect, toRect)));
+  if (state.currentLine?.pts) state.currentLine.pts.forEach((pt) => remapPointBetweenRects(pt, fromRect, toRect));
+  if (state.replay?.flightBall) remapPointBetweenRects(state.replay.flightBall, fromRect, toRect);
+  if (state.replay?.runs) state.replay.runs.forEach((r) => (r.pts || []).forEach((pt) => remapPointBetweenRects(pt, fromRect, toRect)));
+  if (state.replay?.passes){
+    state.replay.passes.forEach((p) => {
+      remapPointBetweenRects(p.p0, fromRect, toRect);
+      remapPointBetweenRects(p.p1, fromRect, toRect);
+    });
+  }
+  if (state.replay?.snapshot?.players){
+    state.replay.snapshot.players.forEach((p) => remapPointBetweenRects(p, fromRect, toRect));
+  }
+}
+
 window.addEventListener('resize', ()=>{
+  const prevRect = snapshotCourtRect();
   resizeForDPI();
+  remapStateGeometryBetweenRects(prevRect, snapshotCourtRect());
   draw();
 });
 
