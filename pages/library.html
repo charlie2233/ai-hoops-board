@@ -4,97 +4,695 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>战术库</title>
+<meta name="theme-color" content="#f4f7ff"/>
+<script>
+(() => {
+  try {
+    const t = localStorage.getItem('uiThemeV1');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    const s = localStorage.getItem('uiThemeStyleV1');
+    if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
+  } catch (_) {}
+})();
+</script>
 <style>
-  :root{--accent:#FF7A1A;--border:#E5E7EB;--tap:48px}
+  :root{
+    --bg:#f3f7ff;
+    --bg-soft:#edf3ff;
+    --panel:rgba(255,255,255,.8);
+    --panel-strong:rgba(255,255,255,.92);
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:#d7dff3;
+    --line-strong:#becae6;
+    --accent:#ea580c;
+    --accent-soft:#fb923c;
+    --ok:#16a34a;
+    --shadow:0 14px 36px rgba(15,23,42,.08);
+    --font-main:"Avenir Next", "Trebuchet MS", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    --font-title:"Avenir Next Condensed", "Trebuchet MS", "PingFang SC", sans-serif;
+  }
+
+  :root[data-theme="dark"]{
+    --bg:#0b1220;
+    --bg-soft:#111a2d;
+    --panel:rgba(15,23,42,.78);
+    --panel-strong:rgba(15,23,42,.92);
+    --ink:#e2e8f0;
+    --muted:#94a3b8;
+    --line:#25324d;
+    --line-strong:#3a4a6b;
+    --accent:#fb923c;
+    --accent-soft:#f97316;
+    --ok:#22c55e;
+    --shadow:0 18px 44px rgba(2,6,23,.45);
+  }
+
+  :root[data-style="vivid"]{
+    --bg:#fff8ef;
+    --bg-soft:#ffe9d6;
+    --panel:rgba(255,250,243,.8);
+    --panel-strong:rgba(255,250,243,.92);
+    --ink:#1f2937;
+    --muted:#7c5c3d;
+    --line:#f2c7a7;
+    --line-strong:#e8a87f;
+    --accent:#0f766e;
+    --accent-soft:#14b8a6;
+    --ok:#0f766e;
+    --shadow:0 16px 38px rgba(15,118,110,.15);
+  }
+
+  :root[data-theme="dark"][data-style="vivid"]{
+    --bg:#0f172a;
+    --bg-soft:#111827;
+    --panel:rgba(17,24,39,.78);
+    --panel-strong:rgba(17,24,39,.92);
+    --ink:#ecfeff;
+    --muted:#93c5fd;
+    --line:#234059;
+    --line-strong:#2f5f87;
+    --accent:#14b8a6;
+    --accent-soft:#2dd4bf;
+    --ok:#2dd4bf;
+    --shadow:0 18px 44px rgba(15,118,110,.35);
+  }
+
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,"PingFang SC",Arial}
-  .appbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);
-    padding:12px 16px;display:flex;gap:12px;align-items:center;z-index:10}
-  .appbar a{color:#111;text-decoration:none}
-  h1{font-size:18px;margin:0}
-  .filters{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)}
-  select,input{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px}
-  input{flex:1}
-  .list{padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-  .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;
-    display:flex;flex-direction:column;gap:8px}
-  .name{font-weight:700}
-  .tags{font-size:12px;color:#475569}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:var(--font-main);
+    color:var(--ink);
+    background:
+      radial-gradient(980px 540px at -12% -20%, color-mix(in srgb, var(--accent-soft) 26%, transparent), transparent 70%),
+      radial-gradient(920px 520px at 108% -15%, color-mix(in srgb, #22c55e 18%, transparent), transparent 70%),
+      linear-gradient(165deg,var(--bg),var(--bg-soft));
+    background-attachment:fixed;
+  }
+
+  .appbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:color-mix(in srgb,var(--panel-strong) 92%, transparent);
+    backdrop-filter:blur(8px);
+  }
+  .appbar a{color:var(--ink);text-decoration:none;font-size:13px;font-weight:700}
+  h1{font:700 20px/1.1 var(--font-title);margin:0}
+  .sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .appbar-right{display:flex;align-items:center;gap:8px}
+  .theme-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
+  .theme-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .theme-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
+  .style-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
+  .style-btn{height:30px;min-width:52px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .style-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff;box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 36%, transparent)}
+
+  .filters{
+    position:sticky;top:66px;z-index:19;
+    display:grid;grid-template-columns:minmax(220px,1fr) 140px 140px 130px 130px;gap:8px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    background:color-mix(in srgb,var(--panel) 90%, transparent);
+    backdrop-filter:blur(8px);
+  }
+  .ctrl{height:40px;border:1px solid var(--line);border-radius:12px;padding:0 10px;background:color-mix(in srgb,var(--panel-strong) 88%, transparent);color:var(--ink);font-size:13px;font-weight:600}
+
+  .stats{
+    margin:10px 12px 0;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:color-mix(in srgb,var(--panel) 90%, transparent);
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .list{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .card{
+    --d:0;
+    border:1px solid var(--line);border-radius:16px;padding:12px;
+    background:linear-gradient(170deg,color-mix(in srgb,var(--panel-strong) 90%, transparent),color-mix(in srgb,var(--panel) 86%, transparent));
+    box-shadow:var(--shadow);
+    display:flex;flex-direction:column;gap:8px;
+    animation:rise .45s ease both;
+    animation-delay:calc(var(--d) * 42ms);
+    transition:transform .2s ease,border-color .2s ease;
+  }
+  .card:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+  .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .name{font-size:16px;font-weight:800;line-height:1.2}
+  .fav-btn{height:30px;min-width:30px;padding:0 8px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel-strong) 92%, transparent);color:var(--muted);font-size:15px;font-weight:800;cursor:pointer}
+  .fav-btn.active{border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff}
+  .tags{font-size:12px;color:var(--muted)}
+  .line{font-size:12px;color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:color-mix(in srgb,var(--ok) 18%, transparent);color:color-mix(in srgb,var(--ok) 72%, var(--ink));border:1px solid color-mix(in srgb,var(--ok) 36%, transparent)}
+  .pill.fav{background:color-mix(in srgb,var(--accent) 20%, transparent);color:color-mix(in srgb,var(--accent) 78%, var(--ink));border-color:color-mix(in srgb,var(--accent) 36%, transparent)}
+  .pill.recent{background:color-mix(in srgb,var(--line-strong) 40%, transparent);color:var(--muted);border-color:color-mix(in srgb,var(--line-strong) 70%, transparent)}
   .row{display:flex;gap:8px}
-  .btn{flex:1;height:40px;border-radius:10px;border:1px solid var(--accent);background:#fff;color:#000}
-  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn{flex:1;height:40px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel-strong) 90%, transparent);color:var(--ink);font-weight:700;cursor:pointer}
+  .btn.primary{border:0;background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:#fff}
+  .empty{padding:28px 10px;color:var(--muted);text-align:center}
+
+  .modal[hidden]{display:none}
+  .modal{position:fixed;inset:0;z-index:30;background:rgba(2,6,23,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+  .panel{width:min(96vw,820px);max-height:92vh;overflow:auto;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--panel-strong) 96%, transparent);box-shadow:0 24px 64px rgba(2,6,23,.36)}
+  .panel-head{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--panel-strong) 95%, transparent)}
+  .panel-head strong{font-size:16px}
+  .close{height:34px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%, transparent);color:var(--ink);border-radius:10px;padding:0 10px;cursor:pointer}
+  .panel-body{padding:14px;display:grid;gap:12px}
+  .preview-wrap{border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--panel)}
+  #preview-board{width:100%;height:auto;display:block;border-radius:10px;background:#fff}
+  .meta{font-size:13px;color:var(--ink);font-weight:700}
+  .actions{display:flex;justify-content:flex-end;gap:8px}
+
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  @media (max-width:780px){
+    .theme-btn,.style-btn{min-width:44px;font-size:11px}
+    .sub{display:none}
+    h1{font-size:18px}
+    .filters{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:560px){
+    .filters{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
   <div class="appbar">
-    <a href="../index.html">← 画板</a>
-    <h1>战术库</h1>
+    <div>
+      <a href="../index.html">← 返回画板</a>
+      <h1>战术库</h1>
+      <div class="sub">Play Library</div>
+    </div>
+    <div class="appbar-right">
+      <div class="theme-switch" role="group" aria-label="主题切换">
+        <button class="theme-btn" id="theme-light" aria-pressed="false">浅色</button>
+        <button class="theme-btn" id="theme-dark" aria-pressed="false">深色</button>
+      </div>
+      <div class="style-switch" role="group" aria-label="样式切换">
+        <button class="style-btn" id="style-classic" aria-pressed="false">经典</button>
+        <button class="style-btn" id="style-vivid" aria-pressed="false">动感</button>
+      </div>
+    </div>
   </div>
 
   <div class="filters">
-    <input id="q" placeholder="搜索名称/标签…"/>
-    <select id="fType">
+    <input id="q" class="ctrl" placeholder="搜索名称/标签…"/>
+    <select id="fType" class="ctrl">
       <option value="">类型</option><option>PnR</option><option>Off-Ball</option>
       <option>High-Post</option><option>Special</option><option>BLOB</option><option>SLOB</option>
     </select>
-    <select id="fVs">
+    <select id="fVs" class="ctrl">
       <option value="">Vs 防守</option>
       <option>ICE</option><option>Drop</option><option>Switch</option>
       <option>Hedge</option><option>2-3</option><option>3-2</option><option>Box+1</option>
     </select>
+    <select id="fScope" class="ctrl">
+      <option value="">范围</option>
+      <option value="fav">仅收藏</option>
+      <option value="recent">最近使用</option>
+    </select>
+    <select id="fSort" class="ctrl">
+      <option value="">默认排序</option>
+      <option value="name">按名称</option>
+      <option value="fav">收藏优先</option>
+      <option value="recent">最近优先</option>
+    </select>
   </div>
 
+  <div class="stats" id="stats">载入中…</div>
   <div class="list" id="list"></div>
 
+  <div class="modal" id="preview-modal" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <strong id="pv-title">战术预览</strong>
+        <button class="close" id="pv-close">关闭</button>
+      </div>
+      <div class="panel-body">
+        <div class="preview-wrap">
+          <canvas id="preview-board" width="960" height="620"></canvas>
+        </div>
+        <div class="meta" id="pv-meta"></div>
+        <div class="line" id="pv-cues"></div>
+        <div class="line" id="pv-errors"></div>
+        <div class="actions">
+          <button class="btn" id="pv-apply">应用到战术板</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
+const THEME_KEY = 'uiThemeV1';
+const THEME_STYLE_KEY = 'uiThemeStyleV1';
+const FAVORITES_KEY = 'playFavoritesV1';
+const RECENTS_KEY = 'playRecentsV1';
+const themeButtons = {
+  light: document.getElementById('theme-light'),
+  dark: document.getElementById('theme-dark')
+};
+const styleButtons = {
+  classic: document.getElementById('style-classic'),
+  vivid: document.getElementById('style-vivid')
+};
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+let favorites = new Set();
+let recents = [];
+
+function normalizeTheme(theme){
+  return theme === 'dark' ? 'dark' : 'light';
+}
+
+function normalizeStyle(style){
+  return style === 'vivid' ? 'vivid' : 'classic';
+}
+
+function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
+  style = normalizeStyle(document.documentElement.getAttribute('data-style'))){
+  if (!themeColorMeta) return;
+  if (theme === 'dark'){
+    themeColorMeta.setAttribute('content', style === 'vivid' ? '#0f172a' : '#0b1220');
+  } else {
+    themeColorMeta.setAttribute('content', style === 'vivid' ? '#fff8ef' : '#f4f7ff');
+  }
+}
+
+function refreshThemeButtons(theme){
+  const t = normalizeTheme(theme);
+  Object.entries(themeButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === t;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function refreshStyleButtons(style){
+  const s = normalizeStyle(style);
+  Object.entries(styleButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === s;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function applyTheme(theme, persist = true){
+  const t = normalizeTheme(theme);
+  document.documentElement.setAttribute('data-theme', t);
+  refreshThemeButtons(t);
+  updateThemeColorMeta(t);
+  if (persist){
+    try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
+  }
+}
+
+function applyThemeStyle(style, persist = true){
+  const s = normalizeStyle(style);
+  document.documentElement.setAttribute('data-style', s);
+  refreshStyleButtons(s);
+  updateThemeColorMeta(undefined, s);
+  if (persist){
+    try { localStorage.setItem(THEME_STYLE_KEY, s); } catch (_) {}
+  }
+}
+
+function initThemeSwitch(){
+  let savedTheme = null;
+  let savedStyle = null;
+  try {
+    savedTheme = localStorage.getItem(THEME_KEY);
+    savedStyle = localStorage.getItem(THEME_STYLE_KEY);
+  } catch (_) {}
+  applyTheme(savedTheme || document.documentElement.getAttribute('data-theme') || 'light', false);
+  applyThemeStyle(savedStyle || document.documentElement.getAttribute('data-style') || 'classic', false);
+  if (themeButtons.light) themeButtons.light.onclick = () => applyTheme('light');
+  if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
+  if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
+  if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
+}
+
 let plays = [];
+let previewPlayId = '';
+let presetGetter = null;
+let triedImportPreset = false;
+
+function escapeHtml(s){
+  return String(s || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function encodeAttr(s){
+  return encodeURIComponent(String(s || ''));
+}
+
+function decodeAttr(s){
+  try { return decodeURIComponent(s || ''); } catch(_) { return ''; }
+}
+
+function readStoredIds(key, limit = 80){
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set();
+    const out = [];
+    raw.forEach((v) => {
+      const id = String(v || '').trim();
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      out.push(id);
+    });
+    return out.slice(0, limit);
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeStoredIds(key, ids, limit = 80){
+  const seen = new Set();
+  const out = [];
+  (ids || []).forEach((v) => {
+    const id = String(v || '').trim();
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    out.push(id);
+  });
+  try { localStorage.setItem(key, JSON.stringify(out.slice(0, limit))); } catch (_) {}
+}
+
+function refreshCollections(){
+  favorites = new Set(readStoredIds(FAVORITES_KEY, 300));
+  recents = readStoredIds(RECENTS_KEY, 24);
+}
+
+function isFavorite(id){
+  return favorites.has(String(id || '').trim());
+}
+
+function isRecent(id){
+  return recents.includes(String(id || '').trim());
+}
+
+function toggleFavorite(id){
+  const pid = String(id || '').trim();
+  if (!pid) return;
+  const next = readStoredIds(FAVORITES_KEY, 300);
+  const keep = next.filter(x => x !== pid);
+  if (!next.includes(pid)) keep.unshift(pid);
+  writeStoredIds(FAVORITES_KEY, keep, 300);
+  refreshCollections();
+}
+
+function markRecent(id){
+  const pid = String(id || '').trim();
+  if (!pid) return;
+  const old = readStoredIds(RECENTS_KEY, 24);
+  const next = [pid, ...old.filter(x => x !== pid)];
+  writeStoredIds(RECENTS_KEY, next, 24);
+  refreshCollections();
+}
+
+async function ensurePresetGetter(){
+  if (triedImportPreset) return presetGetter;
+  triedImportPreset = true;
+  try {
+    const mod = await import('../plays/presets.js');
+    presetGetter = mod.getPreset || null;
+  } catch(_) {
+    presetGetter = null;
+  }
+  return presetGetter;
+}
+
+async function getPresetSafe(id){
+  const getter = await ensurePresetGetter();
+  if (!getter) return null;
+  try { return getter(id); } catch(_) { return null; }
+}
+
+async function resolveGeometry(play){
+  if (!play) return null;
+  if (play.geometry) return play.geometry;
+  if (play.offense || play.shapes || play.defense) return play;
+
+  const pid = play.preset || play.presetId || play.alias || play.id;
+  let geom = await getPresetSafe(pid);
+  if (!geom && pid !== play.id) geom = await getPresetSafe(play.id);
+  if (!geom) geom = await getPresetSafe('fiveOut');
+  return geom;
+}
 
 async function load(){
-  // ✅ 加上时间戳 + no-store，确保每次拿到最新的 plays.json
   const res = await fetch('../plays/plays.json?t=' + Date.now(), { cache: 'no-store' });
   plays = await res.json();
+  refreshCollections();
   render();
 }
 
-function match(p, q, t, v){
+function match(p, q, t, v, scope){
   const qok = !q || (p.name + p.type + (p.vs||[]).join(',')).toLowerCase().includes(q.toLowerCase());
   const tok = !t || p.type === t;
   const vok = !v || (p.vs||[]).includes(v);
-  return qok && tok && vok;
+  const pid = String(p.id || '').trim();
+  const sok = !scope
+    || (scope === 'fav' && isFavorite(pid))
+    || (scope === 'recent' && isRecent(pid));
+  return qok && tok && vok && sok;
 }
 
 function render(){
   const list = document.getElementById('list');
+  const stats = document.getElementById('stats');
   const q = document.getElementById('q').value.trim();
   const t = document.getElementById('fType').value;
   const v = document.getElementById('fVs').value;
-  const rows = plays.filter(p=>match(p,q,t,v)).map(p=>`
-    <div class="card">
-      <div class="name">${p.name}</div>
-      <div class="tags">${p.type} · Vs ${p.vs?.join('/')||'-'}</div>
-      <div style="font-size:12px;color:#64748B">口令：${(p.cues||[]).slice(0,2).join(' / ')}</div>
-      <div class="row">
-        <button class="btn" onclick="preview('${p.id}')">预览</button>
-        <button class="btn primary" onclick="applyPlay('${p.id}')">应用到战术板</button>
+  const scope = document.getElementById('fScope').value;
+  const sort = document.getElementById('fSort').value;
+  const recency = new Map(recents.map((id, idx) => [id, idx]));
+  const filtered = plays.filter(p => match(p, q, t, v, scope));
+
+  if (sort === 'name'){
+    filtered.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hans-CN'));
+  } else if (sort === 'fav'){
+    filtered.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
+  } else if (sort === 'recent'){
+    filtered.sort((a, b) => {
+      const ai = recency.has(a.id) ? recency.get(a.id) : 9999;
+      const bi = recency.has(b.id) ? recency.get(b.id) : 9999;
+      return ai - bi;
+    });
+  }
+
+  const rows = filtered.map((p, idx)=>{
+    const pid = String(p.id || '');
+    const fav = isFavorite(pid);
+    const recent = isRecent(pid);
+    return `
+    <div class="card" style="--d:${idx % 10}">
+      <div class="card-head">
+        <div class="name">${escapeHtml(p.name)}</div>
+        <button class="fav-btn js-fav ${fav ? 'active' : ''}" data-id="${encodeAttr(pid)}" aria-label="${fav ? '取消收藏' : '收藏'}">${fav ? '★' : '☆'}</button>
       </div>
-    </div>`).join('');
-  list.innerHTML = rows || '<div style="color:#64748B">没有匹配项</div>';
+      <div class="tags">${escapeHtml(p.type)} · Vs ${escapeHtml((p.vs||[]).join('/') || '-')}</div>
+      <div class="line">口令：${escapeHtml((p.cues||[]).slice(0,2).join(' / ') || '—')}</div>
+      <div>
+        <span class="pill">${escapeHtml(p.id || 'play')}</span>
+        ${fav ? '<span class="pill fav">收藏</span>' : ''}
+        ${recent ? '<span class="pill recent">最近</span>' : ''}
+      </div>
+      <div class="row">
+        <button class="btn js-preview" data-id="${encodeAttr(p.id)}">预览</button>
+        <button class="btn primary js-apply" data-id="${encodeAttr(p.id)}">应用到战术板</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (stats){
+    stats.textContent = `共 ${plays.length} 条 · 当前 ${filtered.length} 条 · 收藏 ${favorites.size} 条 · 最近 ${recents.length} 条`;
+  }
+  list.innerHTML = rows || '<div class="empty">没有匹配项</div>';
 }
 
-function preview(id){
-  alert('预览占位：稍后做可视化。当前选择：' + id);
-}
-
-// ✅ 同时写 localStorage + URL 传参，双通道更稳
 function applyPlay(id){
+  markRecent(id);
   try { localStorage.setItem('applyPlayId', id); } catch(_) {}
   location.href = '../index.html?apply=' + encodeURIComponent(id);
+}
+
+function closePreview(){
+  document.getElementById('preview-modal').hidden = true;
+}
+
+function toPx(pt, rect){
+  return {
+    x: rect.left + pt.x * rect.width,
+    y: rect.top + pt.y * rect.height
+  };
+}
+
+function drawArrow(ctx, a, b, color){
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const len = 12;
+  const p1 = { x: b.x - len * Math.cos(ang - Math.PI / 6), y: b.y - len * Math.sin(ang - Math.PI / 6) };
+  const p2 = { x: b.x - len * Math.cos(ang + Math.PI / 6), y: b.y - len * Math.sin(ang + Math.PI / 6) };
+  ctx.beginPath();
+  ctx.moveTo(b.x, b.y);
+  ctx.lineTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPreview(geom){
+  const c = document.getElementById('preview-board');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const m = Math.min(W, H) * 0.06;
+  const rect = { left:m, top:m, width:W-2*m, height:H-2*m };
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.strokeStyle = '#CBD5E1';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
+  if ((geom && geom.court) === 'full'){
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    ctx.beginPath(); ctx.moveTo(cx, rect.top); ctx.lineTo(cx, rect.top + rect.height); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, rect.height * 0.08, 0, Math.PI * 2); ctx.stroke();
+  } else {
+    const cx = rect.left + rect.width / 2;
+    const by = rect.top + rect.height;
+    ctx.beginPath(); ctx.arc(cx, by, rect.width * 0.44, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.strokeRect(cx - rect.width * 0.12, rect.top + rect.height * 0.73, rect.width * 0.24, rect.height * 0.17);
+  }
+  ctx.restore();
+
+  const shapes = (geom && geom.shapes) || [];
+  shapes.forEach(s => {
+    const pts = (s.pts || []).map(pt => toPx(pt, rect));
+    if (pts.length < 2) return;
+    if (s.type === 'pass') drawArrow(ctx, pts[0], pts[pts.length - 1], '#ea580c');
+    else {
+      ctx.save();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  const R = Math.max(16, Math.min(W, H) * 0.025);
+  const O = (geom && geom.offense) || [];
+  O.slice(0, 5).forEach((pt, i) => {
+    const p = toPx(pt, rect);
+    ctx.save();
+    ctx.fillStyle = '#2563EB';
+    ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.floor(R * 0.9)}px system-ui`;
+    ctx.fillText(String(i + 1), p.x, p.y);
+    if (geom && String(geom.ballHandler || '') === String(i + 1)){
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath(); ctx.arc(p.x + R * 0.65, p.y - R * 0.65, R * 0.34, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  const D = (geom && geom.defense) || [];
+  D.slice(0, 5).forEach((pt, i) => {
+    const p = toPx(pt, rect);
+    ctx.save();
+    ctx.strokeStyle = '#DC2626';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#DC2626';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.floor(R * 0.75)}px system-ui`;
+    ctx.fillText('X' + String(i + 1), p.x, p.y + 1);
+    ctx.restore();
+  });
+}
+
+async function preview(id){
+  const p = plays.find(x => x.id === id);
+  if (!p){ alert('未找到战术：' + id); return; }
+  const geom = await resolveGeometry(p);
+  previewPlayId = id;
+
+  document.getElementById('pv-title').textContent = p.name || p.id || '战术预览';
+  document.getElementById('pv-meta').textContent = `${p.type || '战术'} · Vs ${(p.vs||[]).join('/') || '-'}`;
+  document.getElementById('pv-cues').textContent = '口令：' + ((p.cues||[]).slice(0, 3).join(' / ') || '—');
+  document.getElementById('pv-errors').textContent = '常见错误：' + ((p.errors||[]).slice(0, 2).join(' / ') || '—');
+  drawPreview(geom);
+  document.getElementById('preview-modal').hidden = false;
 }
 
 document.getElementById('q').oninput = render;
 document.getElementById('fType').onchange = render;
 document.getElementById('fVs').onchange = render;
+document.getElementById('fScope').onchange = render;
+document.getElementById('fSort').onchange = render;
+document.getElementById('list').addEventListener('click', (e) => {
+  const fav = e.target.closest('.js-fav');
+  if (fav){
+    toggleFavorite(decodeAttr(fav.dataset.id));
+    render();
+    return;
+  }
+  const pv = e.target.closest('.js-preview');
+  if (pv){
+    preview(decodeAttr(pv.dataset.id));
+    return;
+  }
+  const ap = e.target.closest('.js-apply');
+  if (ap) applyPlay(decodeAttr(ap.dataset.id));
+});
+document.getElementById('pv-close').onclick = closePreview;
+document.getElementById('preview-modal').addEventListener('pointerdown', (e) => {
+  if (e.target.id === 'preview-modal') closePreview();
+});
+document.getElementById('pv-apply').onclick = () => {
+  if (!previewPlayId) return;
+  applyPlay(previewPlayId);
+};
+window.addEventListener('storage', (e) => {
+  if (e.key === FAVORITES_KEY || e.key === RECENTS_KEY){
+    refreshCollections();
+    render();
+  }
+});
 
+initThemeSwitch();
 load();
 </script>
 </body>

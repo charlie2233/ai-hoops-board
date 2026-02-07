@@ -289,5 +289,244 @@
       "Zipper 脚步",
       "侧翼接球第一步"
     ]
+  },
+  {
+    "id": "horns_flare_L",
+    "name": "Horns Flare Left",
+    "type": "Special",
+    "vs": [
+      "Switch",
+      "Drop"
+    ],
+    "outcome": "左侧外弹三分 / 二次突分",
+    "roles": "4左肘做 flare；2自底角外弹；1转移",
+    "cues": [
+      "2先贴掩后外弹",
+      "1看脚步再出球"
+    ],
+    "errors": [
+      "外弹路线过平",
+      "传球点过低"
+    ],
+    "variants": [
+      "Reject Flare",
+      "Flare + Slip"
+    ],
+    "drills": [
+      "Flare 接投",
+      "外弹第一步"
+    ]
+  },
+  {
+    "id": "horns_flare_R",
+    "name": "Horns Flare Right",
+    "type": "Special",
+    "vs": [
+      "Switch",
+      "Drop"
+    ],
+    "outcome": "右侧镜像外弹出手",
+    "roles": "镜像执行 horns_flare_L",
+    "cues": [
+      "镜像脚步",
+      "右侧外弹接球即投"
+    ],
+    "errors": [
+      "镜像站位未对齐"
+    ],
+    "variants": [
+      "Flare + Backdoor"
+    ],
+    "drills": [
+      "镜像跑位",
+      "右侧接投"
+    ]
+  },
+  {
+    "id": "pistol",
+    "name": "Pistol Action",
+    "type": "PnR",
+    "vs": [
+      "Hedge",
+      "Switch"
+    ],
+    "outcome": "侧翼手递手后顺下终结",
+    "roles": "1推进到侧翼；2上提DHO；5 step-up 后顺下",
+    "cues": [
+      "2上提提前喊手",
+      "5掩后立刻转身顺下"
+    ],
+    "errors": [
+      "DHO 距离过远",
+      "顺下角度太外"
+    ],
+    "variants": [
+      "Pistol Keep",
+      "Pistol Flip"
+    ],
+    "drills": [
+      "DHO 时机",
+      "顺下终结"
+    ]
+  },
+  {
+    "id": "zoom_action",
+    "name": "Zoom Action",
+    "type": "Off-Ball",
+    "vs": [
+      "Switch",
+      "Drop"
+    ],
+    "outcome": "侧翼借掩接球 + DHO 二次发起",
+    "roles": "2角落上提；4做 zoom 掩护；5接手递手",
+    "cues": [
+      "2跑弧线切入",
+      "5接球后立刻 handoff"
+    ],
+    "errors": [
+      "zoom 掩护站死",
+      "handoff 出球慢"
+    ],
+    "variants": [
+      "Zoom Reject",
+      "Zoom Slip"
+    ],
+    "drills": [
+      "Zoom 跑位",
+      "接手递手节奏"
+    ]
+  },
+  {
+    "id": "flex_cut",
+    "name": "Flex Cut",
+    "type": "Off-Ball",
+    "vs": [
+      "Man",
+      "2-3"
+    ],
+    "outcome": "弱侧底线切入篮下",
+    "roles": "4设 flex 掩护；2底线切；1喂球",
+    "cues": [
+      "切入时肩贴掩护",
+      "传球提前到位"
+    ],
+    "errors": [
+      "切入节奏慢",
+      "传球过晚"
+    ],
+    "variants": [
+      "Flex Fake",
+      "Flex + Stagger"
+    ],
+    "drills": [
+      "底线切入脚步",
+      "弱侧喂球"
+    ]
+  },
+  {
+    "id": "delay_5out",
+    "name": "Delay 5-Out",
+    "type": "High-Post",
+    "vs": [
+      "Switch",
+      "Drop"
+    ],
+    "outcome": "拖车组织 + 快速球转移",
+    "roles": "5高位持球组织；1/3两侧接应",
+    "cues": [
+      "5先观察再转移",
+      "弱侧提前准备接应"
+    ],
+    "errors": [
+      "转移不够快",
+      "两侧站位过窄"
+    ],
+    "variants": [
+      "Delay DHO",
+      "Delay Backcut"
+    ],
+    "drills": [
+      "高位决策",
+      "快速转移"
+    ]
+  },
+  {
+    "id": "stack_pnr",
+    "name": "Stack PnR",
+    "type": "PnR",
+    "vs": [
+      "ICE",
+      "Drop"
+    ],
+    "outcome": "叠位掩护后顺下吃饼",
+    "roles": "4上层外弹；5下层顺下；1借 stack",
+    "cues": [
+      "stack 先后顺序清楚",
+      "1借掩后第一拍看顺下"
+    ],
+    "errors": [
+      "stack 站位重叠",
+      "顺下时机过早"
+    ],
+    "variants": [
+      "Stack Spain",
+      "Stack Slip"
+    ],
+    "drills": [
+      "叠位脚步",
+      "顺下传球"
+    ]
+  },
+  {
+    "id": "blob_lob",
+    "name": "BLOB – Lob",
+    "type": "BLOB",
+    "vs": [
+      "Man",
+      "Switch"
+    ],
+    "outcome": "底线发球空接终结",
+    "roles": "4发球；3反跑到篮筐上方",
+    "cues": [
+      "反跑先骗后冲",
+      "发球弧线高一点"
+    ],
+    "errors": [
+      "反跑提前暴露",
+      "发球平直易被断"
+    ],
+    "variants": [
+      "Lob Fake + Corner 3"
+    ],
+    "drills": [
+      "反跑启动",
+      "空接发球"
+    ]
+  },
+  {
+    "id": "slob_hammer",
+    "name": "SLOB – Hammer",
+    "type": "SLOB",
+    "vs": [
+      "Switch",
+      "2-3"
+    ],
+    "outcome": "边线发球后弱侧底角三分",
+    "roles": "3边线发球；1接球突破；4做 hammer 掩护",
+    "cues": [
+      "1突破到底线吸引",
+      "4提前卡好掩护角"
+    ],
+    "errors": [
+      "掩护站位太深",
+      "底角接应慢半拍"
+    ],
+    "variants": [
+      "Hammer Lift 45°"
+    ],
+    "drills": [
+      "边线发球衔接",
+      "底角接投"
+    ]
   }
 ]

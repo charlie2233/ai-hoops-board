@@ -5,84 +5,499 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AI 战术板 · MVP</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#ffffff"/>
+  <meta name="theme-color" content="#f4f7ff"/>
   <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <script>
+    (() => {
+      try {
+        const t = localStorage.getItem('uiThemeV1');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        const s = localStorage.getItem('uiThemeStyleV1');
+        if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
+      } catch (_) {}
+    })();
+  </script>
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #0F172A;
-      --muted: #64748B;
-      --accent: #FF7A1A; /* Orange accent (can tune later) */
-      --border: #E5E7EB;
-      --radius: 12px;
+      --bg: #f4f7ff;
+      --bg-soft: #eef2ff;
+      --panel: rgba(255,255,255,.74);
+      --panel-strong: rgba(255,255,255,.88);
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #d7dff3;
+      --line-strong: #c1cae4;
+      --accent: #ea580c;
+      --accent-soft: #fb923c;
       --tap: 48px;
+      --radius: 14px;
+      --shadow: 0 14px 34px rgba(15,23,42,.08);
+      --ai-h: 48px;
+      --canvas-bg: #ffffff;
+      --btn-text: #0f172a;
+      --hint-bg: #fff7ed;
+      --hint-text: #9a3412;
+      --font-main: "Avenir Next", "Trebuchet MS", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+      --font-title: "Avenir Next Condensed", "Trebuchet MS", "PingFang SC", sans-serif;
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin:0; height:100%; background:var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:var(--text); }
-    .appbar { position: sticky; top:0; display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--bg); border-bottom:1px solid var(--border); z-index:10; }
-    .appbar h1 { font-size:18px; margin:0; font-weight:700; }
-    .toolbar{
-      position: sticky; top:56px;
-      display:flex; gap:8px; padding:8px 12px;
-      background:var(--bg); border-bottom:1px solid var(--border); z-index:9;
-      overflow-x:auto; white-space:nowrap; scrollbar-width:none;
-    }
-    .toolbar::-webkit-scrollbar{ display:none; }
-    .toolbar .btn{ flex:0 0 auto; min-width:112px; }
 
-    .btn { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:var(--tap); border:1px solid var(--border); border-radius: var(--radius); background:#fff; font-size:14px; }
-    a.btn{ text-decoration:none; display:flex; align-items:center; justify-content:center; }
-    .btn.primary { background: var(--accent); color:#fff; border-color: var(--accent); }
-    .btn.active { outline: 2px solid var(--accent); }
-    .board-wrap { padding:12px; }
-    canvas { width:100%; height: calc(100vh - 56px - var(--tap) - 48px - 24px); border:1px solid var(--border); border-radius: var(--radius); touch-action: none; background:#fff; }
-    .bottombar { position: fixed; bottom:0; left:0; right:0; display:flex; gap:8px; padding:8px 12px env(safe-area-inset-bottom); background:var(--bg); border-top:1px solid var(--border); }
-    .hint { padding:6px 12px; font-size:12px; color:var(--muted); }
-    .replaybar{
-      position: sticky; top: calc(56px + var(--tap) + 1px);
-      display:flex; gap:8px; align-items:center; padding:8px 12px;
-      background:var(--bg); border-bottom:1px solid var(--border); z-index:8;
+    :root[data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-soft: #111a2d;
+      --panel: rgba(15,23,42,.72);
+      --panel-strong: rgba(15,23,42,.9);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --line: #25324d;
+      --line-strong: #3a4a6b;
+      --accent: #fb923c;
+      --accent-soft: #f97316;
+      --shadow: 0 18px 42px rgba(2,6,23,.44);
+      --canvas-bg: #0e1728;
+      --btn-text: #e2e8f0;
+      --hint-bg: rgba(30,41,59,.66);
+      --hint-text: #fed7aa;
     }
-    .replaybar .btn{ flex:0 0 auto; min-width:96px; }
-    #seek{ flex:1; height: var(--tap); appearance: none; background: #F1F5F9; border-radius: 999px; }
-    #seek::-webkit-slider-thumb{ -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background: var(--accent); border:0; }
-    #speed{ height: var(--tap); border:1px solid var(--border); border-radius: var(--radius); padding:0 10px; }    
+
+    :root[data-style="vivid"] {
+      --bg: #fff8ef;
+      --bg-soft: #ffe9d6;
+      --panel: rgba(255,250,243,.8);
+      --panel-strong: rgba(255,250,243,.93);
+      --text: #1f2937;
+      --muted: #7c5c3d;
+      --line: #f2c7a7;
+      --line-strong: #e8a87f;
+      --accent: #0f766e;
+      --accent-soft: #14b8a6;
+      --shadow: 0 14px 34px rgba(15,118,110,.14);
+      --canvas-bg: #fffdfa;
+      --btn-text: #1f2937;
+      --hint-bg: #ecfeff;
+      --hint-text: #155e75;
+    }
+
+    :root[data-theme="dark"][data-style="vivid"] {
+      --bg: #0f172a;
+      --bg-soft: #111827;
+      --panel: rgba(17,24,39,.78);
+      --panel-strong: rgba(17,24,39,.92);
+      --text: #ecfeff;
+      --muted: #93c5fd;
+      --line: #234059;
+      --line-strong: #2f5f87;
+      --accent: #14b8a6;
+      --accent-soft: #2dd4bf;
+      --shadow: 0 18px 42px rgba(15,118,110,.3);
+      --canvas-bg: #0b1220;
+      --btn-text: #ecfeff;
+      --hint-bg: rgba(8,47,73,.5);
+      --hint-text: #67e8f9;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: var(--font-main);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 620px at -8% -15%, color-mix(in srgb, var(--accent-soft) 30%, transparent), transparent 65%),
+        radial-gradient(980px 560px at 110% -20%, color-mix(in srgb, #22c55e 20%, transparent), transparent 70%),
+        linear-gradient(165deg, var(--bg), var(--bg-soft));
+      background-attachment: fixed;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(34px);
+      opacity: .42;
+      animation: drift 14s ease-in-out infinite;
+    }
+
+    body::before {
+      left: -120px;
+      bottom: 12vh;
+      background: color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+
+    body::after {
+      right: -140px;
+      top: 16vh;
+      background: color-mix(in srgb, #06b6d4 30%, transparent);
+      animation-delay: -7s;
+    }
+
+    @keyframes drift {
+      0% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-18px) scale(1.05); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    .appbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+      backdrop-filter: blur(8px);
+    }
+
+    .appbar h1 {
+      margin: 0;
+      font: 700 19px/1.1 var(--font-title);
+      letter-spacing: .2px;
+    }
+
+    .app-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .appbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 78%, transparent);
+    }
+
+    .theme-switch {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 86%, transparent);
+    }
+
+    .theme-btn {
+      height: 30px;
+      min-width: 52px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .theme-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
+    }
+
+    .style-switch {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 86%, transparent);
+    }
+
+    .style-btn {
+      height: 30px;
+      min-width: 52px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .style-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 66px;
+      z-index: 19;
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      backdrop-filter: blur(7px);
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+
+    .toolbar::-webkit-scrollbar { display: none; }
+
+    .toolbar .btn,
+    .toolbar .player-select {
+      flex: 0 0 auto;
+    }
+
+    .btn,
+    .player-select,
+    #speed {
+      height: var(--tap);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+      color: var(--btn-text);
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+    }
+
+    .btn {
+      min-width: 106px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 12px;
+      box-shadow: var(--shadow);
+    }
+
+    a.btn {
+      text-decoration: none;
+    }
+
+    .btn:hover,
+    .player-select:hover,
+    #speed:hover {
+      border-color: var(--line-strong);
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      box-shadow: 0 10px 20px color-mix(in srgb, var(--accent) 34%, transparent);
+    }
+
+    .btn.active {
+      border-color: var(--accent-soft);
+      outline: 0;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-soft) 30%, transparent), var(--shadow);
+    }
+
+    .player-select {
+      min-width: 132px;
+      padding: 0 10px;
+      box-shadow: var(--shadow);
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position:
+        calc(100% - 16px) calc(50% - 3px),
+        calc(100% - 10px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 24px;
+    }
+
+    #quick-play {
+      min-width: 168px;
+    }
+
+    .replaybar {
+      position: sticky;
+      top: calc(66px + var(--tap) + 1px);
+      z-index: 18;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      backdrop-filter: blur(7px);
+    }
+
+    .replaybar .btn {
+      min-width: 92px;
+      height: 42px;
+      font-size: 12px;
+    }
+
+    #seek {
+      flex: 1;
+      height: 42px;
+      appearance: none;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--line) 80%, transparent);
+      border: 1px solid var(--line);
+    }
+
+    #seek::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    }
+
+    #speed {
+      min-width: 112px;
+      padding: 0 8px;
+    }
+
+    .ai-strip {
+      margin: 8px 12px 0;
+      min-height: var(--ai-h);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+      background: var(--hint-bg);
+      color: var(--hint-text);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+    }
+
+    .board-wrap {
+      margin: 10px 12px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    canvas {
+      width: 100%;
+      height: calc(100vh - 66px - var(--tap) - 58px - var(--ai-h) - 118px);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      touch-action: none;
+      background: var(--canvas-bg);
+    }
+
+    .hint {
+      margin-top: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      border-radius: 10px;
+      border: 1px dashed var(--line);
+      background: color-mix(in srgb, var(--panel) 85%, transparent);
+    }
+
+    .bottombar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 22;
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 94%, transparent);
+      backdrop-filter: blur(10px);
+    }
+
+    .bottombar .btn { min-width: 0; flex: 1; }
+
+    @media (max-width: 860px) {
+      .badge { display: none; }
+      .theme-btn, .style-btn { min-width: 44px; font-size: 11px; }
+      .app-sub { display: none; }
+      .appbar h1 { font-size: 17px; }
+      canvas { height: calc(100vh - 66px - var(--tap) - 58px - var(--ai-h) - 126px); }
+    }
   </style>
 </head>
 <body>
   <div class="appbar">
-    <h1>AI 战术板 · MVP</h1>
-    <div style="font-size:14px;color:var(--muted)">Step 1</div>
+    <div>
+      <h1>AI 战术板 · MVP</h1>
+      <div class="app-sub">Basketball Play Designer</div>
+    </div>
+    <div class="appbar-right">
+      <div class="badge">Step 1</div>
+      <div class="theme-switch" role="group" aria-label="主题切换">
+        <button class="theme-btn" id="theme-light" aria-pressed="false">浅色</button>
+        <button class="theme-btn" id="theme-dark" aria-pressed="false">深色</button>
+      </div>
+      <div class="style-switch" role="group" aria-label="样式切换">
+        <button class="style-btn" id="style-classic" aria-pressed="false">经典</button>
+        <button class="style-btn" id="style-vivid" aria-pressed="false">动感</button>
+      </div>
+    </div>
   </div>
 
   <div class="toolbar">
     <button class="btn" id="mode-drag">拖拽</button>
     <button class="btn" id="mode-run">跑位线</button>
     <button class="btn" id="mode-pass">传球箭头</button>
+    <select id="offense-player" class="player-select" aria-label="持球人选择">
+      <option value="1">持球人：1</option>
+      <option value="2">持球人：2</option>
+      <option value="3">持球人：3</option>
+      <option value="4">持球人：4</option>
+      <option value="5">持球人：5</option>
+    </select>
+    <select id="quick-play" class="player-select" aria-label="快速战术">
+      <option value="">快速战术：选择</option>
+    </select>
+    <button class="btn" id="random-play">随机战术</button>
     <button class="btn" id="undo">撤销</button>
     <button class="btn" id="redo">重做</button>
     <button class="btn" id="play">回放</button>
     <button class="btn" id="erase">橡皮擦</button>
+    <button class="btn" id="reset-view">重置视图</button>
     <a class="btn" href="pages/library.html">战术库</a>
     <a class="btn" href="pages/drills.html">训练</a>
-
   </div>
-    <!-- 回放控制条 -->
+
   <div class="replaybar">
-    <button class="btn" id="btn-playpause">▶ 回放</button>
+    <button class="btn" id="btn-playpause">回放</button>
     <button class="btn" id="btn-stop">停止</button>
     <input id="seek" type="range" min="0" max="100" step="0.1" value="0" />
     <select id="speed">
       <option value="0.5">0.5×</option>
-      <option value="0.75" selected>0.75×（默认）</option>
+      <option value="0.75" selected>0.75× 默认</option>
       <option value="1">1×</option>
       <option value="2">2×</option>
     </select>
   </div>
 
+  <div class="ai-strip" id="ai-strip">AI 提示：正在分析当前站位…</div>
+
   <div class="board-wrap">
     <canvas id="board" width="1080" height="1600"></canvas>
-    <div class="hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下，按下并拖动绘制；支持撤销/重做；右下导出PNG。</div>
+    <div class="hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；双指可缩放/平移画板；支持撤销/重做与导出 PNG。</div>
   </div>
 
   <div class="bottombar">

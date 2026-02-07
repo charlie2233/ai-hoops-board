@@ -4,12 +4,19 @@ import { getPreset } from './plays/presets.js';
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
-const applied = { id: null, name: null };
+const applied = { id: null, name: null, meta: null };
+const aiStrip = document.getElementById('ai-strip');
+const activePointers = new Map();
 
 // 长按切换持球人
 let longPressTimer = null;
 let downPt = null;
 const LONG_PRESS_MS = 600;   // 0.6s 触发
+const THEME_KEY = 'uiThemeV1';
+const THEME_STYLE_KEY = 'uiThemeStyleV1';
+const PLAY_FAVORITES_KEY = 'playFavoritesV1';
+const PLAY_RECENTS_KEY = 'playRecentsV1';
+const PLAY_RECENTS_LIMIT = 12;
 
 
 // —— 本地保存策略
@@ -28,6 +35,25 @@ const state = {
   drawing: false,
   currentLine: null,
   dpi: window.devicePixelRatio || 1,
+  view: {
+    scale: 1,
+    minScale: 1,
+    maxScale: 2.4,
+    offsetX: 0,
+    offsetY: 0
+  },
+  gesture: {
+    active: false,
+    startDist: 0,
+    startScale: 1,
+    anchorWorld: null
+  },
+  ai: {
+    tips: [],
+    idx: 0,
+    signature: '',
+    timer: null
+  }
 };
 
 // 放在 state 定义后
@@ -46,6 +72,96 @@ const modeButtons = {
   run: $('mode-run'),
   pass: $('mode-pass'),
 };
+const themeButtons = {
+  light: $('theme-light'),
+  dark: $('theme-dark')
+};
+const styleButtons = {
+  classic: $('style-classic'),
+  vivid: $('style-vivid')
+};
+const themeColorMeta = document.querySelector('meta[name=\"theme-color\"]');
+const offenseSelect = $('offense-player');
+const quickPlaySelect = $('quick-play');
+const randomPlayBtn = $('random-play');
+let playsCatalog = [];
+let playsCatalogLoaded = false;
+
+function normalizeTheme(theme){
+  return theme === 'dark' ? 'dark' : 'light';
+}
+
+function normalizeStyle(style){
+  return style === 'vivid' ? 'vivid' : 'classic';
+}
+
+function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
+  style = normalizeStyle(document.documentElement.getAttribute('data-style'))){
+  if (!themeColorMeta) return;
+  if (theme === 'dark'){
+    themeColorMeta.setAttribute('content', style === 'vivid' ? '#0f172a' : '#0b1220');
+  } else {
+    themeColorMeta.setAttribute('content', style === 'vivid' ? '#fff8ef' : '#f4f7ff');
+  }
+}
+
+function refreshThemeButtons(theme){
+  const t = normalizeTheme(theme);
+  Object.entries(themeButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === t;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function refreshStyleButtons(style){
+  const s = normalizeStyle(style);
+  Object.entries(styleButtons).forEach(([k, el]) => {
+    if (!el) return;
+    const active = k === s;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function applyTheme(theme, opts = {}){
+  const t = normalizeTheme(theme);
+  document.documentElement.setAttribute('data-theme', t);
+  refreshThemeButtons(t);
+  updateThemeColorMeta(t);
+  if (opts.persist !== false){
+    try { localStorage.setItem(THEME_KEY, t); } catch(_) {}
+  }
+}
+
+function applyThemeStyle(style, opts = {}){
+  const s = normalizeStyle(style);
+  document.documentElement.setAttribute('data-style', s);
+  refreshStyleButtons(s);
+  updateThemeColorMeta(undefined, s);
+  if (opts.persist !== false){
+    try { localStorage.setItem(THEME_STYLE_KEY, s); } catch(_) {}
+  }
+}
+
+function initThemeControls(){
+  let savedTheme = null;
+  let savedStyle = null;
+  try {
+    savedTheme = localStorage.getItem(THEME_KEY);
+    savedStyle = localStorage.getItem(THEME_STYLE_KEY);
+  } catch(_) {}
+  const current = document.documentElement.getAttribute('data-theme');
+  const currentStyle = document.documentElement.getAttribute('data-style');
+  applyTheme(savedTheme || current || 'light', { persist: false });
+  applyThemeStyle(savedStyle || currentStyle || 'classic', { persist: false });
+  if (themeButtons.light) themeButtons.light.onclick = () => applyTheme('light');
+  if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
+  if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
+  if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
+}
+
 function setMode(m){
   state.mode = m;
   for (const k in modeButtons) modeButtons[k].classList.toggle('active', k===m);
@@ -57,6 +173,21 @@ $('undo').onclick=()=>undo();
 $('redo').onclick=()=>redo();
 $('clear').onclick=()=>{ pushUndo(); state.shapes=[]; draw(); };
 $('toggle-court').onclick=()=>{ state.court = (state.court==='half'?'full':'half'); layoutPlayers(); draw(); };
+$('reset-view').onclick=()=>{ resetView(); draw(); toast('视图已重置'); };
+if (offenseSelect){
+  offenseSelect.onchange = (e) => setBallHandlerById((e.target && e.target.value) || '1');
+}
+if (quickPlaySelect){
+  quickPlaySelect.onchange = async (e) => {
+    const id = (e.target && e.target.value) || '';
+    if (!id) return;
+    await applyPlayById(id, { source: '快速选择' });
+    e.target.value = '';
+  };
+}
+if (randomPlayBtn){
+  randomPlayBtn.onclick = () => { applyRandomPlay(); };
+}
 
 $('export').onclick = async () => {
   const opts = await promptExportOptions();   // { bg:'court'|'white', hideDefense:boolean } | null
@@ -138,7 +269,13 @@ $('play').onclick = () => {
   if (bp) bp.click();
 };
 
+initThemeControls();
 setMode('drag');
+window.addEventListener('storage', (e) => {
+  if (e.key === PLAY_FAVORITES_KEY || e.key === PLAY_RECENTS_KEY) {
+    refreshQuickPlayOptions();
+  }
+});
 
 // Init
 function init(){
@@ -147,6 +284,7 @@ function init(){
   layoutPlayers();
   bindPointerEvents();
   draw();
+  initAITips();
 
   // —— 自动恢复（带过期/不兼容处理）
   try {
@@ -168,6 +306,7 @@ function init(){
 
   // 长按“清空”= 同时清除保存（隐性手势，不加按钮）
   bindLongPressClearSave();
+  ensurePlaysCatalog();
 }
 
 
@@ -186,11 +325,215 @@ function bindLongPressClearSave(){
   ['pointerup','pointercancel','pointerleave'].forEach(ev => el.addEventListener(ev, cancel));
 }
 
-function setBallHandler(p){
+function readStoredIds(key, limit = 50){
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set();
+    const out = [];
+    raw.forEach((v) => {
+      const id = String(v || '').trim();
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      out.push(id);
+    });
+    return out.slice(0, limit);
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeStoredIds(key, ids, limit = 50){
+  const seen = new Set();
+  const out = [];
+  (ids || []).forEach((v) => {
+    const id = String(v || '').trim();
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    out.push(id);
+  });
+  try { localStorage.setItem(key, JSON.stringify(out.slice(0, limit))); } catch (_) {}
+}
+
+function markPlayRecent(id){
+  const pid = String(id || '').trim();
+  if (!pid) return;
+  const old = readStoredIds(PLAY_RECENTS_KEY, PLAY_RECENTS_LIMIT);
+  const next = [pid, ...old.filter(x => x !== pid)];
+  writeStoredIds(PLAY_RECENTS_KEY, next, PLAY_RECENTS_LIMIT);
+}
+
+function getPlayByIdFromCatalog(id){
+  const key = String(id || '').trim().toLowerCase();
+  if (!key) return null;
+  return playsCatalog.find((p) => String(p?.id || '').trim().toLowerCase() === key) || null;
+}
+
+function playLabel(play, fallbackId){
+  if (!play) return String(fallbackId || '');
+  const title = String(play.name || play.id || fallbackId || '').trim();
+  const type = String(play.type || '').trim();
+  return type ? `${title} · ${type}` : title;
+}
+
+function refreshQuickPlayOptions(){
+  if (!quickPlaySelect) return;
+  const keep = quickPlaySelect.value;
+  quickPlaySelect.innerHTML = '';
+
+  const first = document.createElement('option');
+  first.value = '';
+  first.textContent = '快速战术：选择';
+  quickPlaySelect.appendChild(first);
+
+  const favorites = readStoredIds(PLAY_FAVORITES_KEY, 200)
+    .map((id) => ({ id, play: getPlayByIdFromCatalog(id) }))
+    .filter((x) => x.play);
+  const recents = readStoredIds(PLAY_RECENTS_KEY, PLAY_RECENTS_LIMIT)
+    .map((id) => ({ id, play: getPlayByIdFromCatalog(id) }))
+    .filter((x) => x.play);
+  const all = playsCatalog
+    .filter((p) => p && p.id)
+    .slice()
+    .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hans-CN'));
+
+  const appendGroup = (label, items, prefix = '') => {
+    if (!items.length) return;
+    const group = document.createElement('optgroup');
+    group.label = label;
+    items.forEach((item) => {
+      const play = item.play || item;
+      const id = String(item.id || play.id || '').trim();
+      if (!id) return;
+      const op = document.createElement('option');
+      op.value = id;
+      op.textContent = `${prefix}${playLabel(play, id)}`;
+      group.appendChild(op);
+    });
+    quickPlaySelect.appendChild(group);
+  };
+
+  appendGroup('收藏', favorites, '★ ');
+  appendGroup('最近使用', recents, '• ');
+  appendGroup('全部战术', all);
+
+  if (keep && Array.from(quickPlaySelect.options).some(op => op.value === keep)) {
+    quickPlaySelect.value = keep;
+  }
+}
+
+async function ensurePlaysCatalog(force = false){
+  if (playsCatalogLoaded && !force) return playsCatalog;
+  try {
+    const res = await fetch('./plays/plays.json?t=' + Date.now(), { cache: 'no-store' });
+    const list = await res.json();
+    playsCatalog = Array.isArray(list) ? list : [];
+    playsCatalogLoaded = true;
+  } catch (_) {
+    if (!playsCatalogLoaded) playsCatalog = [];
+  }
+  refreshQuickPlayOptions();
+  return playsCatalog;
+}
+
+function resolvePlayGeometry(play, rawId){
+  if (play && play.geometry) return { geom: play.geometry, source: 'JSON.geometry' };
+  if (play && (play.offense || play.shapes || play.defense)) return { geom: play, source: 'JSON(简化)' };
+
+  if (play){
+    const pid = play.preset || play.presetId || play.alias || play.id;
+    if (pid){
+      const byPreset = getPreset(pid);
+      if (byPreset) return { geom: byPreset, source: '预设(preset)' };
+    }
+  }
+
+  const byId = getPreset(rawId);
+  if (byId) return { geom: byId, source: '预设' };
+
+  return { geom: getPreset('fiveOut'), source: '预设兜底' };
+}
+
+function syncAppliedMeta(play, rawId){
+  applied.id = rawId;
+  applied.name = (play && (play.name || play.id)) || rawId;
+  applied.meta = play ? {
+    cues: Array.isArray(play.cues) ? play.cues : [],
+    errors: Array.isArray(play.errors) ? play.errors : [],
+    drills: Array.isArray(play.drills) ? play.drills : [],
+    type: play.type || '',
+    vs: Array.isArray(play.vs) ? play.vs : []
+  } : null;
+}
+
+async function applyPlayById(rawId, opts = {}){
+  const id = String(rawId || '').trim();
+  if (!id) return false;
+
+  await ensurePlaysCatalog();
+  let play = getPlayByIdFromCatalog(id);
+  if (!play && !playsCatalog.length){
+    await ensurePlaysCatalog(true);
+    play = getPlayByIdFromCatalog(id);
+  }
+
+  syncAppliedMeta(play, id);
+  const resolved = resolvePlayGeometry(play, id);
+  if (!resolved.geom){
+    toast('未找到战术几何，已保持当前布置');
+    return false;
+  }
+
+  applyPlay(resolved.geom);
+  const recentId = String((play && play.id) || id);
+  markPlayRecent(recentId);
+  refreshQuickPlayOptions();
+
+  if (opts.toast !== false){
+    const src = opts.source ? `${opts.source} · ` : '';
+    toast(`已应用：${applied.name}（${src}${resolved.source}）`);
+  }
+  return true;
+}
+
+async function applyRandomPlay(){
+  await ensurePlaysCatalog();
+  const favoritePool = readStoredIds(PLAY_FAVORITES_KEY, 200)
+    .filter((id) => !!getPlayByIdFromCatalog(id));
+  const fullPool = playsCatalog.map((p) => String(p?.id || '').trim()).filter(Boolean);
+  const pool = favoritePool.length ? favoritePool : fullPool;
+  if (!pool.length){
+    toast('战术库为空');
+    return;
+  }
+  const id = pool[Math.floor(Math.random() * pool.length)];
+  await applyPlayById(id, { source: favoritePool.length ? '随机(收藏)' : '随机' });
+}
+
+function currentBallHandlerId(){
+  return state.players.find(p => p.team === 'O' && p.ball)?.id || '';
+}
+
+function syncOffenseSelect(){
+  if (!offenseSelect) return;
+  const id = currentBallHandlerId();
+  if (id && offenseSelect.value !== id) offenseSelect.value = id;
+}
+
+function setBallHandlerById(id, opts = {}){
+  const target = state.players.find(x => x.team === 'O' && x.id === String(id));
+  if (!target) return false;
   state.players.forEach(x=>{ if (x.team==='O') x.ball = false; });
-  p.ball = true;
-  draw();
-  toast('持球人：' + p.id);
+  target.ball = true;
+  syncOffenseSelect();
+  if (opts.redraw !== false) draw();
+  if (!opts.silent) toast('持球人：' + target.id);
+  return true;
+}
+
+function setBallHandler(p){
+  if (!p || p.team !== 'O') return;
+  setBallHandlerById(p.id);
 }
 
 function resizeForDPI(){
@@ -200,6 +543,7 @@ function resizeForDPI(){
   canvas.width = Math.round(cssW*ratio);
   canvas.height = Math.round(cssH*ratio);
   ctx.setTransform(ratio,0,0,ratio,0,0);
+  clampView();
 }
 
 window.addEventListener('resize', ()=>{
@@ -250,7 +594,6 @@ function layoutPlayers(){
 function drawCourt(){
   const W = canvas.clientWidth;
   const H = canvas.clientHeight;
-  ctx.clearRect(0,0,W,H);
   ctx.save();
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#E5E7EB';
@@ -420,6 +763,108 @@ function drawSpacingAlerts(){
   }
 }
 
+function findClosestOffensePair(){
+  const O = state.players.filter(p => p.team === 'O');
+  let best = null;
+  for (let i = 0; i < O.length; i++){
+    for (let j = i + 1; j < O.length; j++){
+      const a = O[i], b = O[j];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (!best || d < best.d) best = { a, b, d };
+    }
+  }
+  return best;
+}
+
+function dedupeStrings(items = []){
+  const seen = new Set();
+  const out = [];
+  items.forEach((txt) => {
+    const k = (txt || '').trim();
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    out.push(k);
+  });
+  return out;
+}
+
+function buildAITips(){
+  const tips = [];
+  const runCount = state.shapes.filter(s => s.type === 'run').length;
+  const passCount = state.shapes.filter(s => s.type === 'pass').length;
+  const ball = state.players.find(p => p.team === 'O' && p.ball);
+
+  const close = findClosestOffensePair();
+  const thr = spacingThresholdPx();
+  if (close && close.d < thr){
+    tips.push(`${close.a.id} 与 ${close.b.id} 过近，建议一人拉到 45° 或底角。`);
+  }
+
+  if (!state.shapes.length){
+    tips.push('先画第 1 个动作：为持球人添加跑位线或传球箭头。');
+  } else {
+    if (runCount >= 2 && passCount === 0){
+      tips.push('已有跑位线但没有传球箭头，补 1 次传导把优势转化成出手。');
+    }
+    if (passCount >= 1 && runCount === 0){
+      tips.push('只有传球没有无球移动，建议补 1 条跑位线避免站桩。');
+    }
+    if (runCount > 0 && passCount > 0){
+      tips.push('线路已成型，可点击“回放”检查先后时序与接应点。');
+    }
+  }
+
+  if (ball && state.mode === 'drag' && state.shapes.length < 2){
+    tips.push(`当前持球人为 ${ball.id} 号，切到“跑位线”可更快标出第一拍。`);
+  }
+
+  if (applied.meta?.cues?.length){
+    tips.push(`战术口令：${applied.meta.cues.slice(0, 2).join(' / ')}`);
+  }
+  if (applied.meta?.errors?.length){
+    tips.push(`常见错误：${applied.meta.errors[0]}。`);
+  }
+
+  if (state.court === 'full' && state.shapes.length){
+    tips.push('全场模式建议先标推进传球，再落位执行半场动作。');
+  }
+
+  return dedupeStrings(tips).slice(0, 6);
+}
+
+function renderAITip(){
+  if (!aiStrip) return;
+  if (!state.ai.tips.length){
+    aiStrip.textContent = 'AI 提示：当前没有建议，继续绘制即可。';
+    return;
+  }
+  const idx = Math.max(0, Math.min(state.ai.idx, state.ai.tips.length - 1));
+  const prefix = state.ai.tips.length > 1 ? `AI 提示（${idx + 1}/${state.ai.tips.length}）：` : 'AI 提示：';
+  aiStrip.textContent = `${prefix}${state.ai.tips[idx]}`;
+}
+
+function refreshAITips(force = false){
+  if (!aiStrip) return;
+  const tips = buildAITips();
+  const signature = tips.join('||');
+  if (!force && signature === state.ai.signature) return;
+  state.ai.signature = signature;
+  state.ai.tips = tips;
+  state.ai.idx = 0;
+  renderAITip();
+}
+
+function initAITips(){
+  if (!aiStrip) return;
+  refreshAITips(true);
+  if (state.ai.timer) clearInterval(state.ai.timer);
+  state.ai.timer = setInterval(() => {
+    if (!state.ai.tips || state.ai.tips.length <= 1) return;
+    state.ai.idx = (state.ai.idx + 1) % state.ai.tips.length;
+    renderAITip();
+  }, 4200);
+}
+
 function drawPolyline(pts, color, dashed=false){
   if (pts.length<2) return;
   ctx.save();
@@ -476,15 +921,92 @@ function applyPlay(play){
 
   // 5) 持球人（可选字段：ballHandler，取值 '1'..'5'）
   if (play.ballHandler){
-    const id = String(play.ballHandler);
-    state.players.forEach(x => { if (x.team==='O') x.ball = false; });
-    const target = state.players.find(x => x.team==='O' && x.id === id);
-    if (target) target.ball = true;
+    setBallHandlerById(String(play.ballHandler), { silent: true, redraw: false });
   }
 
   draw();
 }
 
+function clampView(){
+  const W = canvas.clientWidth || 0;
+  const H = canvas.clientHeight || 0;
+  const scaledW = W * state.view.scale;
+  const scaledH = H * state.view.scale;
+  const minX = Math.min(0, W - scaledW);
+  const minY = Math.min(0, H - scaledH);
+  state.view.offsetX = Math.min(0, Math.max(minX, state.view.offsetX));
+  state.view.offsetY = Math.min(0, Math.max(minY, state.view.offsetY));
+}
+
+function resetView(){
+  state.view.scale = 1;
+  state.view.offsetX = 0;
+  state.view.offsetY = 0;
+  state.gesture.active = false;
+  state.gesture.anchorWorld = null;
+  clampView();
+}
+
+function getPointerScreenPos(e){
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
+
+function screenToWorld(pt){
+  return {
+    x: (pt.x - state.view.offsetX) / state.view.scale,
+    y: (pt.y - state.view.offsetY) / state.view.scale
+  };
+}
+
+function clampScale(v){
+  return Math.max(state.view.minScale, Math.min(state.view.maxScale, v));
+}
+
+function firstTwoPointers(){
+  const pts = Array.from(activePointers.values());
+  if (pts.length < 2) return null;
+  return [pts[0], pts[1]];
+}
+
+function startGestureFromPointers(){
+  const pair = firstTwoPointers();
+  if (!pair) return;
+  const [a, b] = pair;
+  const center = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const dist = Math.max(12, Math.hypot(a.x - b.x, a.y - b.y));
+  state.gesture.active = true;
+  state.gesture.startDist = dist;
+  state.gesture.startScale = state.view.scale;
+  state.gesture.anchorWorld = screenToWorld(center);
+}
+
+function updateGestureFromPointers(){
+  const pair = firstTwoPointers();
+  if (!pair || !state.gesture.active || !state.gesture.anchorWorld) return;
+  const [a, b] = pair;
+  const center = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const dist = Math.max(12, Math.hypot(a.x - b.x, a.y - b.y));
+  const nextScale = clampScale(state.gesture.startScale * (dist / state.gesture.startDist));
+  state.view.scale = nextScale;
+  state.view.offsetX = center.x - state.gesture.anchorWorld.x * nextScale;
+  state.view.offsetY = center.y - state.gesture.anchorWorld.y * nextScale;
+  clampView();
+}
+
+function cancelCurrentInteraction(){
+  state.dragTarget = null;
+  if (state.drawing){
+    state.drawing = false;
+    state.currentLine = null;
+  }
+  clearTimeout(longPressTimer);
+  longPressTimer = null;
+  downPt = null;
+}
 
 function drawArrow(p0, p1, color){
   ctx.save();
@@ -513,26 +1035,34 @@ function drawArrow(p0, p1, color){
 function draw(opts = {}){
   const bg = opts.bg || 'court';
   const hideDefense = !!opts.hideDefense;
+  const useView = opts.useView !== false;
 
   if (bg === 'white'){
     const W = canvas.clientWidth, H = canvas.clientHeight;
     ctx.clearRect(0,0,W,H);
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H); ctx.restore();
   }else{
-    drawCourt();
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    ctx.clearRect(0,0,W,H);
   }
+  ctx.save();
+  if (useView){
+    ctx.translate(state.view.offsetX, state.view.offsetY);
+    ctx.scale(state.view.scale, state.view.scale);
+  }
+  if (bg !== 'white') drawCourt();
   drawShapes();
   drawPlayers({ hideDefense });
   drawSpacingAlerts();
+  ctx.restore();
+  syncOffenseSelect();
+  refreshAITips();
 }
 
 
 
 function getPointerPos(e){
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left);
-  const y = (e.clientY - rect.top);
-  return {x,y};
+  return screenToWorld(getPointerScreenPos(e));
 }
 
 function getCourtRect(){
@@ -571,12 +1101,23 @@ function bindPointerEvents(){
 function onDown(e){
   e.preventDefault();
   canvas.setPointerCapture(e.pointerId);
-  const pt = getPointerPos(e);
+  const spt = getPointerScreenPos(e);
+  activePointers.set(e.pointerId, spt);
+
+  if (activePointers.size >= 2){
+    cancelCurrentInteraction();
+    startGestureFromPointers();
+    draw();
+    return;
+  }
+
+  if (state.gesture.active) return;
+  const pt = screenToWorld(spt);
   if (state.mode==='drag'){
     const hit = nearestPlayer(pt);
     if (hit){ 
       state.dragTarget = hit;
-      downPt = pt;
+      downPt = spt;
       clearTimeout(longPressTimer);
       longPressTimer = setTimeout(() => {
         if (hit.team === 'O') setBallHandler(hit);
@@ -589,13 +1130,21 @@ function onDown(e){
 }
 
 function onMove(e){
-  // 鼠标松开不处理（但要先拿到pt用于长按判断也行）
-  // 如果想保留这条，建议放到下面；先取 pt
-  const pt = getPointerPos(e);
+  const spt = getPointerScreenPos(e);
+  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, spt);
+
+  if (activePointers.size >= 2 || state.gesture.active){
+    if (!state.gesture.active) startGestureFromPointers();
+    updateGestureFromPointers();
+    draw();
+    return;
+  }
+
+  const pt = screenToWorld(spt);
 
   // 拖动距离超过阈值则取消长按
   if (longPressTimer && downPt){
-    const dx = pt.x - downPt.x, dy = pt.y - downPt.y;
+    const dx = spt.x - downPt.x, dy = spt.y - downPt.y;
     if (dx*dx + dy*dy > 16) { clearTimeout(longPressTimer); longPressTimer = null; }
   }
 
@@ -620,6 +1169,18 @@ function onMove(e){
 
 function onUp(e){
   clearTimeout(longPressTimer); longPressTimer = null; downPt = null;
+  activePointers.delete(e.pointerId);
+
+  if (state.gesture.active){
+    if (activePointers.size >= 2){
+      startGestureFromPointers();
+      return;
+    }
+    state.gesture.active = false;
+    state.gesture.anchorWorld = null;
+    return;
+  }
+
   if (state.mode==='drag'){
     state.dragTarget = null;
   } else if (state.drawing){
@@ -660,7 +1221,7 @@ function exportPNG(opts = { bg:'court', hideDefense:false }){
   // 显式打开平滑（尤其白底导出）
   if (ctx && 'imageSmoothingEnabled' in ctx) ctx.imageSmoothingEnabled = true;
   // 用本次选择渲染一帧
-  draw({ bg: opts.bg, hideDefense: opts.hideDefense });
+  draw({ bg: opts.bg, hideDefense: opts.hideDefense, useView: false });
 
   const W = canvas.clientWidth, H = canvas.clientHeight;
   ctx.save();
@@ -778,75 +1339,28 @@ readAppliedPlay();   // 启动时尝试接收 Library 的“应用”指令
 
 
 async function readAppliedPlay(){
-  // 1) 读取来源：URL ?apply=XXX 优先，其次 localStorage
   const urlId = new URLSearchParams(location.search).get('apply');
-  const lsId  = localStorage.getItem('applyPlayId');
+  const lsId = localStorage.getItem('applyPlayId');
   const idRaw = (urlId || lsId || '').trim();
   if (!idRaw) return;
 
-  // 可选：大小写/空白规整（保持原样匹配 + 降级匹配）
-  const norm = s => (s || '').toString().trim();
-  const same = (a,b) => norm(a) === norm(b);
-
-  const applyFromGeometry = (geom, label) => {
-    if (geom) {
-      applyPlay(geom);
-      toast(`已应用：${applied.name}（${label}）`);
+  try {
+    await applyPlayById(idRaw, { source: '链接应用' });
+  } catch (_) {
+    const fallback = getPreset(idRaw) || getPreset('fiveOut');
+    if (fallback){
+      applied.id = idRaw;
+      applied.name = idRaw;
+      applied.meta = null;
+      applyPlay(fallback);
+      markPlayRecent(idRaw);
+      refreshQuickPlayOptions();
+      toast(`已应用：${idRaw}（离线预设）`);
     } else {
       toast('未找到战术几何，已保持当前布置');
     }
-  };
-
-  try {
-    const url = './plays/plays.json?t=' + Date.now(); // 防缓存
-    const res = await fetch(url, { cache: 'no-store' });
-    const list = await res.json();
-
-    // 2) 精确找 + 宽松找（id 完整匹配，找不到再尝试忽略大小写）
-    let p = list.find(x => same(x.id, idRaw));
-    if (!p) {
-      const idLower = idRaw.toLowerCase();
-      p = list.find(x => (x.id || '').toString().toLowerCase() === idLower);
-    }
-
-    applied.id = idRaw;
-    applied.name = (p && (p.name || p.id)) || idRaw;
-
-    // 3) 选择几何来源优先级：
-    //    JSON.geometry > JSON.(offense/shapes) > JSON.(preset|presetId|alias) > 预设(getPreset(id)) > fiveOut
-    let geom = null;
-
-    if (p) {
-      if (p.geometry) {
-        geom = p.geometry;
-      } else if (p.offense || p.shapes) {
-        geom = p; // 直接用条目本身当几何
-      } else if (p.preset || p.presetId || p.alias) {
-        const pid = p.preset || p.presetId || p.alias;
-        geom = getPreset(pid) || null;
-      }
-    }
-
-    if (!geom) geom = getPreset(idRaw) || null;        // 与 presets 名称直接对齐
-    if (!geom) geom = getPreset('fiveOut');            // 兜底
-
-    // 4) 应用 + 提示来源
-    const label = p
-      ? ( (geom === p) ? 'JSON几何' :
-          (p.geometry ? 'JSON.geometry' :
-           (p.offense||p.shapes) ? 'JSON(简化)' : '预设(preset)') )
-      : (geom === getPreset('fiveOut') ? '预设兜底' : '预设');
-
-    applyFromGeometry(geom, label);
-
-  } catch(e){
-    // 网络/离线：预设兜底
-    applied.id   = idRaw;
-    applied.name = idRaw;
-    const geom = getPreset(idRaw) || getPreset('fiveOut');
-    applyFromGeometry(geom, '离线预设');
   } finally {
-    localStorage.removeItem('applyPlayId'); // 用一次即清，避免误复用
+    localStorage.removeItem('applyPlayId');
   }
 }
 
@@ -883,7 +1397,7 @@ function catmullRom(a,b,c,d,t){const t2=t*t,t3=t2*t;return{
   y:0.5*((2*b.y)+(-a.y+c.y)*t+(2*a.y-5*b.y+4*c.y-d.y)*t2+(-a.y+3*b.y-3*c.y+d.y)*t3)};}
 function sampleSpline(pts,n=64){ if(!pts||pts.length<3) return pts?.slice()||[];
   const r=[],L=pts.length; for(let i=0;i<L-1;i++){const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(L-1,i+2)];
-    for(let k=0;k<(i<L-2?n:1?n:1);k++){const t=k/n; r.push(catmullRom(p0,p1,p2,p3,t));}} r.push(pts[L-1]); return r;}
+    for(let k=0;k<(i<L-2?n:1);k++){const t=k/n; r.push(catmullRom(p0,p1,p2,p3,t));}} r.push(pts[L-1]); return r;}
 function polyLength(pts){let L=0; for(let i=1;i<pts.length;i++) L+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y); return L;}
 function polyLerp(pts,u){if(!pts||!pts.length)return{x:0,y:0}; if(pts.length===1)return pts[0];
   const tot=polyLength(pts); if(!tot) return pts[0]; let d=u*tot;
