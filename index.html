@@ -313,27 +313,9 @@
       min-width: 168px;
     }
 
-    .replaybar {
-      position: sticky;
-      top: 106px;
-      z-index: 18;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel) 90%, transparent);
-      backdrop-filter: blur(7px);
-    }
-
-    .replaybar .btn {
-      min-width: 92px;
-      height: 42px;
-      font-size: 12px;
-    }
-
     #seek {
-      flex: 1;
+      flex: 0 0 180px;
+      width: 180px;
       height: 42px;
       appearance: none;
       border-radius: 999px;
@@ -384,7 +366,7 @@
       width: 100%;
       height: auto;
       max-height: calc(100vh - 220px);
-      aspect-ratio: 1080 / 1600;
+      aspect-ratio: 50 / 47;
       border: 1px solid var(--line);
       border-radius: 14px;
       touch-action: none;
@@ -421,6 +403,7 @@
       .badge { display: none; }
       .app-sub { display: none; }
       .appbar h1 { font-size: 17px; }
+      #seek { flex-basis: 150px; width: 150px; }
     }
 
     @media (min-width: 861px) and (max-width: 1024px) {
@@ -458,6 +441,15 @@
     <button class="btn" id="erase">橡皮擦</button>
     <button class="btn" id="toggle-court">切换半场/全场</button>
     <button class="btn" id="toggle-defense" aria-pressed="false">移除防守</button>
+    <button class="btn" id="btn-playpause">回放</button>
+    <button class="btn" id="btn-stop">停止</button>
+    <input id="seek" type="range" min="0" max="100" step="0.1" value="0" />
+    <select id="speed">
+      <option value="0.5">0.5×</option>
+      <option value="0.75" selected>0.75× 默认</option>
+      <option value="1">1×</option>
+      <option value="2">2×</option>
+    </select>
     <button class="btn more-btn" id="show-advanced">更多 ▼</button>
   </div>
 
@@ -474,19 +466,6 @@
     </select>
     <button class="btn" id="random-play">随机战术</button>
     <button class="btn" id="reset-view">重置视图</button>
-    <button class="btn" id="play">回放</button>
-  </div>
-
-  <div class="replaybar" id="replaybar" style="display: none;">
-    <button class="btn" id="btn-playpause">回放</button>
-    <button class="btn" id="btn-stop">停止</button>
-    <input id="seek" type="range" min="0" max="100" step="0.1" value="0" />
-    <select id="speed">
-      <option value="0.5">0.5×</option>
-      <option value="0.75" selected>0.75× 默认</option>
-      <option value="1">1×</option>
-      <option value="2">2×</option>
-    </select>
   </div>
 
   <div class="ai-strip" id="ai-strip">AI 提示：正在分析当前站位…</div>
