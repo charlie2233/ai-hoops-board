@@ -90,6 +90,7 @@ const themeColorMeta = document.querySelector('meta[name=\"theme-color\"]');
 const offenseSelect = $('offense-player');
 const quickPlaySelect = $('quick-play');
 const randomPlayBtn = $('random-play');
+const toggleDefenseBtn = $('toggle-defense');
 let playsCatalog = [];
 let playsCatalogLoaded = false;
 
@@ -108,6 +109,8 @@ const I18N = {
     mode_drag: '拖拽',
     mode_run: '跑位线',
     mode_pass: '传球箭头',
+    toggle_defense_remove: '移除防守',
+    toggle_defense_restore: '恢复防守',
     ball_handler_opt: '持球人：{n}',
     quick_play_pick: '快速战术：选择',
     random_play: '随机战术',
@@ -124,7 +127,7 @@ const I18N = {
     speed_1: '1×',
     speed_2: '2×',
     ai_loading: 'AI 提示：正在分析当前站位…',
-    board_hint: '手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；双指可缩放/平移画板；支持撤销/重做与导出 PNG。',
+    board_hint: '手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；可一键移除/恢复防守；双指可缩放/平移画板；支持撤销/重做与导出 PNG。',
     clear: '清空',
     toggle_court: '切换：半场/全场',
     save: '保存',
@@ -132,6 +135,7 @@ const I18N = {
     export_png: '导出 PNG',
     aria_ball_handler: '持球人选择',
     aria_quick_play: '快速战术',
+    aria_toggle_defense: '移除或恢复防守球员',
     replay_pause: '⏸ 暂停',
     replay_resume: '▶ 继续',
     replay_replay: '▶ 回放',
@@ -143,6 +147,8 @@ const I18N = {
     toast_load_corrupt: '载入失败：数据损坏',
     toast_cleared_saved: '已清除本地保存',
     toast_no_geom: '未找到战术几何，已保持当前布置',
+    toast_defense_removed: '已移除防守球员',
+    toast_defense_restored: '已恢复防守球员',
     toast_applied: '已应用：{name}（{src}{kind}）',
     toast_no_plays: '战术库为空',
     toast_ball_handler: '持球人：{id}',
@@ -201,6 +207,8 @@ const I18N = {
     mode_drag: 'Drag',
     mode_run: 'Run Line',
     mode_pass: 'Pass Arrow',
+    toggle_defense_remove: 'Remove Defense',
+    toggle_defense_restore: 'Restore Defense',
     ball_handler_opt: 'Ball Handler: {n}',
     quick_play_pick: 'Quick Play: Select',
     random_play: 'Random Play',
@@ -217,7 +225,7 @@ const I18N = {
     speed_1: '1x',
     speed_2: '2x',
     ai_loading: 'AI Tip: analyzing current spacing...',
-    board_hint: 'Drag circles to move players. Draw in Run Line/Pass Arrow mode. Pinch to zoom and pan. Supports undo/redo and PNG export.',
+    board_hint: 'Drag circles to move players. Draw in Run Line/Pass Arrow mode. You can remove/restore defenders anytime. Pinch to zoom and pan. Supports undo/redo and PNG export.',
     clear: 'Clear',
     toggle_court: 'Toggle: Half/Full',
     save: 'Save',
@@ -225,6 +233,7 @@ const I18N = {
     export_png: 'Export PNG',
     aria_ball_handler: 'Ball handler selection',
     aria_quick_play: 'Quick play',
+    aria_toggle_defense: 'Remove or restore defenders',
     replay_pause: '⏸ Pause',
     replay_resume: '▶ Resume',
     replay_replay: '▶ Replay',
@@ -236,6 +245,8 @@ const I18N = {
     toast_load_corrupt: 'Load failed: corrupted data',
     toast_cleared_saved: 'Local save cleared',
     toast_no_geom: 'Play geometry not found; kept current layout',
+    toast_defense_removed: 'Defenders removed',
+    toast_defense_restored: 'Defenders restored',
     toast_applied: 'Applied: {name} ({src}{kind})',
     toast_no_plays: 'Play library is empty',
     toast_ball_handler: 'Ball handler: {id}',
@@ -380,6 +391,10 @@ function renderLanguageUI(){
   if (quickPlaySelect){
     quickPlaySelect.setAttribute('aria-label', t('aria_quick_play'));
   }
+  if (toggleDefenseBtn){
+    toggleDefenseBtn.setAttribute('aria-label', t('aria_toggle_defense'));
+  }
+  updateDefenseToggleButton();
 
   if (!state.ai?.tips?.length && aiStrip){
     aiStrip.textContent = t('ai_loading');
@@ -505,6 +520,11 @@ if (quickPlaySelect){
 if (randomPlayBtn){
   randomPlayBtn.onclick = () => { applyRandomPlay(); };
 }
+if (toggleDefenseBtn){
+  toggleDefenseBtn.onclick = () => {
+    setDefendersRemoved(!areDefendersRemoved());
+  };
+}
 
 $('export').onclick = async () => {
   const opts = await promptExportOptions();   // { bg:'court'|'white', hideDefense:boolean } | null
@@ -547,6 +567,7 @@ $('load').onclick = () => {
     state.players= data.players ?? state.players;
     state.shapes = data.shapes  ?? [];
     //layoutPlayers(); // 兼容旧结构
+    updateDefenseToggleButton();
     draw();
     toast(t('toast_loaded'));
   } catch(e){
@@ -603,6 +624,7 @@ function init(){
   resizeForDPI();
   seedPlayers();
   layoutPlayers();
+  updateDefenseToggleButton();
   bindPointerEvents();
   draw();
   initAITips();
@@ -620,6 +642,7 @@ function init(){
         state.court   = data.court   ?? state.court;
         state.players = data.players ?? state.players;
         state.shapes  = data.shapes  ?? [];
+        updateDefenseToggleButton();
         draw();
       }
     }
@@ -857,6 +880,33 @@ function setBallHandler(p){
   setBallHandlerById(p.id);
 }
 
+function areDefendersRemoved(){
+  const defenders = state.players.filter((p) => p.team === 'D');
+  return defenders.length > 0 && defenders.every((p) => !!p.hidden);
+}
+
+function updateDefenseToggleButton(){
+  if (!toggleDefenseBtn) return;
+  const removed = areDefendersRemoved();
+  toggleDefenseBtn.textContent = t(removed ? 'toggle_defense_restore' : 'toggle_defense_remove');
+  toggleDefenseBtn.classList.toggle('active', removed);
+  toggleDefenseBtn.setAttribute('aria-pressed', removed ? 'true' : 'false');
+}
+
+function setDefendersRemoved(removed, opts = {}){
+  const defenders = state.players.filter((p) => p.team === 'D');
+  if (!defenders.length) return;
+  defenders.forEach((p) => { p.hidden = !!removed; });
+  if (state.dragTarget && state.dragTarget.team === 'D'){
+    state.dragTarget = null;
+  }
+  updateDefenseToggleButton();
+  draw();
+  if (opts.toast !== false){
+    toast(t(removed ? 'toast_defense_removed' : 'toast_defense_restored'));
+  }
+}
+
 function resizeForDPI(){
   const cssW = canvas.clientWidth;
   const cssH = canvas.clientHeight;
@@ -876,11 +926,11 @@ function seedPlayers(){
   state.players = [];
   // Offense 1-5 (blue solid)
   for (let i=1;i<=5;i++){
-    state.players.push({id:String(i), team:'O', x:0, y:0, ball: i===1});
+    state.players.push({id:String(i), team:'O', x:0, y:0, ball: i===1, hidden:false});
   }
   // Defense X1-X5 (red hollow)
   for (let i=1;i<=5;i++){
-    state.players.push({id:'X'+i, team:'D', x:0, y:0});
+    state.players.push({id:'X'+i, team:'D', x:0, y:0, hidden:false});
   }
 }
 
@@ -1007,6 +1057,7 @@ function drawPlayers(opts = {}){
   const W = canvas.clientWidth, H = canvas.clientHeight;
   const R = Math.max(16, Math.min(W,H)*0.028);
   state.players.forEach(p=>{
+    if (p.hidden) return;
     if (hideDefense && p.team === 'D') return;
     ctx.save();
     if (p.team==='O'){
@@ -1407,6 +1458,7 @@ function nearestPlayer(pt){
   let hit=null, min=1e9;
   const R = Math.max(16, Math.min(canvas.clientWidth, canvas.clientHeight)*0.028);
   state.players.forEach(p=>{
+    if (p.hidden) return;
     const d = Math.hypot(p.x-pt.x, p.y-pt.y);
     if (d< R*1.2 && d<min){ min=d; hit=p; }
   });

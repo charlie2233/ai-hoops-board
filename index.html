@@ -528,6 +528,7 @@
       <option value="">快速战术：选择</option>
     </select>
     <button class="btn" id="random-play">随机战术</button>
+    <button class="btn" id="toggle-defense" aria-pressed="false">移除防守</button>
     <button class="btn" id="undo">撤销</button>
     <button class="btn" id="redo">重做</button>
     <button class="btn" id="play">回放</button>
@@ -553,7 +554,7 @@
 
   <div class="board-wrap">
     <canvas id="board" width="1080" height="1600"></canvas>
-    <div class="hint" id="board-hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；双指可缩放/平移画板；支持撤销/重做与导出 PNG。</div>
+    <div class="hint" id="board-hint">手指拖动圆点移动球员；在“跑位线/传球箭头”模式下拖动绘制；可一键移除/恢复防守；双指可缩放/平移画板；支持撤销/重做与导出 PNG。</div>
   </div>
 
   <div class="bottombar">
