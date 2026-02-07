@@ -190,7 +190,7 @@
       color: var(--text);
     }
 
-    .theme-switch, .style-switch, .lang-switch {
+    .theme-switch, .style-switch, .lang-switch, .size-switch {
       display: flex;
       gap: 4px;
       padding: 4px;
@@ -199,7 +199,7 @@
       background: color-mix(in srgb, var(--panel) 86%, transparent);
     }
 
-    .theme-btn, .style-btn, .lang-btn {
+    .theme-btn, .style-btn, .lang-btn, .size-btn {
       height: 36px;
       min-width: 64px;
       border: 0;
@@ -212,7 +212,7 @@
       transition: all .2s ease;
     }
 
-    .theme-btn.active, .style-btn.active, .lang-btn.active {
+    .theme-btn.active, .style-btn.active, .lang-btn.active, .size-btn.active {
       color: #fff;
       background: linear-gradient(135deg, var(--accent), var(--accent-soft));
       box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 38%, transparent);
@@ -256,6 +256,20 @@
           <button class="style-btn" id="style-vivid">动感</button>
         </div>
       </div>
+
+      <div class="control-group">
+        <div class="control-label" id="label-player-size">球员大小</div>
+        <div class="size-switch" role="group" aria-label="球员大小">
+          <button class="size-btn" id="size-small">小</button>
+          <button class="size-btn" id="size-normal">普通</button>
+          <button class="size-btn" id="size-large">大</button>
+          <button class="size-btn" id="size-huge">超大</button>
+        </div>
+      </div>
+
+      <div class="info-text" id="info-size">
+        会影响主画板中进攻/防守球员大小，并同步到回放与拖拽点击范围。
+      </div>
     </div>
 
     <div class="section">
@@ -289,6 +303,7 @@
     const THEME_KEY = 'uiThemeV1';
     const THEME_STYLE_KEY = 'uiThemeStyleV1';
     const LANG_KEY = 'uiLangV1';
+    const PLAYER_SIZE_KEY = 'uiPlayerSizeV1';
 
     // Theme controls
     const themeButtons = {
@@ -303,6 +318,16 @@
       zh: document.getElementById('lang-zh'),
       en: document.getElementById('lang-en')
     };
+    const sizeButtons = {
+      small: document.getElementById('size-small'),
+      normal: document.getElementById('size-normal'),
+      large: document.getElementById('size-large'),
+      huge: document.getElementById('size-huge')
+    };
+
+    function normalizePlayerSize(size) {
+      return (size === 'small' || size === 'large' || size === 'huge') ? size : 'normal';
+    }
 
     // Initialize theme state
     function initTheme() {
@@ -322,6 +347,12 @@
       Object.keys(langButtons).forEach(k => {
         langButtons[k].classList.toggle('active', k === lang);
         langButtons[k].setAttribute('aria-pressed', k === lang);
+      });
+
+      const size = normalizePlayerSize(localStorage.getItem(PLAYER_SIZE_KEY) || 'normal');
+      Object.keys(sizeButtons).forEach(k => {
+        sizeButtons[k].classList.toggle('active', k === size);
+        sizeButtons[k].setAttribute('aria-pressed', k === size);
       });
       
       updateLanguage(lang);
@@ -362,6 +393,16 @@
       });
     });
 
+    Object.keys(sizeButtons).forEach(size => {
+      sizeButtons[size].addEventListener('click', () => {
+        localStorage.setItem(PLAYER_SIZE_KEY, size);
+        Object.keys(sizeButtons).forEach(k => {
+          sizeButtons[k].classList.toggle('active', k === size);
+          sizeButtons[k].setAttribute('aria-pressed', k === size);
+        });
+      });
+    });
+
     // Language translations
     const I18N = {
       zh: {
@@ -371,10 +412,16 @@
         desc_theme: '选择您喜欢的视觉主题和样式',
         label_color_theme: '颜色主题',
         label_style: '样式变体',
+        label_player_size: '球员大小',
         theme_light: '浅色',
         theme_dark: '深色',
         style_classic: '经典',
         style_vivid: '动感',
+        size_small: '小',
+        size_normal: '普通',
+        size_large: '大',
+        size_huge: '超大',
+        info_size: '会影响主画板中进攻/防守球员大小，并同步到回放与拖拽点击范围。',
         section_language: '语言设置',
         desc_language: '切换界面显示语言',
         label_lang: '界面语言',
@@ -390,10 +437,16 @@
         desc_theme: 'Choose your preferred visual theme and style',
         label_color_theme: 'Color Theme',
         label_style: 'Style Variant',
+        label_player_size: 'Player Size',
         theme_light: 'Light',
         theme_dark: 'Dark',
         style_classic: 'Classic',
         style_vivid: 'Vivid',
+        size_small: 'Small',
+        size_normal: 'Normal',
+        size_large: 'Large',
+        size_huge: 'Huge',
+        info_size: 'Affects offense/defense marker size on the board, including replay and drag hit area.',
         section_language: 'Language Settings',
         desc_language: 'Switch interface display language',
         label_lang: 'Interface Language',
@@ -412,10 +465,16 @@
       document.getElementById('desc-theme').textContent = t.desc_theme;
       document.getElementById('label-color-theme').textContent = t.label_color_theme;
       document.getElementById('label-style').textContent = t.label_style;
+      document.getElementById('label-player-size').textContent = t.label_player_size;
       document.getElementById('theme-light').textContent = t.theme_light;
       document.getElementById('theme-dark').textContent = t.theme_dark;
       document.getElementById('style-classic').textContent = t.style_classic;
       document.getElementById('style-vivid').textContent = t.style_vivid;
+      document.getElementById('size-small').textContent = t.size_small;
+      document.getElementById('size-normal').textContent = t.size_normal;
+      document.getElementById('size-large').textContent = t.size_large;
+      document.getElementById('size-huge').textContent = t.size_huge;
+      document.getElementById('info-size').textContent = t.info_size;
       document.getElementById('section-language').textContent = t.section_language;
       document.getElementById('desc-language').textContent = t.desc_language;
       document.getElementById('label-lang').textContent = t.label_lang;

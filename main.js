@@ -15,6 +15,7 @@ const LONG_PRESS_MS = 600;   // 0.6s 触发
 const THEME_KEY = 'uiThemeV1';
 const THEME_STYLE_KEY = 'uiThemeStyleV1';
 const LANG_KEY = 'uiLangV1';
+const PLAYER_SIZE_KEY = 'uiPlayerSizeV1';
 const IMMERSIVE_SIDE_KEY = 'uiImmersiveSideV1';
 const PLAY_FAVORITES_KEY = 'playFavoritesV1';
 const PLAY_RECENTS_KEY = 'playRecentsV1';
@@ -57,6 +58,7 @@ const state = {
     timer: null
   },
   uiLang: 'zh',
+  playerSize: 'normal',
   immersive: {
     enabled: false,
     side: 'right'
@@ -333,6 +335,10 @@ function normalizeLang(lang){
   return lang === 'en' ? 'en' : 'zh';
 }
 
+function normalizePlayerSize(size){
+  return (size === 'small' || size === 'large' || size === 'huge') ? size : 'normal';
+}
+
 function normalizeImmersiveSide(side){
   return side === 'left' ? 'left' : 'right';
 }
@@ -545,6 +551,23 @@ function initThemeControls(){
   if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
 }
 
+function applyPlayerSize(size, opts = {}){
+  state.playerSize = normalizePlayerSize(size);
+  document.documentElement.setAttribute('data-player-size', state.playerSize);
+  if (opts.persist !== false){
+    try { localStorage.setItem(PLAYER_SIZE_KEY, state.playerSize); } catch(_) {}
+  }
+  if (opts.redraw !== false && state.players.length){
+    draw();
+  }
+}
+
+function initPlayerSize(){
+  let saved = null;
+  try { saved = localStorage.getItem(PLAYER_SIZE_KEY); } catch(_) {}
+  applyPlayerSize(saved || 'normal', { persist: false, redraw: false });
+}
+
 function updateImmersiveButtons(){
   const side = normalizeImmersiveSide(state.immersive.side);
   document.body.setAttribute('data-immersive-side', side);
@@ -727,6 +750,7 @@ $('load').onclick = () => {
 
 initThemeControls();
 initLanguageControls();
+initPlayerSize();
 initImmersiveControls();
 setMode('drag');
 window.addEventListener('storage', (e) => {
@@ -735,6 +759,9 @@ window.addEventListener('storage', (e) => {
   }
   if (e.key === LANG_KEY){
     applyLanguage((e.newValue || 'zh'), { persist: false });
+  }
+  if (e.key === PLAYER_SIZE_KEY){
+    applyPlayerSize((e.newValue || 'normal'), { persist: false });
   }
   if (e.key === IMMERSIVE_SIDE_KEY){
     setImmersiveSide((e.newValue || 'right'), { persist: false });
@@ -1111,7 +1138,10 @@ function layoutPlayers(){
 }
 
 function playerRadiusPx(){
-  return Math.max(18, Math.min(canvas.clientWidth, canvas.clientHeight) * 0.034);
+  const base = Math.max(18, Math.min(canvas.clientWidth, canvas.clientHeight) * 0.034);
+  const scaleMap = { small: 0.82, normal: 1, large: 1.18, huge: 1.36 };
+  const scale = scaleMap[normalizePlayerSize(state.playerSize)] || 1;
+  return Math.min(74, base * scale);
 }
 
 function courtPalette(){
