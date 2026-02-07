@@ -97,6 +97,7 @@ const I18N = {
   zh: {
     app_title: 'AI 战术板 · MVP',
     app_sub: 'Basketball Play Designer',
+    creator_label: '制作团队：',
     badge_step: 'Step 1',
     theme_light: '浅色',
     theme_dark: '深色',
@@ -189,6 +190,7 @@ const I18N = {
   en: {
     app_title: 'AI Hoops Board · MVP',
     app_sub: 'Basketball Play Designer',
+    creator_label: 'Created by',
     badge_step: 'Step 1',
     theme_light: 'Light',
     theme_dark: 'Dark',
@@ -329,6 +331,7 @@ function renderLanguageUI(){
 
   setText('app-title', 'app_title');
   setText('app-sub', 'app_sub');
+  setText('creator-label', 'creator_label');
   setText('badge-step', 'badge_step');
   setText('theme-light', 'theme_light');
   setText('theme-dark', 'theme_dark');

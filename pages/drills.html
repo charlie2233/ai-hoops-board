@@ -99,6 +99,9 @@
   .appbar a{color:var(--ink);text-decoration:none;font-size:13px;font-weight:700}
   h1{font:700 20px/1.1 var(--font-title);margin:0}
   .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .creator{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.2}
+  .creator a{color:var(--accent);text-decoration:none;font-weight:700}
+  .creator a:hover{text-decoration:underline}
 
   .appbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .theme-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 86%, transparent)}
@@ -179,6 +182,10 @@
       <a id="back-link" href="../index.html">← 返回画板</a>
       <h1 id="page-title">训练库</h1>
       <div class="sub" id="page-sub">Drill Library</div>
+      <div class="creator">
+        <span id="creator-label">制作团队：</span>
+        <a href="https://atrak.dev" target="_blank" rel="noopener noreferrer">Atrak Student Tech Team</a>
+      </div>
     </div>
     <div class="appbar-right">
       <div class="theme-switch" role="group" aria-label="主题切换">
@@ -241,6 +248,7 @@ const I18N = {
     back: '← 返回画板',
     title: '训练库',
     sub: 'Drill Library',
+    creator_label: '制作团队：',
     theme_light: '浅色',
     theme_dark: '深色',
     style_classic: '经典',
@@ -265,6 +273,7 @@ const I18N = {
     back: '← Back to Board',
     title: 'Drill Library',
     sub: 'Drill Library',
+    creator_label: 'Created by',
     theme_light: 'Light',
     theme_dark: 'Dark',
     style_classic: 'Classic',
@@ -375,6 +384,7 @@ function renderLanguageUI(){
   setText('back-link', 'back');
   setText('page-title', 'title');
   setText('page-sub', 'sub');
+  setText('creator-label', 'creator_label');
   setText('theme-light', 'theme_light');
   setText('theme-dark', 'theme_dark');
   setText('style-classic', 'style_classic');
