@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE = 'ai-hoops-mvp-v23';
+const CACHE = 'ai-hoops-mvp-v24';
 
 // ✅ 不要把 plays.json 放进预缓存，避免读到旧表
 const ASSETS = [
