@@ -63,6 +63,7 @@ export function attachInteractionApi(app) {
       app.state.drawing = false;
       app.state.currentLine = null;
     }
+    if (app.cancelSceneEdit) app.cancelSceneEdit();
     clearTimeout(app.longPressTimer);
     app.longPressTimer = null;
     app.downPt = null;
@@ -98,21 +99,66 @@ export function attachInteractionApi(app) {
 
     if (app.state.gesture.active) return;
     const pt = app.screenToWorld(spt);
-    if (app.state.mode === 'drag') {
-      const hit = app.nearestPlayer(pt);
-      if (hit) {
-        app.state.dragTarget = hit;
-        app.downPt = spt;
-        clearTimeout(app.longPressTimer);
-        app.longPressTimer = setTimeout(() => {
-          if (hit.team === 'O') app.setBallHandler(hit);
-        }, app.LONG_PRESS_MS);
-      }
+    const shapeHit = app.hitTestShape ? app.hitTestShape(pt) : null;
+    const playerHit = app.state.mode === 'drag' && app.hitTestPlayer ? app.hitTestPlayer(pt) : null;
+
+    if (playerHit) {
+      app.setSelection({ kind: 'player', id: playerHit.id }, { redraw: false });
+      app.state.dragTarget = playerHit;
+      app.downPt = spt;
+      app.startSceneEdit({ kind: 'player', id: playerHit.id });
+      clearTimeout(app.longPressTimer);
+      app.longPressTimer = setTimeout(() => {
+        if (playerHit.team === 'O') {
+          app.pushUndo();
+          app.setBallHandler(playerHit);
+        }
+      }, app.LONG_PRESS_MS);
+      app.draw();
       return;
     }
 
+    if (shapeHit) {
+      app.setSelection({ kind: 'shape', id: shapeHit.shape.id }, { redraw: false });
+      const before = app.captureSceneSnapshot ? app.captureSceneSnapshot() : app.serializeScene();
+      if (shapeHit.kind === 'vertex') {
+        app.startSceneEdit({
+          kind: 'shape',
+          id: shapeHit.shape.id,
+          pointIndex: shapeHit.pointIndex,
+          beforeScene: before
+        });
+      } else if (shapeHit.kind === 'insert') {
+        const pointIndex = app.insertShapePoint(shapeHit.shape, shapeHit.segmentIndex, pt);
+        app.setSelection({ kind: 'shape', id: shapeHit.shape.id, pointIndex }, { redraw: false });
+        app.startSceneEdit({
+          kind: 'shape',
+          id: shapeHit.shape.id,
+          pointIndex,
+          beforeScene: before
+        });
+        app.markSceneEditChanged();
+      } else {
+        app.cancelSceneEdit();
+      }
+      app.draw();
+      return;
+    }
+
+    if (app.state.mode === 'drag') {
+      app.clearSelection({ redraw: false });
+      app.draw();
+      return;
+    }
+
+    app.clearSelection({ redraw: false });
     app.state.drawing = true;
     app.state.currentLine = { type: app.state.mode === 'run' ? 'run' : 'pass', pts: [pt] };
+    app.startSceneEdit({
+      kind: 'draw',
+      beforeScene: app.captureSceneSnapshot ? app.captureSceneSnapshot() : app.serializeScene()
+    });
+    app.draw();
   };
 
   app.onMove = function onMove(e) {
@@ -127,6 +173,14 @@ export function attachInteractionApi(app) {
     }
 
     const pt = app.screenToWorld(spt);
+    const edit = app.state.editor?.editSession || null;
+    if (edit && (edit.kind === 'player' || edit.kind === 'shape')) {
+      if (app.moveSelectedHandle(pt)) {
+        app.draw();
+      }
+      return;
+    }
+
     if (app.longPressTimer && app.downPt) {
       const dx = spt.x - app.downPt.x;
       const dy = spt.y - app.downPt.y;
@@ -174,16 +228,54 @@ export function attachInteractionApi(app) {
       return;
     }
 
+    const edit = app.state.editor?.editSession || null;
+    if (edit && (edit.kind === 'player' || edit.kind === 'shape')) {
+      app.state.dragTarget = null;
+      app.finishSceneEdit();
+      if (edit.changed) {
+        app.pushUndo(edit.beforeScene);
+      }
+      app.draw();
+      return;
+    }
+
     if (app.state.mode === 'drag') {
       app.state.dragTarget = null;
+      return;
+    }
+
+    if (edit && edit.kind === 'draw') {
+      app.finishSceneEdit();
+      if (app.state.currentLine && app.state.currentLine.pts.length > 1) {
+        app.pushUndo(edit.beforeScene);
+        const shape = {
+          id: app.allocateShapeId(app.state.currentLine.type),
+          type: app.state.currentLine.type,
+          pts: app.state.currentLine.pts.map((p) => ({ x: p.x, y: p.y }))
+        };
+        app.state.shapes.push(shape);
+        if (app.ensureShapeIds) app.ensureShapeIds();
+        app.setSelection({ kind: 'shape', id: shape.id }, { redraw: false });
+      }
+      app.state.drawing = false;
+      app.state.currentLine = null;
+      app.draw();
       return;
     }
 
     if (app.state.drawing) {
       app.state.drawing = false;
       if (app.state.currentLine && app.state.currentLine.pts.length > 1) {
-        app.pushUndo();
-        app.state.shapes.push(app.state.currentLine);
+        const editBefore = app.captureSceneSnapshot ? app.captureSceneSnapshot() : app.serializeScene();
+        app.pushUndo(editBefore);
+        const shape = {
+          id: app.allocateShapeId(app.state.currentLine.type),
+          type: app.state.currentLine.type,
+          pts: app.state.currentLine.pts.map((p) => ({ x: p.x, y: p.y }))
+        };
+        app.state.shapes.push(shape);
+        if (app.ensureShapeIds) app.ensureShapeIds();
+        app.setSelection({ kind: 'shape', id: shape.id }, { redraw: false });
       }
       app.state.currentLine = null;
       app.draw();

@@ -113,26 +113,26 @@ export function attachReplayApi(app) {
     return out;
   };
 
-  app.compileTimeline = function compileTimeline() {
+  app.compileTimeline = function compileTimeline(scene = app.captureSceneSnapshot ? app.captureSceneSnapshot() : app.serializeScene()) {
     const runs = [];
     const passes = [];
-    const offense = app.state.players.filter((p) => p.team === 'O');
+    const offense = (scene.players || []).filter((p) => p.team === 'O');
     const nearest = (pt) => offense.reduce((memo, player) => {
       const d = Math.hypot(pt.x - player.x, pt.y - player.y);
       return (!memo || d < memo.d) ? { p: player, d } : memo;
     }, null)?.p;
 
-    app.state.shapes.filter((s) => s.type === 'run' && s.pts?.length >= 2).forEach((shape) => {
+    (scene.shapes || []).filter((s) => s.type === 'run' && s.pts?.length >= 2).forEach((shape) => {
       const player = nearest(shape.pts[0]);
       if (!player) return;
       const smooth = app.sampleSpline(shape.pts, 64);
       const adjusted = app.adjustPathForTeammates(smooth, player, offense);
       const dur = Math.max(0.2, app.polyLength(adjusted) / MOVE_SPEED);
-      runs.push({ player, pts: adjusted, t0: 0, t1: dur * 1000 });
+      runs.push({ playerId: player.id, pts: adjusted, t0: 0, t1: dur * 1000 });
     });
 
     let idx = 0;
-    app.state.shapes.filter((s) => s.type === 'pass' && s.pts?.length >= 2).forEach((shape) => {
+    (scene.shapes || []).filter((s) => s.type === 'pass' && s.pts?.length >= 2).forEach((shape) => {
       const a = shape.pts[0];
       const b = shape.pts.at(-1);
       const from = nearest(a);
@@ -142,7 +142,7 @@ export function attachReplayApi(app) {
       const dur = Math.max(0.2, dist / PASS_SPEED);
       const t0 = BASE_DELAY + idx * 300;
       const arc = Math.max(28, Math.min(84, dist * 0.18));
-      passes.push({ from, to, p0: a, p1: b, t0, dur: dur * 1000, arc });
+      passes.push({ fromId: from.id, toId: to.id, p0: a, p1: b, t0, dur: dur * 1000, arc });
       idx += 1;
     });
 
@@ -155,12 +155,9 @@ export function attachReplayApi(app) {
   };
 
   app.startReplay = function startReplay() {
-    app.state.replay.snapshot = {
-      players: JSON.parse(JSON.stringify(app.state.players)),
-      ballOwnerId: app.state.players.find((p) => p.team === 'O' && p.ball)?.id || null
-    };
+    app.state.replay.snapshot = app.captureSceneSnapshot ? app.captureSceneSnapshot() : app.serializeScene();
     app.canvas.style.pointerEvents = 'none';
-    const tl = app.compileTimeline();
+    const tl = app.compileTimeline(app.state.replay.snapshot);
     app.state.replay.runs = tl.runs;
     app.state.replay.passes = tl.passes;
     app.state.replay.durationMs = Math.max(100, tl.durationMs);
@@ -180,10 +177,7 @@ export function attachReplayApi(app) {
     app.state.replay.paused = false;
     app.canvas.style.pointerEvents = 'auto';
     if (restore && app.state.replay.snapshot) {
-      app.state.players = JSON.parse(JSON.stringify(app.state.replay.snapshot.players));
-      app.state.players.forEach((p) => {
-        p.ball = p.team === 'O' && p.id === app.state.replay.snapshot.ballOwnerId;
-      });
+      app.restoreScene(app.state.replay.snapshot, { redraw: false });
     }
     app.state.replay.flightBall = null;
     app.draw();
@@ -209,11 +203,15 @@ export function attachReplayApi(app) {
   app.setReplayTime = function setReplayTime(ms) {
     const t = Math.max(0, Math.min(app.state.replay.durationMs, ms | 0));
     app.state.replay.timeMs = t;
+    const snapshot = app.state.replay.snapshot || app.captureSceneSnapshot?.() || app.serializeScene();
     app.state.replay.runs.forEach((run) => {
       const u = (t < run.t0) ? 0 : (t > run.t1 ? 1 : (t - run.t0) / (run.t1 - run.t0));
       const pos = app.polyLerp(run.pts, Math.max(0, Math.min(1, u)));
-      run.player.x = pos.x;
-      run.player.y = pos.y;
+      const live = app.state.players.find((player) => player.id === run.playerId);
+      if (live) {
+        live.x = pos.x;
+        live.y = pos.y;
+      }
     });
     app.state.players.forEach((p) => {
       if (p.team === 'O') p.ball = false;
@@ -231,7 +229,7 @@ export function attachReplayApi(app) {
       const arcY = -4 * inFlight.arc * u * (1 - u);
       app.state.replay.flightBall = { x: base.x, y: base.y + arcY };
     } else {
-      const targetId = lastDone ? lastDone.to.id : app.state.replay.snapshot.ballOwnerId;
+      const targetId = lastDone ? lastDone.toId : snapshot.ballHandlerId;
       const holder = app.state.players.find((p) => p.team === 'O' && p.id === targetId);
       if (holder) holder.ball = true;
     }

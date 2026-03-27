@@ -58,11 +58,15 @@ export function registerCore(app) {
   if (app.refs.$('undo')) app.refs.$('undo').onclick = () => app.undo();
   if (app.refs.$('redo')) app.refs.$('redo').onclick = () => app.redo();
   if (app.refs.$('clear')) app.refs.$('clear').onclick = () => {
+    app.cancelCurrentInteraction();
     app.pushUndo();
     app.state.shapes = [];
+    if (app.clearSelection) app.clearSelection({ redraw: false });
     app.draw();
   };
   if (app.refs.$('toggle-court')) app.refs.$('toggle-court').onclick = () => {
+    app.cancelCurrentInteraction();
+    app.pushUndo();
     app.state.court = app.state.court === 'half' ? 'full' : 'half';
     app.updateCanvasAspect();
     app.resizeForDPI();
@@ -74,7 +78,11 @@ export function registerCore(app) {
     app.draw();
     app.toast(app.t('toast_view_reset'));
   };
-  if (app.refs.offenseSelect) app.refs.offenseSelect.onchange = (e) => app.setBallHandlerById((e.target && e.target.value) || '1');
+  if (app.refs.offenseSelect) app.refs.offenseSelect.onchange = (e) => {
+    const next = (e.target && e.target.value) || '1';
+    if (String(next) !== String(app.currentBallHandlerId())) app.pushUndo();
+    app.setBallHandlerById(next);
+  };
   if (app.refs.quickPlaySelect) {
     app.refs.quickPlaySelect.onchange = async (e) => {
       const id = (e.target && e.target.value) || '';
@@ -84,7 +92,11 @@ export function registerCore(app) {
     };
   }
   if (app.refs.randomPlayBtn) app.refs.randomPlayBtn.onclick = () => app.applyRandomPlay();
-  if (app.refs.toggleDefenseBtn) app.refs.toggleDefenseBtn.onclick = () => app.setDefendersRemoved(!app.areDefendersRemoved());
+  if (app.refs.toggleDefenseBtn) app.refs.toggleDefenseBtn.onclick = () => {
+    app.cancelCurrentInteraction();
+    app.pushUndo();
+    app.setDefendersRemoved(!app.areDefendersRemoved());
+  };
   if (app.refs.$('export')) {
     app.refs.$('export').onclick = async () => {
       const opts = await app.promptExportOptions();
@@ -94,9 +106,14 @@ export function registerCore(app) {
   }
   if (app.refs.$('erase')) {
     app.refs.$('erase').onclick = () => {
+      if (app.getSelection && app.getSelection()) {
+        if (app.deleteSelectedObject && app.deleteSelectedObject()) return;
+        return;
+      }
       if (!app.state.shapes.length) return;
       app.pushUndo();
       app.state.shapes.pop();
+      if (app.clearSelection) app.clearSelection({ redraw: false });
       app.draw();
       app.toast(app.t('toast_erased_last'));
     };
@@ -117,6 +134,7 @@ export function registerCore(app) {
       }
       try {
         const data = JSON.parse(raw);
+        app.cancelCurrentInteraction();
         app.pushUndo();
         app.restoreScene(data);
         app.toast(app.t('toast_loaded'));

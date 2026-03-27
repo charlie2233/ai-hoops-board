@@ -36,6 +36,10 @@ function createInitialState() {
     },
     uiLang: 'zh',
     playerSize: 'normal',
+    editor: {
+      selection: null,
+      editSession: null
+    },
     immersive: {
       enabled: false,
       side: 'right'
@@ -54,11 +58,13 @@ function createInitialState() {
 
 export function attachSceneApi(app) {
   app.state = createInitialState();
+  app.shapeSeq = 0;
   app.saveExportOpts = function saveExportOpts() {
     localStorage.setItem(EXPORT_OPTS_KEY, JSON.stringify(app.state.exportOpts));
   };
 
   app.serializeScene = function serializeScene() {
+    if (app.ensureShapeIds) app.ensureShapeIds();
     return {
       schema: SAVE_SCHEMA,
       court: app.state.court,
@@ -127,6 +133,12 @@ export function attachSceneApi(app) {
     });
     if (app.state.dragTarget && app.state.dragTarget.team === 'D') {
       app.state.dragTarget = null;
+    }
+    if (app.state.editor?.selection?.kind === 'player') {
+      const selected = app.state.players.find((p) => p.id === app.state.editor.selection.id);
+      if (selected && selected.team === 'D' && selected.hidden && app.clearSelection) {
+        app.clearSelection({ redraw: false });
+      }
     }
     app.updateDefenseToggleButton();
     if (app.draw) app.draw();
@@ -290,11 +302,17 @@ export function attachSceneApi(app) {
 
   app.restoreScene = function restoreScene(scene, opts = {}) {
     if (!scene) return false;
+    if (app.cancelCurrentInteraction) app.cancelCurrentInteraction();
     app.state.court = scene.court === 'full' ? 'full' : 'half';
     app.state.players = JSON.parse(JSON.stringify(scene.players || []));
     app.state.shapes = JSON.parse(JSON.stringify(scene.shapes || []));
+    if (app.ensureShapeIds) app.ensureShapeIds();
     app.normalizePlayerVisibility();
     app.applied.id = scene.appliedPlayId || null;
+    if (app.state.editor) {
+      app.state.editor.selection = null;
+      app.state.editor.editSession = null;
+    }
     if (scene.ballHandlerId) {
       app.setBallHandlerById(String(scene.ballHandlerId), { silent: true, redraw: false });
     }

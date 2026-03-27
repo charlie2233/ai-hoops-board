@@ -180,13 +180,17 @@ export function attachPlaysApi(app) {
     }
     if (Array.isArray(play.shapes)) {
       app.state.shapes = play.shapes.map((s) => ({
+        id: s.id || app.allocateShapeId(s.type === 'pass' ? 'pass' : 'run'),
         type: s.type === 'pass' ? 'pass' : 'run',
         pts: (s.pts || []).map(app.normToPx)
       }));
+      if (app.ensureShapeIds) app.ensureShapeIds();
     }
     if (play.ballHandler) {
       app.setBallHandlerById(String(play.ballHandler), { silent: true, redraw: false });
     }
+    if (app.clearSelection) app.clearSelection({ redraw: false });
+    if (app.cancelSceneEdit) app.cancelSceneEdit();
     app.draw();
   };
 
