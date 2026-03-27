@@ -5,17 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>战术库</title>
 <meta name="theme-color" content="#f4f7ff"/>
-<script>
-(() => {
-  try {
-    const t = localStorage.getItem('uiThemeV1');
-    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
-    const s = localStorage.getItem('uiThemeStyleV1');
-    if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
-    const l = localStorage.getItem('uiLangV1');
-    if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
-  } catch (_) {}
-})();
+<script type="module">
+import { bootstrapPreferenceAttributes } from '../src/shared/page-prefs.js';
+bootstrapPreferenceAttributes();
 </script>
 <style>
   :root{
@@ -264,10 +256,9 @@
     </div>
   </div>
 
-<script>
-const THEME_KEY = 'uiThemeV1';
-const THEME_STYLE_KEY = 'uiThemeStyleV1';
-const LANG_KEY = 'uiLangV1';
+<script type="module">
+import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
+
 const FAVORITES_KEY = 'playFavoritesV1';
 const RECENTS_KEY = 'playRecentsV1';
 const themeButtons = {
@@ -282,7 +273,6 @@ const langButtons = {
   zh: document.getElementById('lang-zh'),
   en: document.getElementById('lang-en')
 };
-const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 let favorites = new Set();
 let recents = [];
 let uiLang = 'zh';
@@ -362,163 +352,16 @@ const I18N = {
   }
 };
 
-function normalizeTheme(theme){
-  return theme === 'dark' ? 'dark' : 'light';
-}
-
-function normalizeStyle(style){
-  return style === 'vivid' ? 'vivid' : 'classic';
-}
-
-function normalizeLang(lang){
-  return lang === 'en' ? 'en' : 'zh';
-}
+let plays = [];
+let previewPlayId = '';
+let presetGetter = null;
+let triedImportPreset = false;
 
 function t(key, vars = {}){
   const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
   const base = dict[key] ?? I18N.zh[key] ?? key;
   return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 }
-
-function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
-  style = normalizeStyle(document.documentElement.getAttribute('data-style'))){
-  if (!themeColorMeta) return;
-  if (theme === 'dark'){
-    themeColorMeta.setAttribute('content', style === 'vivid' ? '#0f172a' : '#0b1220');
-  } else {
-    themeColorMeta.setAttribute('content', style === 'vivid' ? '#fff8ef' : '#f4f7ff');
-  }
-}
-
-function refreshThemeButtons(theme){
-  const t = normalizeTheme(theme);
-  Object.entries(themeButtons).forEach(([k, el]) => {
-    if (!el) return;
-    const active = k === t;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-function refreshStyleButtons(style){
-  const s = normalizeStyle(style);
-  Object.entries(styleButtons).forEach(([k, el]) => {
-    if (!el) return;
-    const active = k === s;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-function refreshLangButtons(lang){
-  const l = normalizeLang(lang);
-  Object.entries(langButtons).forEach(([k, el]) => {
-    if (!el) return;
-    const active = k === l;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-function applyTheme(theme, persist = true){
-  const t = normalizeTheme(theme);
-  document.documentElement.setAttribute('data-theme', t);
-  refreshThemeButtons(t);
-  updateThemeColorMeta(t);
-  if (persist){
-    try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
-  }
-}
-
-function applyThemeStyle(style, persist = true){
-  const s = normalizeStyle(style);
-  document.documentElement.setAttribute('data-style', s);
-  refreshStyleButtons(s);
-  updateThemeColorMeta(undefined, s);
-  if (persist){
-    try { localStorage.setItem(THEME_STYLE_KEY, s); } catch (_) {}
-  }
-}
-
-function renderLanguageUI(){
-  document.title = t('title');
-  const setText = (id, key) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = t(key);
-  };
-  setText('back-link', 'back');
-  setText('page-title', 'title');
-  setText('page-sub', 'sub');
-  setText('creator-label', 'creator_label');
-  setText('theme-light', 'theme_light');
-  setText('theme-dark', 'theme_dark');
-  setText('style-classic', 'style_classic');
-  setText('style-vivid', 'style_vivid');
-  setText('pv-title', 'pv_default');
-  setText('pv-close', 'close');
-  setText('pv-apply', 'pv_apply');
-
-  const q = document.getElementById('q');
-  if (q) q.placeholder = t('q_placeholder');
-
-  const fType = document.getElementById('fType');
-  if (fType && fType.options[0]) fType.options[0].textContent = t('f_type_all');
-
-  const fVs = document.getElementById('fVs');
-  if (fVs && fVs.options[0]) fVs.options[0].textContent = t('f_vs_all');
-
-  const fScope = document.getElementById('fScope');
-  if (fScope){
-    if (fScope.options[0]) fScope.options[0].textContent = t('f_scope_all');
-    if (fScope.options[1]) fScope.options[1].textContent = t('f_scope_fav');
-    if (fScope.options[2]) fScope.options[2].textContent = t('f_scope_recent');
-  }
-
-  const fSort = document.getElementById('fSort');
-  if (fSort){
-    if (fSort.options[0]) fSort.options[0].textContent = t('f_sort_all');
-    if (fSort.options[1]) fSort.options[1].textContent = t('f_sort_name');
-    if (fSort.options[2]) fSort.options[2].textContent = t('f_sort_fav');
-    if (fSort.options[3]) fSort.options[3].textContent = t('f_sort_recent');
-  }
-}
-
-function applyLanguage(lang, persist = true){
-  uiLang = normalizeLang(lang);
-  document.documentElement.setAttribute('data-lang', uiLang);
-  document.documentElement.lang = uiLang === 'en' ? 'en' : 'zh-CN';
-  refreshLangButtons(uiLang);
-  renderLanguageUI();
-  if (persist){
-    try { localStorage.setItem(LANG_KEY, uiLang); } catch (_) {}
-  }
-}
-
-function initThemeSwitch(){
-  let savedTheme = null;
-  let savedStyle = null;
-  let savedLang = null;
-  try {
-    savedTheme = localStorage.getItem(THEME_KEY);
-    savedStyle = localStorage.getItem(THEME_STYLE_KEY);
-    savedLang = localStorage.getItem(LANG_KEY);
-  } catch (_) {}
-  applyTheme(savedTheme || document.documentElement.getAttribute('data-theme') || 'light', false);
-  applyThemeStyle(savedStyle || document.documentElement.getAttribute('data-style') || 'classic', false);
-  applyLanguage(savedLang || document.documentElement.getAttribute('data-lang') || 'zh', false);
-  if (themeButtons.light) themeButtons.light.onclick = () => applyTheme('light');
-  if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
-  if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
-  if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
-  if (langButtons.zh) langButtons.zh.onclick = () => { applyLanguage('zh'); render(); };
-  if (langButtons.en) langButtons.en.onclick = () => { applyLanguage('en'); render(); };
-}
-
-let plays = [];
-let previewPlayId = '';
-let presetGetter = null;
-let triedImportPreset = false;
 
 function escapeHtml(s){
   return String(s || '')
@@ -636,9 +479,9 @@ async function load(){
   render();
 }
 
-function match(p, q, t, v, scope){
+function match(p, q, tVal, v, scope){
   const qok = !q || (p.name + p.type + (p.vs||[]).join(',')).toLowerCase().includes(q.toLowerCase());
-  const tok = !t || p.type === t;
+  const tok = !tVal || p.type === tVal;
   const vok = !v || (p.vs||[]).includes(v);
   const pid = String(p.id || '').trim();
   const sok = !scope
@@ -647,67 +490,48 @@ function match(p, q, t, v, scope){
   return qok && tok && vok && sok;
 }
 
-function render(){
-  const list = document.getElementById('list');
-  const stats = document.getElementById('stats');
-  const q = document.getElementById('q').value.trim();
-  const t = document.getElementById('fType').value;
-  const v = document.getElementById('fVs').value;
-  const scope = document.getElementById('fScope').value;
-  const sort = document.getElementById('fSort').value;
-  const recency = new Map(recents.map((id, idx) => [id, idx]));
-  const filtered = plays.filter(p => match(p, q, t, v, scope));
+function renderLanguageUI(){
+  document.title = t('title');
+  const setText = (id, key) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = t(key);
+  };
+  setText('back-link', 'back');
+  setText('page-title', 'title');
+  setText('page-sub', 'sub');
+  setText('creator-label', 'creator_label');
+  setText('theme-light', 'theme_light');
+  setText('theme-dark', 'theme_dark');
+  setText('style-classic', 'style_classic');
+  setText('style-vivid', 'style_vivid');
+  setText('pv-title', 'pv_default');
+  setText('pv-close', 'close');
+  setText('pv-apply', 'pv_apply');
 
-  if (sort === 'name'){
-    filtered.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), uiLang === 'en' ? 'en' : 'zh-Hans-CN'));
-  } else if (sort === 'fav'){
-    filtered.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
-  } else if (sort === 'recent'){
-    filtered.sort((a, b) => {
-      const ai = recency.has(a.id) ? recency.get(a.id) : 9999;
-      const bi = recency.has(b.id) ? recency.get(b.id) : 9999;
-      return ai - bi;
-    });
+  const q = document.getElementById('q');
+  if (q) q.placeholder = t('q_placeholder');
+
+  const fType = document.getElementById('fType');
+  if (fType && fType.options[0]) fType.options[0].textContent = t('f_type_all');
+
+  const fVs = document.getElementById('fVs');
+  if (fVs && fVs.options[0]) fVs.options[0].textContent = t('f_vs_all');
+
+  const fScope = document.getElementById('fScope');
+  if (fScope){
+    if (fScope.options[0]) fScope.options[0].textContent = t('f_scope_all');
+    if (fScope.options[1]) fScope.options[1].textContent = t('f_scope_fav');
+    if (fScope.options[2]) fScope.options[2].textContent = t('f_scope_recent');
   }
 
-  const rows = filtered.map((p, idx)=>{
-    const pid = String(p.id || '');
-    const fav = isFavorite(pid);
-    const recent = isRecent(pid);
-    return `
-    <div class="card" style="--d:${idx % 10}">
-      <div class="card-head">
-        <div class="name">${escapeHtml(p.name)}</div>
-        <button class="fav-btn js-fav ${fav ? 'active' : ''}" data-id="${encodeAttr(pid)}" aria-label="${fav ? t('fav_on') : t('fav_off')}">${fav ? '★' : '☆'}</button>
-      </div>
-      <div class="tags">${escapeHtml(p.type)} · Vs ${escapeHtml((p.vs||[]).join('/') || '-')}</div>
-      <div class="line">${escapeHtml(t('line_cues', { text: (p.cues||[]).slice(0,2).join(' / ') || '—' }))}</div>
-      <div>
-        <span class="pill">${escapeHtml(p.id || 'play')}</span>
-        ${fav ? `<span class="pill fav">${escapeHtml(t('pill_fav'))}</span>` : ''}
-        ${recent ? `<span class="pill recent">${escapeHtml(t('pill_recent'))}</span>` : ''}
-      </div>
-      <div class="row">
-        <button class="btn js-preview" data-id="${encodeAttr(p.id)}">${escapeHtml(t('preview'))}</button>
-        <button class="btn primary js-apply" data-id="${encodeAttr(p.id)}">${escapeHtml(t('apply'))}</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  if (stats){
-    stats.textContent = t('stats', { total: plays.length, shown: filtered.length, fav: favorites.size, recent: recents.length });
+  const fSort = document.getElementById('fSort');
+  if (fSort){
+    if (fSort.options[0]) fSort.options[0].textContent = t('f_sort_all');
+    if (fSort.options[1]) fSort.options[1].textContent = t('f_sort_name');
+    if (fSort.options[2]) fSort.options[2].textContent = t('f_sort_fav');
+    if (fSort.options[3]) fSort.options[3].textContent = t('f_sort_recent');
   }
-  list.innerHTML = rows || `<div class="empty">${escapeHtml(t('empty'))}</div>`;
-}
-
-function applyPlay(id){
-  markRecent(id);
-  try { localStorage.setItem('applyPlayId', id); } catch(_) {}
-  location.href = '../index.html?apply=' + encodeURIComponent(id);
-}
-
-function closePreview(){
-  document.getElementById('preview-modal').hidden = true;
 }
 
 function toPx(pt, rect){
@@ -834,6 +658,23 @@ async function preview(id){
   document.getElementById('preview-modal').hidden = false;
 }
 
+function applyPlay(id){
+  markRecent(id);
+  try { localStorage.setItem('applyPlayId', id); } catch(_) {}
+  location.href = '../index.html?apply=' + encodeURIComponent(id);
+}
+
+const preferenceController = createPreferenceController({
+  themeButtons,
+  styleButtons,
+  langButtons,
+  onLanguageChange: (lang) => {
+    uiLang = normalizeLang(lang);
+    renderLanguageUI();
+    render();
+  }
+});
+
 document.getElementById('q').oninput = render;
 document.getElementById('fType').onchange = render;
 document.getElementById('fVs').onchange = render;
@@ -854,26 +695,25 @@ document.getElementById('list').addEventListener('click', (e) => {
   const ap = e.target.closest('.js-apply');
   if (ap) applyPlay(decodeAttr(ap.dataset.id));
 });
-document.getElementById('pv-close').onclick = closePreview;
+document.getElementById('pv-close').onclick = () => {
+  document.getElementById('preview-modal').hidden = true;
+};
 document.getElementById('preview-modal').addEventListener('pointerdown', (e) => {
-  if (e.target.id === 'preview-modal') closePreview();
+  if (e.target.id === 'preview-modal') document.getElementById('preview-modal').hidden = true;
 });
 document.getElementById('pv-apply').onclick = () => {
   if (!previewPlayId) return;
   applyPlay(previewPlayId);
 };
 window.addEventListener('storage', (e) => {
+  preferenceController.handleStorageEvent(e);
   if (e.key === FAVORITES_KEY || e.key === RECENTS_KEY){
     refreshCollections();
     render();
   }
-  if (e.key === LANG_KEY){
-    applyLanguage(e.newValue || 'zh', false);
-    render();
-  }
 });
 
-initThemeSwitch();
+preferenceController.init();
 load();
 </script>
 </body>
