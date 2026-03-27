@@ -112,6 +112,7 @@ export function registerAccessibility(app) {
   const doc = app.document;
   const win = app.window;
   let overlayReturnFocus = null;
+  let overlayTrapHandler = null;
 
   createVisuallyHiddenStyle(doc);
   const liveRegion = ensureLiveRegion(doc);
@@ -147,8 +148,34 @@ export function registerAccessibility(app) {
       root.setAttribute('aria-modal', 'true');
       root.setAttribute('aria-label', copyFor(app).overlay);
       if (!root.hasAttribute('tabindex')) root.tabIndex = -1;
-      const focusable = root.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      (focusable || root).focus();
+      const focusable = root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0] || root;
+      const last = focusable[focusable.length - 1] || root;
+      if (overlayTrapHandler) {
+        root.removeEventListener('keydown', overlayTrapHandler, true);
+      }
+      overlayTrapHandler = (event) => {
+        if (event.key !== 'Tab') return;
+        const activeEl = doc.activeElement;
+        if (!focusable.length) {
+          event.preventDefault();
+          root.focus();
+          return;
+        }
+        if (event.shiftKey) {
+          if (activeEl === first || activeEl === root) {
+            event.preventDefault();
+            last.focus();
+          }
+          return;
+        }
+        if (activeEl === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      root.addEventListener('keydown', overlayTrapHandler, true);
+      first.focus();
     };
   }
 
@@ -158,6 +185,10 @@ export function registerAccessibility(app) {
       originalCloseOverlay(...args);
       const root = app.refs.overlayRoot;
       if (root) {
+        if (overlayTrapHandler) {
+          root.removeEventListener('keydown', overlayTrapHandler, true);
+          overlayTrapHandler = null;
+        }
         root.setAttribute('aria-hidden', 'true');
         root.removeAttribute('role');
         root.removeAttribute('aria-modal');

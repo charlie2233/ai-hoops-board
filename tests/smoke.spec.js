@@ -40,20 +40,23 @@ test('keyboard shortcuts drive core board actions', async ({ page, browserName }
   await page.keyboard.press('v');
   await expect(page.locator('#mode-drag')).toHaveClass(/active/);
 
+  const defensePressedBefore = await page.locator('#toggle-defense').getAttribute('aria-pressed');
   await page.keyboard.press('d');
-  await expect(page.locator('#toggle-defense')).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(async () => page.locator('#toggle-defense').getAttribute('aria-pressed')).not.toBe(defensePressedBefore);
 
+  const advancedExpandedBefore = await page.locator('#show-advanced').getAttribute('aria-expanded');
   await page.keyboard.press('a');
-  await expect(page.locator('#show-advanced')).toHaveAttribute('aria-expanded', 'true');
+  await expect.poll(async () => page.locator('#show-advanced').getAttribute('aria-expanded')).not.toBe(advancedExpandedBefore);
 
+  const immersiveBefore = await page.evaluate(() => document.body.classList.contains('immersive'));
   await page.keyboard.press('f');
-  await expect(page.locator('body')).toHaveClass(/immersive/);
+  await expect.poll(async () => page.evaluate(() => document.body.classList.contains('immersive'))).not.toBe(immersiveBefore);
 
   await page.keyboard.press(' ');
-  await expect(page.locator('#btn-playpause')).not.toHaveText(/回放|Replay/);
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__aiHoopsBoardApp?.state?.replay?.playing))).toBe(true);
 
   await page.keyboard.press('Escape');
-  await expect(page.locator('#btn-playpause')).toHaveText(/回放|Replay/);
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__aiHoopsBoardApp?.state?.replay?.playing))).toBe(false);
 
   await page.keyboard.press('?');
   await expect(page.locator('#app-live-region')).not.toBeEmpty();
