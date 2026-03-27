@@ -7,17 +7,9 @@
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#f4f7ff"/>
   <link rel="apple-touch-icon" href="../assets/icon-192.png">
-  <script>
-    (() => {
-      try {
-        const t = localStorage.getItem('uiThemeV1');
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
-        const s = localStorage.getItem('uiThemeStyleV1');
-        if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
-        const l = localStorage.getItem('uiLangV1');
-        if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
-      } catch (_) {}
-    })();
+  <script type="module">
+    import { bootstrapPreferenceAttributes } from '../src/shared/page-prefs.js';
+    bootstrapPreferenceAttributes();
   </script>
   <style>
     :root {
@@ -299,109 +291,8 @@
     </div>
   </div>
 
-  <script>
-    const THEME_KEY = 'uiThemeV1';
-    const THEME_STYLE_KEY = 'uiThemeStyleV1';
-    const LANG_KEY = 'uiLangV1';
-    const PLAYER_SIZE_KEY = 'uiPlayerSizeV1';
-
-    // Theme controls
-    const themeButtons = {
-      light: document.getElementById('theme-light'),
-      dark: document.getElementById('theme-dark')
-    };
-    const styleButtons = {
-      classic: document.getElementById('style-classic'),
-      vivid: document.getElementById('style-vivid')
-    };
-    const langButtons = {
-      zh: document.getElementById('lang-zh'),
-      en: document.getElementById('lang-en')
-    };
-    const sizeButtons = {
-      small: document.getElementById('size-small'),
-      normal: document.getElementById('size-normal'),
-      large: document.getElementById('size-large'),
-      huge: document.getElementById('size-huge')
-    };
-
-    function normalizePlayerSize(size) {
-      return (size === 'small' || size === 'large' || size === 'huge') ? size : 'normal';
-    }
-
-    // Initialize theme state
-    function initTheme() {
-      const theme = localStorage.getItem(THEME_KEY) || 'light';
-      Object.keys(themeButtons).forEach(k => {
-        themeButtons[k].classList.toggle('active', k === theme);
-        themeButtons[k].setAttribute('aria-pressed', k === theme);
-      });
-      
-      const style = localStorage.getItem(THEME_STYLE_KEY) || 'classic';
-      Object.keys(styleButtons).forEach(k => {
-        styleButtons[k].classList.toggle('active', k === style);
-        styleButtons[k].setAttribute('aria-pressed', k === style);
-      });
-      
-      const lang = localStorage.getItem(LANG_KEY) || 'zh';
-      Object.keys(langButtons).forEach(k => {
-        langButtons[k].classList.toggle('active', k === lang);
-        langButtons[k].setAttribute('aria-pressed', k === lang);
-      });
-
-      const size = normalizePlayerSize(localStorage.getItem(PLAYER_SIZE_KEY) || 'normal');
-      Object.keys(sizeButtons).forEach(k => {
-        sizeButtons[k].classList.toggle('active', k === size);
-        sizeButtons[k].setAttribute('aria-pressed', k === size);
-      });
-      
-      updateLanguage(lang);
-    }
-
-    // Theme switchers
-    Object.keys(themeButtons).forEach(theme => {
-      themeButtons[theme].addEventListener('click', () => {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem(THEME_KEY, theme);
-        Object.keys(themeButtons).forEach(k => {
-          themeButtons[k].classList.toggle('active', k === theme);
-          themeButtons[k].setAttribute('aria-pressed', k === theme);
-        });
-      });
-    });
-
-    Object.keys(styleButtons).forEach(style => {
-      styleButtons[style].addEventListener('click', () => {
-        document.documentElement.setAttribute('data-style', style);
-        localStorage.setItem(THEME_STYLE_KEY, style);
-        Object.keys(styleButtons).forEach(k => {
-          styleButtons[k].classList.toggle('active', k === style);
-          styleButtons[k].setAttribute('aria-pressed', k === style);
-        });
-      });
-    });
-
-    Object.keys(langButtons).forEach(lang => {
-      langButtons[lang].addEventListener('click', () => {
-        document.documentElement.setAttribute('data-lang', lang);
-        localStorage.setItem(LANG_KEY, lang);
-        Object.keys(langButtons).forEach(k => {
-          langButtons[k].classList.toggle('active', k === lang);
-          langButtons[k].setAttribute('aria-pressed', k === lang);
-        });
-        updateLanguage(lang);
-      });
-    });
-
-    Object.keys(sizeButtons).forEach(size => {
-      sizeButtons[size].addEventListener('click', () => {
-        localStorage.setItem(PLAYER_SIZE_KEY, size);
-        Object.keys(sizeButtons).forEach(k => {
-          sizeButtons[k].classList.toggle('active', k === size);
-          sizeButtons[k].setAttribute('aria-pressed', k === size);
-        });
-      });
-    });
+  <script type="module">
+    import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
 
     // Language translations
     const I18N = {
@@ -457,8 +348,30 @@
       }
     };
 
+    const themeButtons = {
+      light: document.getElementById('theme-light'),
+      dark: document.getElementById('theme-dark')
+    };
+    const styleButtons = {
+      classic: document.getElementById('style-classic'),
+      vivid: document.getElementById('style-vivid')
+    };
+    const langButtons = {
+      zh: document.getElementById('lang-zh'),
+      en: document.getElementById('lang-en')
+    };
+    const sizeButtons = {
+      small: document.getElementById('size-small'),
+      normal: document.getElementById('size-normal'),
+      large: document.getElementById('size-large'),
+      huge: document.getElementById('size-huge')
+    };
+
+    let controller = null;
+
     function updateLanguage(lang) {
-      const t = I18N[lang] || I18N.zh;
+      const current = normalizeLang(lang);
+      const t = I18N[current] || I18N.zh;
       document.getElementById('page-title').textContent = t.page_title;
       document.querySelector('.back-btn').textContent = t.back_btn;
       document.getElementById('section-theme').textContent = t.section_theme;
@@ -484,7 +397,17 @@
       document.getElementById('section-about').textContent = t.section_about;
     }
 
-    initTheme();
+    controller = createPreferenceController({
+      themeButtons,
+      styleButtons,
+      langButtons,
+      sizeButtons,
+      onLanguageChange: (lang) => updateLanguage(lang)
+    });
+    window.addEventListener('storage', (e) => {
+      controller.handleStorageEvent(e);
+    });
+    controller.init();
   </script>
 </body>
 </html>

@@ -5,17 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>训练库</title>
 <meta name="theme-color" content="#f4f7ff"/>
-<script>
-(() => {
-  try {
-    const t = localStorage.getItem('uiThemeV1');
-    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
-    const s = localStorage.getItem('uiThemeStyleV1');
-    if (s === 'classic' || s === 'vivid') document.documentElement.setAttribute('data-style', s);
-    const l = localStorage.getItem('uiLangV1');
-    if (l === 'zh' || l === 'en') document.documentElement.setAttribute('data-lang', l);
-  } catch (_) {}
-})();
+<script type="module">
+import { bootstrapPreferenceAttributes } from '../src/shared/page-prefs.js';
+bootstrapPreferenceAttributes();
 </script>
 <style>
   :root{
@@ -223,10 +215,9 @@
 
   <div class="list" id="list"></div>
 
-<script>
-const THEME_KEY = 'uiThemeV1';
-const THEME_STYLE_KEY = 'uiThemeStyleV1';
-const LANG_KEY = 'uiLangV1';
+<script type="module">
+import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
+
 const RECENTS_KEY = 'playRecentsV1';
 const themeButtons = {
   light: document.getElementById('theme-light'),
@@ -240,7 +231,6 @@ const langButtons = {
   zh: document.getElementById('lang-zh'),
   en: document.getElementById('lang-en')
 };
-const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 let uiLang = 'zh';
 
 const I18N = {
@@ -296,17 +286,9 @@ const I18N = {
   }
 };
 
-function normalizeTheme(theme){
-  return theme === 'dark' ? 'dark' : 'light';
-}
-
-function normalizeStyle(style){
-  return style === 'vivid' ? 'vivid' : 'classic';
-}
-
-function normalizeLang(lang){
-  return lang === 'en' ? 'en' : 'zh';
-}
+let drills = [];
+let plays = [];
+let activeVideoId = '';
 
 function t(key, vars = {}){
   const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
@@ -314,64 +296,21 @@ function t(key, vars = {}){
   return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 }
 
-function updateThemeColorMeta(theme = normalizeTheme(document.documentElement.getAttribute('data-theme')),
-  style = normalizeStyle(document.documentElement.getAttribute('data-style'))){
-  if (!themeColorMeta) return;
-  if (theme === 'dark'){
-    themeColorMeta.setAttribute('content', style === 'vivid' ? '#0f172a' : '#0b1220');
-  } else {
-    themeColorMeta.setAttribute('content', style === 'vivid' ? '#fff8ef' : '#f4f7ff');
-  }
+function escapeHtml(s){
+  return String(s || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
-function refreshThemeButtons(theme){
-  const t = normalizeTheme(theme);
-  Object.entries(themeButtons).forEach(([k, el]) => {
-    if (!el) return;
-    const active = k === t;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
+function encodeAttr(s){
+  return encodeURIComponent(String(s || ''));
 }
 
-function refreshStyleButtons(style){
-  const s = normalizeStyle(style);
-  Object.entries(styleButtons).forEach(([k, el]) => {
-    if (!el) return;
-    const active = k === s;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-function refreshLangButtons(lang){
-  const l = normalizeLang(lang);
-  Object.entries(langButtons).forEach(([k, el]) => {
-    if (!el) return;
-    const active = k === l;
-    el.classList.toggle('active', active);
-    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-function applyTheme(theme, persist = true){
-  const t = normalizeTheme(theme);
-  document.documentElement.setAttribute('data-theme', t);
-  refreshThemeButtons(t);
-  updateThemeColorMeta(t);
-  if (persist){
-    try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
-  }
-}
-
-function applyThemeStyle(style, persist = true){
-  const s = normalizeStyle(style);
-  document.documentElement.setAttribute('data-style', s);
-  refreshStyleButtons(s);
-  updateThemeColorMeta(undefined, s);
-  if (persist){
-    try { localStorage.setItem(THEME_STYLE_KEY, s); } catch (_) {}
-  }
+function decodeAttr(s){
+  try { return decodeURIComponent(s || ''); } catch(_) { return ''; }
 }
 
 function renderLanguageUI(){
@@ -404,56 +343,20 @@ function renderLanguageUI(){
   }
 }
 
-function applyLanguage(lang, persist = true){
-  uiLang = normalizeLang(lang);
-  document.documentElement.setAttribute('data-lang', uiLang);
-  document.documentElement.lang = uiLang === 'en' ? 'en' : 'zh-CN';
-  refreshLangButtons(uiLang);
-  renderLanguageUI();
-  if (persist){
-    try { localStorage.setItem(LANG_KEY, uiLang); } catch (_) {}
+function readRecents(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+    return Array.isArray(raw) ? raw.map(x => String(x || '').trim()).filter(Boolean) : [];
+  } catch (_) {
+    return [];
   }
 }
 
-function initThemeSwitch(){
-  let savedTheme = null;
-  let savedStyle = null;
-  let savedLang = null;
-  try {
-    savedTheme = localStorage.getItem(THEME_KEY);
-    savedStyle = localStorage.getItem(THEME_STYLE_KEY);
-    savedLang = localStorage.getItem(LANG_KEY);
-  } catch (_) {}
-  applyTheme(savedTheme || document.documentElement.getAttribute('data-theme') || 'light', false);
-  applyThemeStyle(savedStyle || document.documentElement.getAttribute('data-style') || 'classic', false);
-  applyLanguage(savedLang || document.documentElement.getAttribute('data-lang') || 'zh', false);
-  if (themeButtons.light) themeButtons.light.onclick = () => applyTheme('light');
-  if (themeButtons.dark) themeButtons.dark.onclick = () => applyTheme('dark');
-  if (styleButtons.classic) styleButtons.classic.onclick = () => applyThemeStyle('classic');
-  if (styleButtons.vivid) styleButtons.vivid.onclick = () => applyThemeStyle('vivid');
-  if (langButtons.zh) langButtons.zh.onclick = () => { applyLanguage('zh'); render(); };
-  if (langButtons.en) langButtons.en.onclick = () => { applyLanguage('en'); render(); };
-}
-
-let drills = [];
-let plays = [];
-let activeVideoId = '';
-
-function escapeHtml(s){
-  return String(s || '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function encodeAttr(s){
-  return encodeURIComponent(String(s || ''));
-}
-
-function decodeAttr(s){
-  try { return decodeURIComponent(s || ''); } catch(_) { return ''; }
+function markRecent(playId){
+  const pid = String(playId || '').trim();
+  if (!pid) return;
+  const next = [pid, ...readRecents().filter(x => x !== pid)].slice(0, 24);
+  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(next)); } catch (_) {}
 }
 
 async function load(){
@@ -532,24 +435,23 @@ function playVideo(id, title){
   document.getElementById('player').hidden = false;
 }
 
-function markRecent(playId){
-  const pid = String(playId || '').trim();
-  if (!pid) return;
-  let list = [];
-  try {
-    const raw = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
-    if (Array.isArray(raw)) list = raw.map(x => String(x || '').trim()).filter(Boolean);
-  } catch (_) {}
-  const next = [pid, ...list.filter(x => x !== pid)].slice(0, 24);
-  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(next)); } catch (_) {}
-}
-
 function applyPlay(playId){
   if (!playId) return;
   markRecent(playId);
   try { localStorage.setItem('applyPlayId', playId); } catch(_) {}
   location.href = '../index.html?apply=' + encodeURIComponent(playId);
 }
+
+const preferenceController = createPreferenceController({
+  themeButtons,
+  styleButtons,
+  langButtons,
+  onLanguageChange: (lang) => {
+    uiLang = normalizeLang(lang);
+    renderLanguageUI();
+    render();
+  }
+});
 
 document.getElementById('q').oninput = render;
 document.getElementById('fPlay').onchange = render;
@@ -574,13 +476,10 @@ document.getElementById('list').addEventListener('click', (e) => {
   }
 });
 window.addEventListener('storage', (e) => {
-  if (e.key === LANG_KEY){
-    applyLanguage(e.newValue || 'zh', false);
-    render();
-  }
+  preferenceController.handleStorageEvent(e);
 });
 
-initThemeSwitch();
+preferenceController.init();
 load();
 </script>
 </body>
