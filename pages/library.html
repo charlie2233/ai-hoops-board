@@ -490,6 +490,59 @@ function match(p, q, tVal, v, scope){
   return qok && tok && vok && sok;
 }
 
+function render(){
+  const list = document.getElementById('list');
+  const stats = document.getElementById('stats');
+  const q = document.getElementById('q').value.trim();
+  const tVal = document.getElementById('fType').value;
+  const v = document.getElementById('fVs').value;
+  const scope = document.getElementById('fScope').value;
+  const sort = document.getElementById('fSort').value;
+  const recency = new Map(recents.map((id, idx) => [id, idx]));
+  const filtered = plays.filter((p) => match(p, q, tVal, v, scope));
+
+  if (sort === 'name'){
+    filtered.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), uiLang === 'en' ? 'en' : 'zh-Hans-CN'));
+  } else if (sort === 'fav'){
+    filtered.sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
+  } else if (sort === 'recent'){
+    filtered.sort((a, b) => {
+      const ai = recency.has(a.id) ? recency.get(a.id) : 9999;
+      const bi = recency.has(b.id) ? recency.get(b.id) : 9999;
+      return ai - bi;
+    });
+  }
+
+  const rows = filtered.map((p, idx) => {
+    const pid = String(p.id || '');
+    const fav = isFavorite(pid);
+    const recent = isRecent(pid);
+    return `
+    <div class="card" style="--d:${idx % 10}">
+      <div class="card-head">
+        <div class="name">${escapeHtml(p.name)}</div>
+        <button class="fav-btn js-fav ${fav ? 'active' : ''}" data-id="${encodeAttr(pid)}" aria-label="${fav ? t('fav_on') : t('fav_off')}">${fav ? '★' : '☆'}</button>
+      </div>
+      <div class="tags">${escapeHtml(p.type)} · Vs ${escapeHtml((p.vs || []).join('/') || '-')}</div>
+      <div class="line">${escapeHtml(t('line_cues', { text: (p.cues || []).slice(0, 2).join(' / ') || '—' }))}</div>
+      <div>
+        <span class="pill">${escapeHtml(p.id || 'play')}</span>
+        ${fav ? `<span class="pill fav">${escapeHtml(t('pill_fav'))}</span>` : ''}
+        ${recent ? `<span class="pill recent">${escapeHtml(t('pill_recent'))}</span>` : ''}
+      </div>
+      <div class="row">
+        <button class="btn js-preview" data-id="${encodeAttr(p.id)}">${escapeHtml(t('preview'))}</button>
+        <button class="btn primary js-apply" data-id="${encodeAttr(p.id)}">${escapeHtml(t('apply'))}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (stats){
+    stats.textContent = t('stats', { total: plays.length, shown: filtered.length, fav: favorites.size, recent: recents.length });
+  }
+  list.innerHTML = rows || `<div class="empty">${escapeHtml(t('empty'))}</div>`;
+}
+
 function renderLanguageUI(){
   document.title = t('title');
   const setText = (id, key) => {
