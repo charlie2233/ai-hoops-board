@@ -26,6 +26,7 @@ export function createShellRefs(doc = document) {
     offenseSelect: $('offense-player'),
     quickPlaySelect: $('quick-play'),
     randomPlayBtn: $('random-play'),
+    playbookBtn: $('link-playbook'),
     toggleDefenseBtn: $('toggle-defense'),
     toolbarEl: $('toolbar'),
     bottombarEl: $('bottombar'),

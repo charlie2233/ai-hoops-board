@@ -1,5 +1,5 @@
-import { registerCore } from './register-core.js';
 import { registerPlaybook } from './register-playbook.js';
+import { registerCore } from './register-core.js';
 import { registerEditor } from './register-editor.js';
 import { registerCatalog } from './register-catalog.js';
 import { registerQuality } from './register-quality.js';
@@ -38,8 +38,8 @@ export function boot() {
   attachDrillsApi(app);
   attachOverlayShell(app);
 
-  registerCore(app);
   registerPlaybook(app);
+  registerCore(app);
   registerEditor(app);
   registerCatalog(app);
   registerQuality(app);
