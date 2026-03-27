@@ -258,6 +258,7 @@ bootstrapPreferenceAttributes();
 
 <script type="module">
 import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
+import { applyPlayFromCatalog, bindOverlayBackLink, getBoardApp, isOverlayMode } from '../src/features/library/index.js';
 
 const FAVORITES_KEY = 'playFavoritesV1';
 const RECENTS_KEY = 'playRecentsV1';
@@ -354,6 +355,9 @@ const I18N = {
 
 let plays = [];
 let previewPlayId = '';
+
+const overlayMode = isOverlayMode(window);
+const boardApp = getBoardApp(window);
 let presetGetter = null;
 let triedImportPreset = false;
 
@@ -711,10 +715,11 @@ async function preview(id){
   document.getElementById('preview-modal').hidden = false;
 }
 
-function applyPlay(id){
-  markRecent(id);
-  try { localStorage.setItem('applyPlayId', id); } catch(_) {}
-  location.href = '../index.html?apply=' + encodeURIComponent(id);
+async function applyPlay(id){
+  const pid = String(id || '').trim();
+  if (!pid) return;
+  markRecent(pid);
+  await applyPlayFromCatalog(pid, { boardApp, fallbackHref: '../index.html?apply=' });
 }
 
 const preferenceController = createPreferenceController({
@@ -758,6 +763,16 @@ document.getElementById('pv-apply').onclick = () => {
   if (!previewPlayId) return;
   applyPlay(previewPlayId);
 };
+if (overlayMode) {
+  bindOverlayBackLink(document, () => {
+    try { boardApp?.closeOverlay?.(); } catch (_) {}
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      try { boardApp?.closeOverlay?.(); } catch (_) {}
+    }
+  });
+}
 window.addEventListener('storage', (e) => {
   preferenceController.handleStorageEvent(e);
   if (e.key === FAVORITES_KEY || e.key === RECENTS_KEY){
