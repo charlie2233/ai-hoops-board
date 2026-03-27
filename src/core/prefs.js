@@ -9,7 +9,7 @@ import {
   THEME_STYLE_KEY
 } from './keys.js';
 
-const immersiveRailMoveIds = ['btn-playpause', 'btn-stop', 'seek', 'speed', 'native-fullscreen', 'show-advanced'];
+const immersiveRailMoveIds = ['btn-playpause', 'btn-stop', 'seek', 'speed', 'native-fullscreen', 'show-advanced', 'link-playbook'];
 const immersiveQuickbarMoveIds = ['immersive-side-toggle', 'immersive-exit'];
 
 export function attachPrefsApi(app) {
