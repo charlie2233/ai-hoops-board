@@ -217,6 +217,7 @@ bootstrapPreferenceAttributes();
 
 <script type="module">
 import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
+import { applyPlayFromCatalog, bindOverlayBackLink, getBoardApp, isOverlayMode } from '../src/features/drills/index.js';
 
 const RECENTS_KEY = 'playRecentsV1';
 const themeButtons = {
@@ -289,6 +290,9 @@ const I18N = {
 let drills = [];
 let plays = [];
 let activeVideoId = '';
+
+const overlayMode = isOverlayMode(window);
+const boardApp = getBoardApp(window);
 
 function t(key, vars = {}){
   const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
@@ -435,11 +439,11 @@ function playVideo(id, title){
   document.getElementById('player').hidden = false;
 }
 
-function applyPlay(playId){
-  if (!playId) return;
-  markRecent(playId);
-  try { localStorage.setItem('applyPlayId', playId); } catch(_) {}
-  location.href = '../index.html?apply=' + encodeURIComponent(playId);
+async function applyPlay(playId){
+  const pid = String(playId || '').trim();
+  if (!pid) return;
+  markRecent(pid);
+  await applyPlayFromCatalog(pid, { boardApp, fallbackHref: '../index.html?apply=' });
 }
 
 const preferenceController = createPreferenceController({
@@ -460,6 +464,16 @@ document.getElementById('player-open').onclick = () => {
   if (!activeVideoId) return;
   window.open(`https://www.youtube.com/watch?v=${activeVideoId}`, '_blank');
 };
+if (overlayMode) {
+  bindOverlayBackLink(document, () => {
+    try { boardApp?.closeOverlay?.(); } catch (_) {}
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      try { boardApp?.closeOverlay?.(); } catch (_) {}
+    }
+  });
+}
 
 document.getElementById('list').addEventListener('click', (e) => {
   const playBtn = e.target.closest('.js-play');
