@@ -394,6 +394,61 @@ export function attachRenderApi(app) {
     }
   };
 
+  app.drawSelectionOverlay = function drawSelectionOverlay() {
+    const sel = app.getSelection ? app.getSelection() : null;
+    if (!sel) return;
+    const ctx = app.ctx;
+    const edit = app.state.editor?.editSession || null;
+    const R = app.playerRadiusPx();
+
+    ctx.save();
+    if (sel.kind === 'player') {
+      const player = app.getSelectedPlayer ? app.getSelectedPlayer() : null;
+      if (player && !player.hidden) {
+        ctx.fillStyle = 'rgba(253, 230, 138, 0.10)';
+        ctx.strokeStyle = '#FDE68A';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, R + 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
+    if (sel.kind === 'shape') {
+      const shape = app.getSelectedShape ? app.getSelectedShape() : null;
+      if (!shape || !Array.isArray(shape.pts) || shape.pts.length < 2) {
+        ctx.restore();
+        return;
+      }
+
+      ctx.strokeStyle = '#FDE68A';
+      ctx.lineWidth = 6;
+      ctx.setLineDash([8, 6]);
+      if (shape.type === 'pass') {
+        app.drawArrow(shape.pts[0], shape.pts[shape.pts.length - 1], '#FDE68A');
+      } else {
+        app.drawPolyline(shape.pts, '#FDE68A', true);
+      }
+      ctx.setLineDash([]);
+
+      shape.pts.forEach((pt, idx) => {
+        const active = edit && edit.kind === 'shape' && edit.id === shape.id && edit.pointIndex === idx;
+        ctx.fillStyle = active ? '#0F172A' : '#FDE68A';
+        ctx.strokeStyle = active ? '#FDE68A' : '#0F172A';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, active ? 8 : 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+
+    ctx.restore();
+  };
+
   app.spacingThresholdPx = function spacingThresholdPx() {
     return Math.min(app.canvas.clientWidth, app.canvas.clientHeight) * 0.09;
   };
@@ -540,6 +595,7 @@ export function attachRenderApi(app) {
     app.drawShapes();
     app.drawPlayers({ hideDefense });
     app.drawSpacingAlerts();
+    app.drawSelectionOverlay();
     ctx.restore();
     app.syncOffenseSelect();
     app.refreshAITips();
