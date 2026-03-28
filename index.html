@@ -190,6 +190,34 @@
       background: color-mix(in srgb, var(--panel) 78%, transparent);
     }
 
+    .toolbar-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 12px;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar-badge[data-state="synced"] {
+      border-color: color-mix(in srgb, #16a34a 40%, var(--line));
+      color: color-mix(in srgb, #166534 70%, var(--text));
+      background: color-mix(in srgb, #16a34a 16%, var(--panel-strong));
+    }
+
+    .toolbar-badge[data-state="cached"] {
+      border-color: color-mix(in srgb, var(--accent-soft) 42%, var(--line));
+      color: color-mix(in srgb, var(--accent) 74%, var(--text));
+      background: color-mix(in srgb, var(--accent-soft) 16%, var(--panel-strong));
+    }
+
+    .toolbar-badge[data-state="unavailable"] {
+      border-color: color-mix(in srgb, #dc2626 42%, var(--line));
+      color: color-mix(in srgb, #991b1b 78%, var(--text));
+      background: color-mix(in srgb, #dc2626 12%, var(--panel-strong));
+    }
+
     .icon-btn {
       min-width: 44px !important;
       font-size: 18px;
@@ -721,6 +749,7 @@
       <option value="1">1×</option>
       <option value="2">2×</option>
     </select>
+    <span class="badge toolbar-badge" id="catalog-status-badge" hidden aria-live="polite"></span>
     <button class="btn" id="native-fullscreen">设备全屏</button>
     <button class="btn more-btn" id="show-advanced">更多 ▼</button>
   </div>

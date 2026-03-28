@@ -130,6 +130,9 @@ bootstrapPreferenceAttributes();
     font-size:12px;
     font-weight:700;
   }
+  .stats[data-state="synced"]{border-color:color-mix(in srgb,var(--ok) 36%, var(--line))}
+  .stats[data-state="cached"]{border-color:color-mix(in srgb,var(--accent) 36%, var(--line))}
+  .stats[data-state="unavailable"]{border-color:color-mix(in srgb,#dc2626 40%, var(--line))}
 
   .list{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
   .card{
@@ -277,6 +280,7 @@ const langButtons = {
 let favorites = new Set();
 let recents = [];
 let uiLang = 'zh';
+let playsStatus = null;
 
 const I18N = {
   zh: {
@@ -298,6 +302,11 @@ const I18N = {
     f_sort_name: '按名称',
     f_sort_fav: '收藏优先',
     f_sort_recent: '最近优先',
+    status_synced: '已同步 {time}',
+    status_synced_short: '已同步',
+    status_cached: '离线缓存 · {time}',
+    status_cached_short: '离线缓存',
+    status_unavailable: '目录不可用',
     stats: '共 {total} 条 · 当前 {shown} 条 · 收藏 {fav} 条 · 最近 {recent} 条',
     line_cues: '口令：{text}',
     preview: '预览',
@@ -334,6 +343,11 @@ const I18N = {
     f_sort_name: 'By Name',
     f_sort_fav: 'Favorites First',
     f_sort_recent: 'Recent First',
+    status_synced: 'Synced {time}',
+    status_synced_short: 'Synced',
+    status_cached: 'Offline Cache · {time}',
+    status_cached_short: 'Offline Cache',
+    status_unavailable: 'Catalog Unavailable',
     stats: 'Total {total} · Showing {shown} · Favorites {fav} · Recent {recent}',
     line_cues: 'Cues: {text}',
     preview: 'Preview',
@@ -362,6 +376,37 @@ function t(key, vars = {}){
   const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
   const base = dict[key] ?? I18N.zh[key] ?? key;
   return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+}
+
+function formatStatusTime(ts){
+  if (!ts) return '';
+  const locale = normalizeLang(uiLang) === 'en' ? 'en-US' : 'zh-CN';
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(ts));
+  } catch (_) {
+    return new Date(ts).toLocaleString(locale);
+  }
+}
+
+function displayStatus(status){
+  if (!status) return { state: 'unavailable', lastSyncedAt: null, items: [] };
+  if (navigator.onLine === false && (status.lastSyncedAt || (status.items || []).length)) {
+    return Object.assign({}, status, { state: 'cached' });
+  }
+  return status;
+}
+
+function formatStatusLabel(status){
+  const next = displayStatus(status);
+  const time = formatStatusTime(next.lastSyncedAt);
+  if (next.state === 'synced') return time ? t('status_synced', { time }) : t('status_synced_short');
+  if (next.state === 'cached') return time ? t('status_cached', { time }) : t('status_cached_short');
+  return t('status_unavailable');
 }
 
 function escapeHtml(s){
@@ -476,6 +521,7 @@ async function resolveGeometry(play){
 async function load(){
   const result = await loadCatalog('plays', '../plays/plays.json', { force: true });
   plays = Array.isArray(result.items) ? result.items : [];
+  playsStatus = result.status;
   refreshCollections();
   render();
 }
@@ -539,7 +585,9 @@ function render(){
   }).join('');
 
   if (stats){
-    stats.textContent = t('stats', { total: plays.length, shown: filtered.length, fav: favorites.size, recent: recents.length });
+    const status = displayStatus(playsStatus);
+    stats.dataset.state = status.state || 'unavailable';
+    stats.textContent = `${formatStatusLabel(status)} · ${t('stats', { total: plays.length, shown: filtered.length, fav: favorites.size, recent: recents.length })}`;
   }
   list.innerHTML = rows || `<div class="empty">${escapeHtml(t('empty'))}</div>`;
 }
@@ -766,6 +814,8 @@ window.addEventListener('storage', (e) => {
     render();
   }
 });
+window.addEventListener('online', load);
+window.addEventListener('offline', render);
 
 preferenceController.init();
 load();

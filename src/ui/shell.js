@@ -27,6 +27,7 @@ export function createShellRefs(doc = document) {
     quickPlaySelect: $('quick-play'),
     randomPlayBtn: $('random-play'),
     toggleDefenseBtn: $('toggle-defense'),
+    catalogStatusBadge: $('catalog-status-badge'),
     toolbarEl: $('toolbar'),
     bottombarEl: $('bottombar'),
     immersiveQuickbarEl: $('immersive-quickbar'),

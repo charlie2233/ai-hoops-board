@@ -102,6 +102,11 @@ const I18N = {
     export_vis: '显示内容',
     export_vis_all: '进攻 + 防守（默认）',
     export_vis_offense: '仅进攻（隐藏 X1–X5）',
+    catalog_status_synced: '已同步 {time}',
+    catalog_status_synced_short: '已同步',
+    catalog_status_cached: '离线缓存 · {time}',
+    catalog_status_cached_short: '离线缓存',
+    catalog_status_unavailable: '目录不可用',
     cancel: '取消',
     export: '导出',
     export_play_named: '战术：{name}',
@@ -212,6 +217,11 @@ const I18N = {
     export_vis: 'Visibility',
     export_vis_all: 'Offense + Defense (default)',
     export_vis_offense: 'Offense Only (hide X1-X5)',
+    catalog_status_synced: 'Synced {time}',
+    catalog_status_synced_short: 'Synced',
+    catalog_status_cached: 'Offline Cache · {time}',
+    catalog_status_cached_short: 'Offline Cache',
+    catalog_status_unavailable: 'Catalog Unavailable',
     cancel: 'Cancel',
     export: 'Export',
     export_play_named: 'Play: {name}',
@@ -367,5 +377,6 @@ const I18N = {
     if (app.updateReplayButtonLabel) app.updateReplayButtonLabel();
     if (app.updateNativeFullscreenButton) app.updateNativeFullscreenButton();
     if (app.updateImmersiveButtons) app.updateImmersiveButtons();
+    if (app.renderCatalogStatusBadge) app.renderCatalogStatusBadge();
   };
 }
