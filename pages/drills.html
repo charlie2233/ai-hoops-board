@@ -216,6 +216,7 @@ bootstrapPreferenceAttributes();
   <div class="list" id="list"></div>
 
 <script type="module">
+import { loadCatalog } from '../src/catalog/cache.js';
 import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
 
 const RECENTS_KEY = 'playRecentsV1';
@@ -360,8 +361,10 @@ function markRecent(playId){
 }
 
 async function load(){
-  plays = await (await fetch('../plays/plays.json?t=' + Date.now(), { cache: 'no-store' })).json();
-  drills = await (await fetch('../drills/drills.json?t=' + Date.now(), { cache: 'no-store' })).json();
+  const playResult = await loadCatalog('plays', '../plays/plays.json', { force: true });
+  const drillResult = await loadCatalog('drills', '../drills/drills.json', { force: true });
+  plays = Array.isArray(playResult.items) ? playResult.items : [];
+  drills = Array.isArray(drillResult.items) ? drillResult.items : [];
 
   const sel = document.getElementById('fPlay');
   plays.forEach(p => {

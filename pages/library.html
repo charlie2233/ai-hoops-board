@@ -257,6 +257,7 @@ bootstrapPreferenceAttributes();
   </div>
 
 <script type="module">
+import { loadCatalog } from '../src/catalog/cache.js';
 import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
 
 const FAVORITES_KEY = 'playFavoritesV1';
@@ -473,8 +474,8 @@ async function resolveGeometry(play){
 }
 
 async function load(){
-  const res = await fetch('../plays/plays.json?t=' + Date.now(), { cache: 'no-store' });
-  plays = await res.json();
+  const result = await loadCatalog('plays', '../plays/plays.json', { force: true });
+  plays = Array.isArray(result.items) ? result.items : [];
   refreshCollections();
   render();
 }
