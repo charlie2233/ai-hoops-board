@@ -9,6 +9,10 @@ export const LAYOUT_MODE_KEY = 'uiLayoutModeV1';
 export const PLAY_FAVORITES_KEY = 'playFavoritesV1';
 export const PLAY_RECENTS_KEY = 'playRecentsV1';
 export const PLAY_RECENTS_LIMIT = 12;
+export const PLAYS_CATALOG_CACHE_KEY = 'catalogCache:plays:v1';
+export const DRILLS_CATALOG_CACHE_KEY = 'catalogCache:drills:v1';
+export const PLAYS_CATALOG_META_KEY = 'catalogMeta:plays:v1';
+export const DRILLS_CATALOG_META_KEY = 'catalogMeta:drills:v1';
 
 export const SAVE_KEY = 'boardState_v1';
 export const SAVE_SCHEMA = 1;

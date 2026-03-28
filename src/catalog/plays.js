@@ -1,4 +1,5 @@
 import { getPreset } from '../../plays/presets.js';
+import { loadCatalog } from './cache.js';
 import {
   PLAY_FAVORITES_KEY,
   PLAY_RECENTS_KEY,
@@ -108,15 +109,10 @@ export function attachPlaysApi(app) {
   };
 
   app.ensurePlaysCatalog = async function ensurePlaysCatalog(force = false) {
-    if (app.playsCatalogLoaded && !force) return app.playsCatalog;
-    try {
-      const res = await fetch('./plays/plays.json?t=' + Date.now(), { cache: 'no-store' });
-      const list = await res.json();
-      app.playsCatalog = Array.isArray(list) ? list : [];
-      app.playsCatalogLoaded = true;
-    } catch (_) {
-      if (!app.playsCatalogLoaded) app.playsCatalog = [];
-    }
+    const result = await loadCatalog('plays', './plays/plays.json', { force });
+    app.playsCatalog = Array.isArray(result.items) ? result.items : [];
+    app.playsCatalogLoaded = !!result.status?.loaded;
+    app.playsCatalogStatus = result.status;
     app.refreshQuickPlayOptions();
     return app.playsCatalog;
   };

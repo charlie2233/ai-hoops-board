@@ -116,6 +116,20 @@ bootstrapPreferenceAttributes();
   }
   .ctrl{height:40px;border:1px solid var(--line);border-radius:12px;padding:0 10px;background:color-mix(in srgb,var(--panel-strong) 88%, transparent);color:var(--ink);font-size:13px;font-weight:600}
 
+  .status-strip{
+    margin:10px 12px 0;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:color-mix(in srgb,var(--panel) 90%, transparent);
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+  }
+  .status-strip[data-state="synced"]{border-color:color-mix(in srgb,#16a34a 36%, var(--line))}
+  .status-strip[data-state="cached"]{border-color:color-mix(in srgb,var(--accent) 36%, var(--line))}
+  .status-strip[data-state="unavailable"]{border-color:color-mix(in srgb,#dc2626 40%, var(--line))}
+
   .player{
     position:sticky;top:124px;z-index:18;
     margin:10px 12px 0;padding:10px;
@@ -200,6 +214,8 @@ bootstrapPreferenceAttributes();
     <select id="fPlay" class="ctrl"><option value="">关联战术</option></select>
   </div>
 
+  <div class="status-strip" id="catalog-status">载入中…</div>
+
   <div class="player" id="player" hidden>
     <div class="player-head">
       <div class="player-title" id="player-title">训练视频</div>
@@ -216,6 +232,7 @@ bootstrapPreferenceAttributes();
   <div class="list" id="list"></div>
 
 <script type="module">
+import { loadCatalog } from '../src/catalog/cache.js';
 import { createPreferenceController, normalizeLang } from '../src/shared/page-prefs.js';
 
 const RECENTS_KEY = 'playRecentsV1';
@@ -232,6 +249,8 @@ const langButtons = {
   en: document.getElementById('lang-en')
 };
 let uiLang = 'zh';
+let playsStatus = null;
+let drillsStatus = null;
 
 const I18N = {
   zh: {
@@ -253,6 +272,11 @@ const I18N = {
     meta_notes: '要点',
     btn_play: '播放',
     btn_apply: '应用关联战术',
+    status_synced: '已同步 {time}',
+    status_synced_short: '已同步',
+    status_cached: '离线缓存 · {time}',
+    status_cached_short: '离线缓存',
+    status_unavailable: '目录不可用',
     empty: '没有匹配的训练',
     playing_now: '正在播放：{title}',
     playing_default: '正在播放训练视频',
@@ -278,6 +302,11 @@ const I18N = {
     meta_notes: 'Notes',
     btn_play: 'Play',
     btn_apply: 'Apply Linked Play',
+    status_synced: 'Synced {time}',
+    status_synced_short: 'Synced',
+    status_cached: 'Offline Cache · {time}',
+    status_cached_short: 'Offline Cache',
+    status_unavailable: 'Catalog Unavailable',
     empty: 'No matching drills',
     playing_now: 'Now Playing: {title}',
     playing_default: 'Now playing drill video',
@@ -294,6 +323,50 @@ function t(key, vars = {}){
   const dict = I18N[normalizeLang(uiLang)] || I18N.zh;
   const base = dict[key] ?? I18N.zh[key] ?? key;
   return String(base).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+}
+
+function formatStatusTime(ts){
+  if (!ts) return '';
+  const locale = normalizeLang(uiLang) === 'en' ? 'en-US' : 'zh-CN';
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(ts));
+  } catch (_) {
+    return new Date(ts).toLocaleString(locale);
+  }
+}
+
+function displayStatus(status){
+  if (!status) return { state: 'unavailable', lastSyncedAt: null, items: [] };
+  if (navigator.onLine === false && (status.lastSyncedAt || (status.items || []).length)) {
+    return Object.assign({}, status, { state: 'cached' });
+  }
+  return status;
+}
+
+function mergeStatus(primary, secondary){
+  const a = displayStatus(primary);
+  const b = displayStatus(secondary);
+  if (a.state === 'unavailable' || b.state === 'unavailable') {
+    if (a.state === 'unavailable') return a;
+    return b;
+  }
+  if (a.state === 'cached' || b.state === 'cached') {
+    return a.state === 'cached' ? a : b;
+  }
+  return a;
+}
+
+function formatStatusLabel(status){
+  const next = displayStatus(status);
+  const time = formatStatusTime(next.lastSyncedAt);
+  if (next.state === 'synced') return time ? t('status_synced', { time }) : t('status_synced_short');
+  if (next.state === 'cached') return time ? t('status_cached', { time }) : t('status_cached_short');
+  return t('status_unavailable');
 }
 
 function escapeHtml(s){
@@ -336,6 +409,12 @@ function renderLanguageUI(){
 
   const fPlay = document.getElementById('fPlay');
   if (fPlay && fPlay.options[0]) fPlay.options[0].textContent = t('f_play');
+  const statusEl = document.getElementById('catalog-status');
+  if (statusEl) {
+    const status = mergeStatus(drillsStatus, playsStatus);
+    statusEl.dataset.state = status.state || 'unavailable';
+    statusEl.textContent = formatStatusLabel(status);
+  }
 
   if (!activeVideoId){
     const titleEl = document.getElementById('player-title');
@@ -360,16 +439,29 @@ function markRecent(playId){
 }
 
 async function load(){
-  plays = await (await fetch('../plays/plays.json?t=' + Date.now(), { cache: 'no-store' })).json();
-  drills = await (await fetch('../drills/drills.json?t=' + Date.now(), { cache: 'no-store' })).json();
+  const playResult = await loadCatalog('plays', '../plays/plays.json', { force: true });
+  const drillResult = await loadCatalog('drills', '../drills/drills.json', { force: true });
+  plays = Array.isArray(playResult.items) ? playResult.items : [];
+  drills = Array.isArray(drillResult.items) ? drillResult.items : [];
+  playsStatus = playResult.status;
+  drillsStatus = drillResult.status;
 
   const sel = document.getElementById('fPlay');
+  const keep = sel.value;
+  sel.innerHTML = '';
+  const baseOption = document.createElement('option');
+  baseOption.value = '';
+  baseOption.textContent = t('f_play');
+  sel.appendChild(baseOption);
   plays.forEach(p => {
     const op = document.createElement('option');
     op.value = p.id;
     op.textContent = p.name;
     sel.appendChild(op);
   });
+  if (keep && Array.from(sel.options).some((option) => option.value === keep)) {
+    sel.value = keep;
+  }
   render();
 }
 
@@ -389,6 +481,12 @@ function render(){
   const q = document.getElementById('q').value.trim();
   const pid = document.getElementById('fPlay').value;
   const list = document.getElementById('list');
+  const statusEl = document.getElementById('catalog-status');
+  const mergedStatus = mergeStatus(drillsStatus, playsStatus);
+  if (statusEl) {
+    statusEl.dataset.state = mergedStatus.state || 'unavailable';
+    statusEl.textContent = formatStatusLabel(mergedStatus);
+  }
 
   const html = drills.filter(d => match(d, q, pid)).map((d, idx) => {
     const thumb = ytThumb(d.youtubeId);
@@ -478,6 +576,8 @@ document.getElementById('list').addEventListener('click', (e) => {
 window.addEventListener('storage', (e) => {
   preferenceController.handleStorageEvent(e);
 });
+window.addEventListener('online', load);
+window.addEventListener('offline', render);
 
 preferenceController.init();
 load();
