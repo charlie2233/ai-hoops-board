@@ -92,6 +92,9 @@ export function registerCore(app) {
       app.exportPNG(opts);
     };
   }
+  if (app.refs.shareBtn) {
+    app.refs.shareBtn.onclick = () => app.shareBoard();
+  }
   if (app.refs.$('erase')) {
     app.refs.$('erase').onclick = () => {
       if (!app.state.shapes.length) return;

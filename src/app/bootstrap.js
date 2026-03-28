@@ -14,6 +14,7 @@ import { attachInteractionApi } from '../board/interaction.js';
 import { attachReplayApi } from '../board/replay.js';
 import { attachPlaysApi } from '../catalog/plays.js';
 import { attachDrillsApi } from '../catalog/drills.js';
+import { attachShareApi } from '../features/share/index.js';
 
 export function boot() {
   const refs = createShellRefs(document);
@@ -36,6 +37,7 @@ export function boot() {
   attachReplayApi(app);
   attachPlaysApi(app);
   attachDrillsApi(app);
+  attachShareApi(app);
   attachOverlayShell(app);
 
   registerCore(app);
