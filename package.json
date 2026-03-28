@@ -1,0 +1,13 @@
+{
+  "name": "ai-hoops-board",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve:static": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "test": "playwright test",
+    "test:smoke": "playwright test tests/smoke.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}
