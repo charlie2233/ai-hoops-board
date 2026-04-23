@@ -11,11 +11,17 @@ from .chunker import chunk_text
 def _iter_documents(root: Path) -> Iterable[dict[str, Any]]:
     documents_path = root / "index" / "documents.jsonl"
     if documents_path.exists():
-      with documents_path.open(encoding="utf-8") as handle:
-          for line in handle:
-              if line.strip():
-                  yield json.loads(line)
-      return
+        seen: set[str] = set()
+        with documents_path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                document = json.loads(line)
+                document_id = str(document.get("id") or document.get("path") or "")
+                if document_id and document_id not in seen:
+                    seen.add(document_id)
+                    yield document
+        return
 
     for markdown_path in root.glob("courses/*/*/*/item.md"):
         yield {
@@ -79,7 +85,7 @@ def rebuild_index(root: str | Path) -> dict[str, int | str]:
                 }
                 chunks_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
                 connection.execute(
-                    "INSERT INTO chunks (id, document_id, chunk_index, text) VALUES (?, ?, ?, ?)",
+                    "INSERT OR REPLACE INTO chunks (id, document_id, chunk_index, text) VALUES (?, ?, ?, ?)",
                     (chunk_id, document_id, chunk.index, chunk.text),
                 )
                 connection.execute(

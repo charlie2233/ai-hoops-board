@@ -8,6 +8,16 @@ export interface DownloadJob {
   filename: string;
 }
 
+export interface DownloadResult {
+  attachmentId: string;
+  title: string;
+  url: string;
+  filename: string;
+  ok: boolean;
+  downloadId?: number;
+  error?: string;
+}
+
 function safeFilename(value: string): string {
   return value
     .normalize("NFKD")
@@ -49,4 +59,24 @@ export async function downloadJob(job: DownloadJob): Promise<number> {
     conflictAction: "uniquify",
     saveAs: false
   });
+}
+
+export async function downloadJobs(jobs: DownloadJob[]): Promise<DownloadResult[]> {
+  const results: DownloadResult[] = [];
+  for (const job of jobs) {
+    try {
+      results.push({
+        ...job,
+        ok: true,
+        downloadId: await downloadJob(job)
+      });
+    } catch (error) {
+      results.push({
+        ...job,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+  return results;
 }

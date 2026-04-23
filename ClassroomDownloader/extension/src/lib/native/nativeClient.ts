@@ -6,6 +6,8 @@ export interface NativeResponse {
   ok: boolean;
   error?: string;
   paths?: Record<string, string>;
+  root?: string;
+  index?: Record<string, unknown>;
   [key: string]: unknown;
 }
 

@@ -27,6 +27,19 @@ Smoke-test the host handler directly:
 python -m classroom_ai_exporter.mcp.server
 ```
 
+## Dev Installer
+
+After building/loading the unpacked extension, copy its extension id from `chrome://extensions` and run:
+
+```sh
+cd ClassroomDownloader/native
+python -m classroom_ai_exporter.install_native_host \
+  --extension-id EXTENSION_ID \
+  --archive-root "$HOME/ClassroomAIExport"
+```
+
+The installer writes a small executable wrapper under `native/.native-host/` and writes Chrome's native messaging manifest for `com.classroom_ai_exporter.host`.
+
 ## Chrome Host Manifest
 
 Chrome needs a native messaging manifest outside the repo. For development, create:

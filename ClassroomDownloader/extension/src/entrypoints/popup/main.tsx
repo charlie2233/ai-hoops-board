@@ -9,6 +9,10 @@ interface PopupState {
   message: string;
   attachmentCount: number;
   title: string;
+  nativeConnected: boolean;
+  archiveRoot: string;
+  lastExportPath: string;
+  downloadSummary: string;
 }
 
 function sendMessage<T>(message: Record<string, unknown>): Promise<T> {
@@ -20,8 +24,30 @@ function App() {
     status: "idle",
     message: "Open a Classroom page to export a local AI archive item.",
     attachmentCount: 0,
-    title: "No page captured"
+    title: "No page captured",
+    nativeConnected: false,
+    archiveRoot: "Not connected",
+    lastExportPath: "No export yet",
+    downloadSummary: "No downloads queued"
   });
+
+  async function refreshNativeHealth() {
+    const response = await sendMessage<any>({ type: "classroom_ai:native_health" });
+    const native = response?.native ?? {};
+    const lastExport = response?.lastExport ?? null;
+    setState((current) => ({
+      ...current,
+      nativeConnected: Boolean(native.connected),
+      archiveRoot: native.root || "Not connected",
+      lastExportPath:
+        lastExport?.nativeResponse?.paths?.markdown ||
+        lastExport?.nativeResponse?.paths?.item_dir ||
+        "No export yet",
+      downloadSummary: lastExport?.downloadResults
+        ? `${lastExport.downloadResults.filter((result: any) => result.ok).length}/${lastExport.downloadResults.length} browser downloads started`
+        : current.downloadSummary
+    }));
+  }
 
   async function refreshSnapshot() {
     setState((current) => ({ ...current, status: "loading", message: "Reading visible Classroom content..." }));
@@ -31,17 +57,26 @@ function App() {
         status: "error",
         message: response?.error || "Could not read this page.",
         attachmentCount: 0,
-        title: "No page captured"
+        title: "No page captured",
+        nativeConnected: state.nativeConnected,
+        archiveRoot: state.archiveRoot,
+        lastExportPath: state.lastExportPath,
+        downloadSummary: state.downloadSummary
       });
       return;
     }
 
-    setState({
+    setState((current) => ({
       status: "ready",
       message: "Snapshot ready for local archive export.",
       attachmentCount: response.item?.attachments?.length ?? 0,
-      title: response.item?.title ?? response.snapshot?.title ?? "Classroom page"
-    });
+      title: response.item?.title ?? response.snapshot?.title ?? "Classroom page",
+      nativeConnected: current.nativeConnected,
+      archiveRoot: current.archiveRoot,
+      lastExportPath: current.lastExportPath,
+      downloadSummary: current.downloadSummary
+    }));
+    await refreshNativeHealth();
   }
 
   async function exportPage(downloadAttachments: boolean) {
@@ -64,17 +99,32 @@ function App() {
       return;
     }
 
-    setState({
+    const downloadSummary = response.downloads
+      ? `${response.downloads.succeeded}/${response.downloads.requested} browser downloads started${
+          response.downloads.failed ? `, ${response.downloads.failed} failed` : ""
+        }`
+      : "No downloads queued";
+
+    setState((current) => ({
       status: "ready",
       message: response.nativeResponse?.ok
         ? "Archive item saved locally."
         : `Snapshot captured. Native host unavailable: ${response.nativeResponse?.error || "not configured"}`,
       attachmentCount: response.item?.attachments?.length ?? 0,
-      title: response.item?.title ?? "Classroom page"
-    });
+      title: response.item?.title ?? "Classroom page",
+      nativeConnected: Boolean(response.nativeResponse?.ok),
+      archiveRoot: response.nativeResponse?.root || current.archiveRoot,
+      lastExportPath:
+        response.nativeResponse?.paths?.markdown ||
+        response.nativeResponse?.paths?.item_dir ||
+        current.lastExportPath,
+      downloadSummary
+    }));
+    await refreshNativeHealth();
   }
 
   useEffect(() => {
+    void refreshNativeHealth();
     void refreshSnapshot();
   }, []);
 
@@ -96,6 +146,16 @@ function App() {
         <div className="metric">
           <Search size={16} />
           <span>{state.attachmentCount} attachment links found</span>
+        </div>
+        <div className="healthGrid">
+          <span>Native host</span>
+          <strong>{state.nativeConnected ? "connected" : "not connected"}</strong>
+          <span>Archive root</span>
+          <strong title={state.archiveRoot}>{state.archiveRoot}</strong>
+          <span>Last export</span>
+          <strong title={state.lastExportPath}>{state.lastExportPath}</strong>
+          <span>Downloads</span>
+          <strong>{state.downloadSummary}</strong>
         </div>
       </section>
 

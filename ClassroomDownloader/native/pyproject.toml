@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 classroom-ai-host = "classroom_ai_exporter.host:main"
+classroom-ai-install-native-host = "classroom_ai_exporter.install_native_host:main"
 classroom-ai-mcp = "classroom_ai_exporter.mcp.server:main"
 
 [tool.pytest.ini_options]

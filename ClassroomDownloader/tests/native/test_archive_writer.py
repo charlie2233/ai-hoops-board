@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "native"))
 from classroom_ai_exporter.archive.writer import ArchiveWriter  # noqa: E402
 from classroom_ai_exporter.host import handle_message  # noqa: E402
 from classroom_ai_exporter.index.sqlite_fts import rebuild_index  # noqa: E402
+from classroom_ai_exporter.install_native_host import install  # noqa: E402
 
 
 class ArchiveWriterTest(unittest.TestCase):
@@ -94,6 +95,52 @@ class ArchiveWriterTest(unittest.TestCase):
             self.assertGreaterEqual(result["documents"], 1)
             self.assertGreaterEqual(result["chunks_count"], 1)
             self.assertTrue(Path(result["sqlite"]).exists())
+
+    def test_save_item_rebuilds_index_from_native_host(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            response = handle_message(
+                {
+                    "type": "save_item",
+                    "course_slug": "Biology",
+                    "item_slug": "Cell Notes",
+                    "item": {
+                        "course": {"name": "Biology"},
+                        "title": "Cell Notes",
+                        "source_url": "https://classroom.google.com/c/bio/a/cells",
+                        "instructions_text": "Review cell organelles.",
+                    },
+                    "download_jobs": [
+                        {
+                            "attachmentId": "attachment:1",
+                            "title": "Cell PDF",
+                            "url": "https://drive.google.com/uc?export=download&id=1",
+                            "filename": "ClassroomAIExporter/cell.pdf",
+                        }
+                    ],
+                },
+                root=Path(temp_dir),
+            )
+            self.assertTrue(response["ok"])
+            self.assertTrue(Path(response["index"]["sqlite"]).exists())
+            self.assertTrue((Path(temp_dir) / response["paths"]["item_dir"] / "attachments" / "download_jobs.jsonl").exists())
+
+    def test_dev_installer_writes_wrapper_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = type(
+                "Args",
+                (),
+                {
+                    "extension_id": "abcdefghijklmnopabcdefghijklmnop",
+                    "archive_root": str(Path(temp_dir) / "Archive"),
+                    "manifest_dir": str(Path(temp_dir) / "NativeMessagingHosts"),
+                    "python": sys.executable,
+                },
+            )()
+            result = install(args)
+            manifest = json.loads(Path(result["manifest"]).read_text(encoding="utf-8"))
+            self.assertEqual(manifest["name"], "com.classroom_ai_exporter.host")
+            self.assertEqual(manifest["allowed_origins"], ["chrome-extension://abcdefghijklmnopabcdefghijklmnop/"])
+            self.assertTrue(Path(result["wrapper"]).exists())
 
 
 if __name__ == "__main__":

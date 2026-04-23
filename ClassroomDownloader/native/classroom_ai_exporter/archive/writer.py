@@ -20,6 +20,33 @@ def _append_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
             handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for record in records:
+            handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _upsert_jsonl(path: Path, records: Iterable[dict[str, Any]], key: str) -> None:
+    existing: dict[str, dict[str, Any]] = {}
+    if path.exists():
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                record_key = str(record.get(key) or "")
+                if record_key:
+                    existing[record_key] = record
+
+    for record in records:
+        record_key = str(record.get(key) or "")
+        if record_key:
+            existing[record_key] = record
+
+    _write_jsonl(path, existing.values())
+
+
 def _frontmatter_value(value: Any) -> str:
     return str(value or "").replace("\n", " ").replace(":", " -")
 
@@ -123,6 +150,7 @@ class ArchiveWriter:
         item: dict[str, Any],
         markdown: str | None = None,
         snapshot: dict[str, Any] | None = None,
+        download_jobs: list[dict[str, Any]] | None = None,
         area: str = "classwork",
     ) -> dict[str, str]:
         self.ensure_layout()
@@ -142,20 +170,25 @@ class ArchiveWriter:
         (item_dir / "item.md").write_text(markdown_text, encoding="utf-8")
         (item_dir / "raw_text.txt").write_text(str(raw_text), encoding="utf-8")
         (item_dir / "page.snapshot.html").write_text(str(raw_html), encoding="utf-8")
-        _append_jsonl(item_dir / "links.jsonl", [link for link in links if isinstance(link, dict)])
+        _write_jsonl(item_dir / "links.jsonl", [link for link in links if isinstance(link, dict)])
 
         attachments_dir = item_dir / "attachments"
         attachments_dir.mkdir(parents=True, exist_ok=True)
-        _append_jsonl(
+        _write_jsonl(
             attachments_dir / "manifest.jsonl",
             [attachment for attachment in normalized.get("attachments", []) if isinstance(attachment, dict)],
+        )
+        _write_jsonl(
+            attachments_dir / "download_jobs.jsonl",
+            [job for job in (download_jobs or []) if isinstance(job, dict)],
         )
         (item_dir / "extracted").mkdir(exist_ok=True)
 
         relative_markdown = item_dir.relative_to(self.root).joinpath("item.md").as_posix()
-        _append_jsonl(
+        _upsert_jsonl(
             archive_join(self.root, "index", "documents.jsonl"),
             [document_record(normalized, relative_markdown)],
+            "id",
         )
         _append_jsonl(
             archive_join(self.root, "logs", "crawl_runs.jsonl"),
@@ -175,4 +208,32 @@ class ArchiveWriter:
             "json": item_dir.relative_to(self.root).joinpath("item.json").as_posix(),
             "markdown": relative_markdown,
             "snapshot": item_dir.relative_to(self.root).joinpath("page.snapshot.html").as_posix(),
+        }
+
+    def record_download_results(
+        self,
+        *,
+        item_dir: str,
+        item_id: str,
+        results: list[dict[str, Any]],
+    ) -> dict[str, str]:
+        self.ensure_layout()
+        relative_dir = archive_join(self.root, item_dir)
+        attachments_dir = relative_dir / "attachments"
+        attachments_dir.mkdir(parents=True, exist_ok=True)
+        _write_jsonl(attachments_dir / "download_results.jsonl", results)
+        _append_jsonl(
+            archive_join(self.root, "logs", "download_events.jsonl"),
+            [
+                {
+                    "event": "download_results",
+                    "at": utc_now_iso(),
+                    "item_id": item_id,
+                    "item_dir": item_dir,
+                    "results": results,
+                }
+            ],
+        )
+        return {
+            "download_results": attachments_dir.relative_to(self.root).joinpath("download_results.jsonl").as_posix()
         }

@@ -2,7 +2,7 @@ import { defineBackground } from "wxt/utils/define-background";
 import { browser, type Browser } from "wxt/browser";
 import { inferExportItem } from "../lib/extractors/assignmentPage";
 import type { PageSnapshot } from "../lib/extractors/classroomPage";
-import { buildDownloadJobs, downloadJob } from "../lib/downloads/downloadQueue";
+import { buildDownloadJobs, downloadJobs } from "../lib/downloads/downloadQueue";
 import { sendNativeMessage } from "../lib/native/nativeClient";
 
 interface ExtractResponse {
@@ -38,21 +38,25 @@ async function exportCurrentPage(downloadAttachments: boolean) {
   const snapshot = extracted.snapshot!;
   const item = extracted.item || inferExportItem(snapshot);
   const sessionPrefix = `${item.course.name}_${item.title}_${new Date().toISOString().slice(0, 10)}`;
+  const jobs = downloadAttachments ? buildDownloadJobs(item.attachments, sessionPrefix) : [];
 
   const nativeResponse = await sendNativeMessage({
     type: "save_item",
     course_slug: item.course.name,
     item_slug: item.title,
     item,
-    snapshot
+    snapshot,
+    download_jobs: jobs
   });
 
-  const jobs = downloadAttachments ? buildDownloadJobs(item.attachments, sessionPrefix) : [];
-  const downloads = [];
-  for (const job of jobs) {
-    downloads.push({
-      job,
-      downloadId: await downloadJob(job)
+  const downloadResults = await downloadJobs(jobs);
+  let downloadRecordResponse = null;
+  if (nativeResponse.ok && nativeResponse.paths?.item_dir && downloadResults.length > 0) {
+    downloadRecordResponse = await sendNativeMessage({
+      type: "record_download_results",
+      item_dir: nativeResponse.paths?.item_dir,
+      item_id: item.id,
+      results: downloadResults
     });
   }
 
@@ -61,7 +65,8 @@ async function exportCurrentPage(downloadAttachments: boolean) {
       exportedAt: new Date().toISOString(),
       item,
       nativeResponse,
-      downloads
+      downloadRecordResponse,
+      downloadResults
     }
   });
 
@@ -69,7 +74,29 @@ async function exportCurrentPage(downloadAttachments: boolean) {
     ok: true,
     item,
     nativeResponse,
-    downloads
+    downloadRecordResponse,
+    downloads: {
+      requested: jobs.length,
+      succeeded: downloadResults.filter((result) => result.ok).length,
+      failed: downloadResults.filter((result) => !result.ok).length,
+      results: downloadResults
+    }
+  };
+}
+
+async function nativeHealth() {
+  const ping = await sendNativeMessage({ type: "ping" });
+  const health = ping.ok ? await sendNativeMessage({ type: "show_export_health" }) : ping;
+  const lastExport = await browser.storage.session.get("lastExport");
+  return {
+    ok: true,
+    native: {
+      connected: ping.ok,
+      root: ping.root || health.root || null,
+      error: ping.ok ? health.error || null : ping.error || null,
+      health
+    },
+    lastExport: lastExport.lastExport ?? null
   };
 }
 
@@ -81,6 +108,10 @@ export default defineBackground(() => {
 
     if (message?.type === "classroom_ai:extract_current") {
       return extractCurrentPage().catch((error: Error) => ({ ok: false, error: error.message }));
+    }
+
+    if (message?.type === "classroom_ai:native_health") {
+      return nativeHealth().catch((error: Error) => ({ ok: false, error: error.message }));
     }
 
     if (message?.type === "classroom_ai:export_current") {

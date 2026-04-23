@@ -99,6 +99,23 @@ h1 {
   font-weight: 700;
 }
 
+.healthGrid {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 7px 10px;
+  padding-top: 4px;
+  color: #5f6a62;
+  font-size: 12px;
+}
+
+.healthGrid strong {
+  overflow: hidden;
+  color: #1c251f;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

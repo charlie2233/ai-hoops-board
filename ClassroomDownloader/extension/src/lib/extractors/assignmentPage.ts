@@ -47,9 +47,18 @@ function firstUsefulHeading(snapshot: PageSnapshot): string {
 
 function inferCourseName(snapshot: PageSnapshot): string {
   const lines = snapshot.bodyText.split("\n").map((line) => line.trim()).filter(Boolean);
+  const navMatch = snapshot.bodyText.replace(/\s+/g, " ").match(/^(.+?)\s+Stream\s+Classwork\b/i);
+  if (navMatch?.[1]) {
+    return navMatch[1].trim();
+  }
+
   const classworkIndex = lines.findIndex((line) => /^stream$|^classwork$|^people$|^grades$/i.test(line));
   if (classworkIndex > 0) {
-    return lines[classworkIndex - 1] || "Unknown course";
+    const previous = lines[classworkIndex - 1] || "";
+    if (/^stream$|^classwork$|^people$|^grades$/i.test(previous) && classworkIndex > 1) {
+      return lines[classworkIndex - 2] || "Unknown course";
+    }
+    return previous || "Unknown course";
   }
   return snapshot.title.replace(/\s+-\s+Google Classroom$/i, "").trim() || "Unknown course";
 }
