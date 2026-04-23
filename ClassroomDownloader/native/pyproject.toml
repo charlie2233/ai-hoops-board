@@ -1,0 +1,25 @@
+[project]
+name = "classroom-ai-exporter"
+version = "0.1.0"
+description = "Native host and local MCP server for Classroom AI Exporter."
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12.0",
+  "fastmcp>=2.0.0",
+  "markdownify>=0.13.0",
+  "openpyxl>=3.1.0",
+  "pypdf>=5.0.0",
+  "python-docx>=1.1.0",
+  "python-pptx>=1.0.0"
+]
+
+[project.scripts]
+classroom-ai-host = "classroom_ai_exporter.host:main"
+classroom-ai-mcp = "classroom_ai_exporter.mcp.server:main"
+
+[tool.pytest.ini_options]
+testpaths = ["../tests/native"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

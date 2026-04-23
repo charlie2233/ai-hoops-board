@@ -1,0 +1,132 @@
+import type { PageSnapshot } from "./classroomPage";
+import { classifyAttachments, type AttachmentCandidate } from "./attachmentClassifier";
+
+export interface ExportItem {
+  schema_version: "0.1";
+  entity_type: "coursework" | "announcement" | "material" | "question" | "page";
+  id: string;
+  course: {
+    id: string;
+    name: string;
+  };
+  title: string;
+  topic?: string;
+  due?: {
+    raw: string;
+    date?: string;
+    time?: string;
+    timezone?: string;
+    parse_confidence: number;
+  };
+  points?: {
+    raw: string;
+    value?: number;
+  };
+  instructions_text: string;
+  source_url: string;
+  captured_at: string;
+  attachments: AttachmentCandidate[];
+  crawler: {
+    method: "chromium_extension_dom";
+    confidence: number;
+    raw_snapshot_path: string;
+  };
+}
+
+function stableHash(value: string): string {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (Math.imul(hash, 33) ^ value.charCodeAt(index)) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+function firstUsefulHeading(snapshot: PageSnapshot): string {
+  return snapshot.headings.find((heading) => !/google classroom/i.test(heading)) || snapshot.title || "Classroom page";
+}
+
+function inferCourseName(snapshot: PageSnapshot): string {
+  const lines = snapshot.bodyText.split("\n").map((line) => line.trim()).filter(Boolean);
+  const classworkIndex = lines.findIndex((line) => /^stream$|^classwork$|^people$|^grades$/i.test(line));
+  if (classworkIndex > 0) {
+    return lines[classworkIndex - 1] || "Unknown course";
+  }
+  return snapshot.title.replace(/\s+-\s+Google Classroom$/i, "").trim() || "Unknown course";
+}
+
+function inferEntityType(snapshot: PageSnapshot): ExportItem["entity_type"] {
+  const text = `${snapshot.url}\n${snapshot.bodyText}`.toLowerCase();
+  if (text.includes("assignment") || text.includes("due ")) return "coursework";
+  if (text.includes("material")) return "material";
+  if (text.includes("question")) return "question";
+  if (text.includes("announcement")) return "announcement";
+  return "page";
+}
+
+function inferDue(snapshot: PageSnapshot): ExportItem["due"] | undefined {
+  const match = snapshot.bodyText.match(/\bDue\s+([^\n]+)/i);
+  if (!match?.[0]) return undefined;
+  return {
+    raw: match[0].trim(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    parse_confidence: 0.45
+  };
+}
+
+function inferPoints(snapshot: PageSnapshot): ExportItem["points"] | undefined {
+  const match = snapshot.bodyText.match(/\b(\d+(?:\.\d+)?)\s+points?\b/i);
+  if (!match?.[0]) return undefined;
+  return {
+    raw: match[0],
+    value: Number(match[1])
+  };
+}
+
+function summarizeInstructions(snapshot: PageSnapshot): string {
+  const lines = snapshot.bodyText.split("\n").map((line) => line.trim()).filter(Boolean);
+  const seen = new Set<string>();
+  return lines
+    .filter((line) => {
+      const key = line.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 160)
+    .join("\n");
+}
+
+export function inferExportItem(snapshot: PageSnapshot): ExportItem {
+  const courseName = inferCourseName(snapshot);
+  const title = firstUsefulHeading(snapshot);
+  const identity = `${snapshot.url}:${title}:${snapshot.capturedAt}`;
+  const attachments = classifyAttachments(snapshot.links).filter(
+    (attachment) => !attachment.sourceUrl.includes("classroom.google.com")
+  );
+
+  const item: ExportItem = {
+    schema_version: "0.1",
+    entity_type: inferEntityType(snapshot),
+    id: `classroom-ui:sha256:${stableHash(identity)}`,
+    course: {
+      id: `ui-course:${stableHash(courseName)}`,
+      name: courseName
+    },
+    title,
+    instructions_text: summarizeInstructions(snapshot),
+    source_url: snapshot.url,
+    captured_at: snapshot.capturedAt,
+    attachments,
+    crawler: {
+      method: "chromium_extension_dom",
+      confidence: 0.65,
+      raw_snapshot_path: "page.snapshot.html"
+    }
+  };
+
+  const due = inferDue(snapshot);
+  const points = inferPoints(snapshot);
+  if (due) item.due = due;
+  if (points) item.points = points;
+  return item;
+}
