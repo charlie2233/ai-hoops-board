@@ -9,3 +9,5 @@ ClassroomAIExport/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+!extension/public/icons/
+!extension/public/icons/*.png

@@ -8,6 +8,8 @@ com.classroom_ai_exporter.host
 
 ## Development Setup
 
+Run these commands from the standalone repository root:
+
 ```sh
 cd native
 python3 -m venv .venv

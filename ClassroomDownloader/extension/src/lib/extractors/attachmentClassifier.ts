@@ -150,8 +150,5 @@ export function classifyAttachment(link: ExtractedLink): AttachmentCandidate {
 
 export function classifyAttachments(links: ExtractedLink[]): AttachmentCandidate[] {
   const candidates = links.map(classifyAttachment);
-  const useful = candidates.filter(
-    (candidate) => candidate.kind !== "external_link" || candidate.sourceUrl.includes("classroom.google.com")
-  );
-  return Array.from(new Map(useful.map((candidate) => [candidate.sourceUrl, candidate])).values());
+  return Array.from(new Map(candidates.map((candidate) => [candidate.sourceUrl, candidate])).values());
 }

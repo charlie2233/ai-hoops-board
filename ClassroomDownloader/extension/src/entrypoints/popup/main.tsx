@@ -38,13 +38,15 @@ function App() {
     setState((current) => ({
       ...current,
       nativeConnected: Boolean(native.connected),
-      archiveRoot: native.root || "Not connected",
+      archiveRoot: native.root || lastExport?.fallbackResponse?.root || "Not connected",
       lastExportPath:
         lastExport?.nativeResponse?.paths?.markdown ||
         lastExport?.nativeResponse?.paths?.item_dir ||
+        lastExport?.fallbackResponse?.paths?.["item.md"] ||
+        lastExport?.fallbackResponse?.root ||
         "No export yet",
       downloadSummary: lastExport?.downloadResults
-        ? `${lastExport.downloadResults.filter((result: any) => result.ok).length}/${lastExport.downloadResults.length} downloads archived`
+        ? `${lastExport.downloadResults.filter((result: any) => result.ok).length}/${lastExport.downloadResults.length} browser downloads completed`
         : current.downloadSummary
     }));
   }
@@ -100,7 +102,7 @@ function App() {
     }
 
     const downloadSummary = response.downloads
-      ? `${response.downloads.succeeded}/${response.downloads.requested} downloads archived${
+      ? `${response.downloads.succeeded}/${response.downloads.requested} browser downloads completed${
           response.downloads.failed ? `, ${response.downloads.failed} failed` : ""
         }`
       : "No downloads queued";
@@ -109,14 +111,18 @@ function App() {
       status: "ready",
       message: response.nativeResponse?.ok
         ? "Archive item saved locally."
-        : `Snapshot captured. Native host unavailable: ${response.nativeResponse?.error || "not configured"}`,
+        : response.fallbackResponse?.ok
+          ? "Native host unavailable; saved browser-download fallback."
+          : `Snapshot captured. Native host unavailable: ${response.nativeResponse?.error || "not configured"}`,
       attachmentCount: response.item?.attachments?.length ?? 0,
       title: response.item?.title ?? "Classroom page",
       nativeConnected: Boolean(response.nativeResponse?.ok),
-      archiveRoot: response.nativeResponse?.root || current.archiveRoot,
+      archiveRoot: response.nativeResponse?.root || response.fallbackResponse?.root || current.archiveRoot,
       lastExportPath:
         response.nativeResponse?.paths?.markdown ||
         response.nativeResponse?.paths?.item_dir ||
+        response.fallbackResponse?.paths?.["item.md"] ||
+        response.fallbackResponse?.root ||
         current.lastExportPath,
       downloadSummary
     }));

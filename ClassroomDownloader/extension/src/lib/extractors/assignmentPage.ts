@@ -30,6 +30,9 @@ export interface ExportItem {
     method: "chromium_extension_dom";
     confidence: number;
     raw_snapshot_path: string;
+    raw_html_truncated: boolean;
+    raw_html_original_chars: number;
+    raw_html_stored_chars: number;
   };
 }
 
@@ -109,9 +112,10 @@ export function inferExportItem(snapshot: PageSnapshot): ExportItem {
   const courseName = inferCourseName(snapshot);
   const title = firstUsefulHeading(snapshot);
   const identity = `${snapshot.url}:${title}:${snapshot.capturedAt}`;
-  const attachments = classifyAttachments(snapshot.links).filter(
-    (attachment) => !attachment.sourceUrl.includes("classroom.google.com")
-  );
+  const attachments = classifyAttachments(snapshot.links).filter((attachment) => {
+    const host = new URL(attachment.sourceUrl).hostname;
+    return host !== "classroom.google.com";
+  });
 
   const item: ExportItem = {
     schema_version: "0.1",
@@ -129,7 +133,10 @@ export function inferExportItem(snapshot: PageSnapshot): ExportItem {
     crawler: {
       method: "chromium_extension_dom",
       confidence: 0.65,
-      raw_snapshot_path: "page.snapshot.html"
+      raw_snapshot_path: "page.snapshot.html",
+      raw_html_truncated: snapshot.rawHtmlTruncated,
+      raw_html_original_chars: snapshot.rawHtmlOriginalChars,
+      raw_html_stored_chars: snapshot.rawHtmlStoredChars
     }
   };
 

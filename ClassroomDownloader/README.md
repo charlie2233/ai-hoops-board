@@ -6,7 +6,7 @@ Classroom AI Exporter turns the Google Classroom content a user can already see 
 Logged-in Google Classroom tab
         -> Chromium extension / content scripts
         -> Extension controller + download queue
-        -> Native host
+        -> Native host (optional)
         -> AI-readable archive folder
         -> Local MCP server
         -> Codex / GPT search, summarize, cite
@@ -24,6 +24,8 @@ The first version is local-only:
 - No telemetry or hosted backend.
 - MCP tools read the local archive and do not mutate Classroom.
 
+See [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) for the Chrome Web Store privacy-policy draft.
+
 ## What Exists Now
 
 This scaffold implements the first useful product slice:
@@ -31,6 +33,8 @@ This scaffold implements the first useful product slice:
 - MV3/WXT extension structure with a popup, background controller, and Classroom content script.
 - DOM snapshot extraction that prefers semantic signals over random Google CSS classes.
 - Attachment classification for Drive files, Docs, Sheets, Slides, Drive folders, YouTube, and external links.
+- Browser-download fallback export when the optional Python native host is not installed.
+- Raw HTML snapshot truncation before native-host transfer or fallback download.
 - Best-effort browser download job creation without bypassing UI restrictions.
 - Python native host archive writer for `item.json`, `item.md`, `raw_text.txt`, `page.snapshot.html`, `links.jsonl`, and archive indexes.
 - Read-only local MCP server skeleton with `search`, `fetch`, `list_courses`, `list_assignments`, `list_due_soon`, `read_attachment`, `show_export_health`, and `rebuild_index`.

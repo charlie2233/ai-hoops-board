@@ -24,9 +24,9 @@ The extension reads visible DOM state from pages the user has already opened:
 - button labels
 - ARIA labels
 - page title and URL
-- raw HTML snapshot for audit/debugging
+- optional raw HTML snapshot for audit/debugging, truncated before export when it exceeds the configured safety limit
 
-The extension can ask Chromium to download URLs that the browser session can already access. It does not read or export the browser's credentials.
+The extension can ask Chromium to download URLs that the browser session can already access. It can also save a no-native fallback export into the user's Downloads folder. It does not read or export the browser's credentials.
 
 ## MCP Safety
 

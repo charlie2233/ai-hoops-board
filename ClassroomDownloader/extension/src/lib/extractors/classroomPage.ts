@@ -22,7 +22,12 @@ export interface PageSnapshot {
   buttons: ExtractedButton[];
   bodyText: string;
   rawHtml: string;
+  rawHtmlTruncated: boolean;
+  rawHtmlOriginalChars: number;
+  rawHtmlStoredChars: number;
 }
+
+export const RAW_HTML_CHAR_LIMIT = 2_000_000;
 
 function cleanText(value: string | null | undefined): string {
   return (value ?? "")
@@ -40,6 +45,18 @@ function visibleText(value: string | null | undefined): string {
 
 function uniqueNonEmpty(values: string[]): string[] {
   return Array.from(new Set(values.map(cleanText).filter(Boolean)));
+}
+
+export function truncateRawHtml(rawHtml: string, limit = RAW_HTML_CHAR_LIMIT) {
+  const safeLimit = Math.max(0, limit);
+  const truncated = rawHtml.length > safeLimit;
+  const stored = truncated ? rawHtml.slice(0, safeLimit) : rawHtml;
+  return {
+    rawHtml: stored,
+    rawHtmlTruncated: truncated,
+    rawHtmlOriginalChars: rawHtml.length,
+    rawHtmlStoredChars: stored.length
+  };
 }
 
 export function extractPageSnapshot(doc: Document = document, loc: Location = location): PageSnapshot {
@@ -65,6 +82,7 @@ export function extractPageSnapshot(doc: Document = document, loc: Location = lo
       (heading) => heading.innerText || heading.textContent || ""
     )
   );
+  const rawHtml = truncateRawHtml(doc.documentElement?.outerHTML || "");
 
   return {
     url: loc.href,
@@ -74,6 +92,6 @@ export function extractPageSnapshot(doc: Document = document, loc: Location = lo
     links,
     buttons,
     bodyText: visibleText(doc.body?.innerText || doc.body?.textContent || ""),
-    rawHtml: doc.documentElement?.outerHTML || ""
+    ...rawHtml
   };
 }

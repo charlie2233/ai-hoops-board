@@ -7,6 +7,7 @@ import {
   buildFinalizeDownloadResultsMessage,
   downloadJobs
 } from "../lib/downloads/downloadQueue";
+import { downloadFallbackExport, type FallbackExportResult } from "../lib/fallback/fallbackExport";
 import { sendNativeMessage } from "../lib/native/nativeClient";
 
 interface ExtractResponse {
@@ -52,6 +53,26 @@ async function exportCurrentPage(downloadAttachments: boolean) {
     snapshot,
     download_jobs: jobs
   });
+  let fallbackResponse: FallbackExportResult | null = null;
+  if (!nativeResponse.ok) {
+    try {
+      fallbackResponse = await downloadFallbackExport(item, snapshot);
+    } catch (error) {
+      fallbackResponse = {
+        ok: false,
+        root: "Downloads/ClassroomAIExporter",
+        paths: {},
+        downloadIds: [],
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  if (!nativeResponse.ok && !fallbackResponse?.ok) {
+    throw new Error(
+      `Native host unavailable and browser-download fallback failed: ${fallbackResponse?.error || nativeResponse.error || "unknown error"}`
+    );
+  }
 
   const downloadResults = await downloadJobs(jobs);
   let downloadRecordResponse = null;
@@ -66,6 +87,7 @@ async function exportCurrentPage(downloadAttachments: boolean) {
       exportedAt: new Date().toISOString(),
       item,
       nativeResponse,
+      fallbackResponse,
       downloadRecordResponse,
       downloadResults
     }
@@ -75,6 +97,7 @@ async function exportCurrentPage(downloadAttachments: boolean) {
     ok: true,
     item,
     nativeResponse,
+    fallbackResponse,
     downloadRecordResponse,
     downloads: {
       requested: jobs.length,

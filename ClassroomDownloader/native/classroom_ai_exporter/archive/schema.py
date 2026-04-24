@@ -31,6 +31,7 @@ def normalize_item(item: dict[str, Any]) -> dict[str, Any]:
     captured_at = str(item.get("captured_at") or item.get("capturedAt") or utc_now_iso())
     course = item.get("course") if isinstance(item.get("course"), dict) else {}
     course_name = str(course.get("name") or "Unknown course")
+    crawler = item.get("crawler") if isinstance(item.get("crawler"), dict) else {}
 
     normalized = {
         **item,
@@ -48,8 +49,11 @@ def normalize_item(item: dict[str, Any]) -> dict[str, Any]:
         "attachments": list(item.get("attachments") or []),
         "crawler": {
             "method": CRAWLER_METHOD,
-            "confidence": float((item.get("crawler") or {}).get("confidence", 0.5)),
+            "confidence": float(crawler.get("confidence", 0.5)),
             "raw_snapshot_path": "page.snapshot.html",
+            "raw_html_truncated": bool(crawler.get("raw_html_truncated", False)),
+            "raw_html_original_chars": int(crawler.get("raw_html_original_chars", 0) or 0),
+            "raw_html_stored_chars": int(crawler.get("raw_html_stored_chars", 0) or 0),
         },
     }
     return normalized

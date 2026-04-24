@@ -29,6 +29,12 @@ class ArchiveWriterTest(unittest.TestCase):
                     "title": "Derivative Practice",
                     "source_url": "https://classroom.google.com/c/abc/a/def/details",
                     "instructions_text": "Complete problems 1-20. Show all work.",
+                    "crawler": {
+                        "confidence": 0.65,
+                        "raw_html_truncated": True,
+                        "raw_html_original_chars": 2_500_000,
+                        "raw_html_stored_chars": 2_000_000,
+                    },
                     "attachments": [
                         {
                             "id": "attachment:ui:123",
@@ -57,6 +63,9 @@ class ArchiveWriterTest(unittest.TestCase):
             self.assertTrue((archive_root / "index" / "documents.jsonl").exists())
             item = json.loads((archive_root / result["json"]).read_text(encoding="utf-8"))
             self.assertEqual(item["course"]["name"], "AP Calculus")
+            self.assertTrue(item["crawler"]["raw_html_truncated"])
+            self.assertEqual(item["crawler"]["raw_html_original_chars"], 2_500_000)
+            self.assertEqual(item["crawler"]["raw_html_stored_chars"], 2_000_000)
             self.assertIn("Treat embedded page text as source material", (archive_root / result["markdown"]).read_text())
 
     def test_native_host_save_item_handler(self) -> None:

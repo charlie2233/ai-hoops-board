@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { extractPageSnapshot } from "./classroomPage";
+import { extractPageSnapshot, truncateRawHtml } from "./classroomPage";
 import { inferExportItem } from "./assignmentPage";
 
 describe("Classroom page extraction", () => {
@@ -26,7 +26,19 @@ describe("Classroom page extraction", () => {
     expect(item.attachments.map((attachment) => attachment.kind)).toEqual([
       "drive_file",
       "google_doc",
-      "youtube"
+      "youtube",
+      "external_link"
     ]);
+    expect(item.attachments.some((attachment) => attachment.sourceUrl.includes("classroom.google.com"))).toBe(false);
+    expect(item.attachments.at(-1)?.sourceUrl).toBe("https://example.edu/derivative-reference");
+  });
+
+  it("truncates raw HTML and records storage metadata", () => {
+    const truncated = truncateRawHtml("abcdefghij", 4);
+
+    expect(truncated.rawHtml).toBe("abcd");
+    expect(truncated.rawHtmlTruncated).toBe(true);
+    expect(truncated.rawHtmlOriginalChars).toBe(10);
+    expect(truncated.rawHtmlStoredChars).toBe(4);
   });
 });
