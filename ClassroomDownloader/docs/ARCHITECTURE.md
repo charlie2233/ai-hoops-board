@@ -1,6 +1,6 @@
 # Architecture
 
-Classroom AI Exporter is built around one constraint: it exports only content already visible to the signed-in browser user. The browser extension observes the page, the native host owns durable local storage, and MCP exposes the local archive to AI tools.
+CourseBinder – AI-Ready Google Classroom Exporter is built around one constraint: it exports only content already visible to the signed-in browser user. The browser extension observes the page, the native host owns durable local storage, and MCP exposes the local archive to AI tools.
 
 ```txt
 Google Classroom tab

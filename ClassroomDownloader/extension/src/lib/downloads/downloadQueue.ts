@@ -57,7 +57,7 @@ export function buildDownloadJobs(attachments: AttachmentCandidate[], sessionPre
         attachmentId: attachment.id,
         title: attachment.title,
         url,
-        filename: `ClassroomAIExporter/${safeFilename(sessionPrefix)}/${baseName}${index ? `_${index + 1}` : ""}${suffix}`
+        filename: `CourseBinder/${safeFilename(sessionPrefix)}/${baseName}${index ? `_${index + 1}` : ""}${suffix}`
       };
     });
   });

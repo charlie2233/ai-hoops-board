@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Classroom AI Exporter is a local-first browser extension for exporting the Google Classroom content that is already visible to the signed-in user in their browser.
+CourseBinder – AI-Ready Google Classroom Exporter is a local-first browser extension for exporting the Google Classroom content that is already visible to the signed-in user in their browser.
 
 ## Data the Extension Reads
 
@@ -32,7 +32,7 @@ If the native host is not installed, the extension still provides a browser-down
 
 ## What the Extension Does Not Do
 
-Classroom AI Exporter does not use:
+CourseBinder – AI-Ready Google Classroom Exporter does not use:
 
 - Google Classroom API
 - Google Drive API
@@ -51,4 +51,4 @@ Exported data stays on the user's device unless the user separately chooses to s
 
 ## Contact
 
-For questions or issues, use the project's GitHub repository: https://github.com/charlie2233/classroom-ai-exporter
+For questions or issues, use the project's GitHub repository: https://github.com/charlie2233/coursebinder-ai-ready-google-classroom-exporter

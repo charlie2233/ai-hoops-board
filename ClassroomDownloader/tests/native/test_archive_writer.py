@@ -124,7 +124,7 @@ class ArchiveWriterTest(unittest.TestCase):
                             "attachmentId": "attachment:1",
                             "title": "Cell PDF",
                             "url": "https://drive.google.com/uc?export=download&id=1",
-                            "filename": "ClassroomAIExporter/cell.pdf",
+                            "filename": "CourseBinder/cell.pdf",
                         }
                     ],
                 },
@@ -190,7 +190,7 @@ class ArchiveWriterTest(unittest.TestCase):
                             "attachmentId": "attachment:worksheet",
                             "title": "Derivative Worksheet",
                             "url": "https://drive.google.com/uc?export=download&id=file-1",
-                            "filename": "ClassroomAIExporter/Derivative_Worksheet.html",
+                            "filename": "CourseBinder/Derivative_Worksheet.html",
                             "ok": True,
                             "downloadStatus": "downloaded",
                             "originalDownloadPath": str(source),

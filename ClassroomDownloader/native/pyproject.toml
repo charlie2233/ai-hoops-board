@@ -1,7 +1,7 @@
 [project]
-name = "classroom-ai-exporter"
+name = "coursebinder-ai-ready-google-classroom-exporter"
 version = "0.1.0"
-description = "Native host and local MCP server for Classroom AI Exporter."
+description = "Native host and local MCP server for CourseBinder – AI-Ready Google Classroom Exporter."
 requires-python = ">=3.11"
 dependencies = [
   "beautifulsoup4>=4.12.0",
@@ -14,6 +14,9 @@ dependencies = [
 ]
 
 [project.scripts]
+coursebinder-host = "classroom_ai_exporter.host:main"
+coursebinder-install-native-host = "classroom_ai_exporter.install_native_host:main"
+coursebinder-mcp = "classroom_ai_exporter.mcp.server:main"
 classroom-ai-host = "classroom_ai_exporter.host:main"
 classroom-ai-install-native-host = "classroom_ai_exporter.install_native_host:main"
 classroom-ai-mcp = "classroom_ai_exporter.mcp.server:main"

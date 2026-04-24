@@ -1,14 +1,14 @@
 # Chrome Web Store Submission Packet
 
-This packet is for an unlisted or deferred Chrome Web Store submission of Classroom AI Exporter.
+This packet is for an unlisted or deferred Chrome Web Store submission of CourseBinder – AI-Ready Google Classroom Exporter.
 
 ## Short Description
 
-Export visible Google Classroom pages into local AI-readable Markdown, JSON, snapshots, links, and attachment archives.
+CourseBinder exports visible Google Classroom pages into local AI-readable Markdown, JSON, snapshots, links, and attachment archives.
 
 ## Long Description
 
-Classroom AI Exporter helps students and educators turn Google Classroom pages they can already see in their browser into a local, AI-readable archive.
+CourseBinder – AI-Ready Google Classroom Exporter helps students and educators turn Google Classroom pages they can already see in their browser into a local, AI-readable archive.
 
 With one click, the extension can export the current Classroom page into structured files such as Markdown, JSON, raw text, links, attachment manifests, and page snapshots. When available, it can also start browser downloads for visible/downloadable attachment links.
 
@@ -27,7 +27,7 @@ Privacy boundary:
 
 The optional native helper can be installed separately by the user to write richer local archives, hash/copy downloaded files, extract text, build indexes, and expose a local read-only MCP server. If the helper is not installed, the browser-download fallback still works.
 
-Classroom AI Exporter only processes content the signed-in user can already see in their browser and does not bypass permissions, view-only restrictions, or access controls.
+CourseBinder – AI-Ready Google Classroom Exporter only processes content the signed-in user can already see in their browser and does not bypass permissions, view-only restrictions, or access controls.
 
 ## Category Recommendation
 
@@ -35,7 +35,7 @@ Use `Education` if available. Otherwise use `Productivity`.
 
 ## Single Purpose Statement
 
-Classroom AI Exporter lets users export Google Classroom page content they can already see in their logged-in browser into local AI-readable files, including Markdown, JSON, page snapshots, links, and downloadable attachments when the user requests it.
+CourseBinder – AI-Ready Google Classroom Exporter lets users export Google Classroom page content they can already see in their logged-in browser into local AI-readable files, including Markdown, JSON, page snapshots, links, and downloadable attachments when the user requests it.
 
 ## Permission Justifications
 
@@ -94,7 +94,7 @@ Recommended data-use framing:
 Privacy policy URL:
 
 ```txt
-https://raw.githubusercontent.com/charlie2233/classroom-ai-exporter/main/docs/PRIVACY_POLICY.md
+https://raw.githubusercontent.com/charlie2233/coursebinder-ai-ready-google-classroom-exporter/main/docs/PRIVACY_POLICY.md
 ```
 
 If the dashboard requires a rendered webpage instead of a raw Markdown file, publish the same policy text through GitHub Pages or another static page before final submission.
@@ -107,9 +107,9 @@ To test:
 
 1. Install the extension.
 2. Open any Google Classroom page available to the reviewer, or use a Classroom page in a logged-in test account.
-3. Click the Classroom AI Exporter toolbar button.
+3. Click the CourseBinder – AI-Ready Google Classroom Exporter toolbar button.
 4. Use the current-page export action.
-5. If the optional native host is not installed, the extension will use browser-download fallback and save export files under `Downloads/ClassroomAIExporter/<session>/`.
+5. If the optional native host is not installed, the extension will use browser-download fallback and save export files under `Downloads/CourseBinder/<session>/`.
 6. Confirm that `item.json`, `item.md`, `raw_text.txt`, `links.jsonl`, `attachments.manifest.jsonl`, and `page.snapshot.html` are created.
 
 The extension does not require Google APIs, OAuth, cookies, or developer-provided credentials. The native host is optional and is not required for basic export functionality.
@@ -119,7 +119,7 @@ The extension does not require Google APIs, OAuth, cookies, or developer-provide
 Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run build`:
 
 - `manifest_version`: `3`
-- `name`: `Classroom AI Exporter`
+- `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
 - `version`: `0.1.0`
 - Permissions only: `activeTab`, `downloads`, `storage`, `scripting`, `nativeMessaging`
 - Host permissions only: `https://classroom.google.com/*`, `https://drive.google.com/*`, `https://docs.google.com/*`

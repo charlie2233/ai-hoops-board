@@ -12,7 +12,7 @@ from .index.sqlite_fts import rebuild_index
 
 
 def default_archive_root() -> Path:
-    return Path(os.environ.get("CLASSROOM_AI_ROOT", "~/ClassroomAIExport")).expanduser()
+    return Path(os.environ.get("CLASSROOM_AI_ROOT", "~/CourseBinderArchive")).expanduser()
 
 
 def read_message(stdin: BinaryIO = sys.stdin.buffer) -> dict[str, Any] | None:

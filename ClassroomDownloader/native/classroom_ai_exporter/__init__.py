@@ -1,4 +1,4 @@
-"""Local archive and MCP tooling for Classroom AI Exporter."""
+"""Local archive and MCP tooling for CourseBinder – AI-Ready Google Classroom Exporter."""
 
 __all__ = ["__version__"]
 

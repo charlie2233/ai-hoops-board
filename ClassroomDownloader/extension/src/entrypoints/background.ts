@@ -60,7 +60,7 @@ async function exportCurrentPage(downloadAttachments: boolean) {
     } catch (error) {
       fallbackResponse = {
         ok: false,
-        root: "Downloads/ClassroomAIExporter",
+        root: "Downloads/CourseBinder",
         paths: {},
         downloadIds: [],
         error: error instanceof Error ? error.message : String(error)

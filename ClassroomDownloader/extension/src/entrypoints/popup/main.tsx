@@ -139,7 +139,7 @@ function App() {
       <header className="header">
         <div>
           <p className="eyebrow">Local archive</p>
-          <h1>Classroom AI Exporter</h1>
+          <h1>CourseBinder – AI-Ready Google Classroom Exporter</h1>
         </div>
         <button className="iconButton" title="Refresh snapshot" onClick={() => void refreshSnapshot()}>
           <RefreshCw size={18} />

@@ -8,8 +8,8 @@ export default defineConfig({
     plugins: [react()]
   }),
   manifest: {
-    name: "Classroom AI Exporter",
-    description: "Export visible Google Classroom pages into a local AI-readable archive.",
+    name: "CourseBinder – AI-Ready Google Classroom Exporter",
+    description: "CourseBinder exports visible Google Classroom pages into local AI-readable archives.",
     version: "0.1.0",
     permissions: ["activeTab", "downloads", "storage", "scripting", "nativeMessaging"],
     host_permissions: [
@@ -24,7 +24,7 @@ export default defineConfig({
       "128": "icons/icon-128.png"
     },
     action: {
-      default_title: "Classroom AI Exporter",
+      default_title: "CourseBinder – AI-Ready Google Classroom Exporter",
       default_icon: {
         "16": "icons/icon-16.png",
         "32": "icons/icon-32.png",

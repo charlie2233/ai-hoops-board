@@ -1,1 +1,1 @@
-"""Tests for Classroom AI Exporter."""
+"""Tests for CourseBinder – AI-Ready Google Classroom Exporter."""

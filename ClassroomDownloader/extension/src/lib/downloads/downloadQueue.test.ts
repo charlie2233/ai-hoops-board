@@ -10,7 +10,7 @@ describe("download finalization", () => {
     attachmentId: "attachment:1",
     title: "Worksheet",
     url: "https://drive.google.com/uc?export=download&id=1",
-    filename: "ClassroomAIExporter/Worksheet.pdf",
+    filename: "CourseBinder/Worksheet.pdf",
     ok: true,
     downloadId: 42,
     downloadStatus: "in_progress"

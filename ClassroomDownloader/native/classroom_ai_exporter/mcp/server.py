@@ -15,7 +15,7 @@ except Exception:  # The CLI fallback keeps tests and local inspection dependenc
 
 
 def archive_root() -> Path:
-    return Path(os.environ.get("CLASSROOM_AI_ROOT", "~/ClassroomAIExport")).expanduser().resolve()
+    return Path(os.environ.get("CLASSROOM_AI_ROOT", "~/CourseBinderArchive")).expanduser().resolve()
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:

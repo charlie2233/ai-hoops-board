@@ -1,1 +1,1 @@
-"""Read-only local MCP server for the Classroom AI archive."""
+"""Read-only local MCP server for the CourseBinder archive."""

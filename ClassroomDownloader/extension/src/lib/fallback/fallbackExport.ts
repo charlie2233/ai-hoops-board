@@ -16,7 +16,7 @@ export interface FallbackExportResult {
   error?: string;
 }
 
-const FALLBACK_ROOT = "ClassroomAIExporter";
+const FALLBACK_ROOT = "CourseBinder";
 
 export function safePathSegment(value: string, fallback = "classroom-page"): string {
   return (

@@ -1,6 +1,6 @@
-# Classroom AI Exporter
+# CourseBinder – AI-Ready Google Classroom Exporter
 
-Classroom AI Exporter turns the Google Classroom content a user can already see in a logged-in Chromium tab into a local, AI-readable archive. It is a browser-visible-content exporter, not a Google API downloader.
+CourseBinder – AI-Ready Google Classroom Exporter turns the Google Classroom content a user can already see in a logged-in Chromium tab into a local, AI-readable archive. It is a browser-visible-content exporter, not a Google API downloader.
 
 ```txt
 Logged-in Google Classroom tab

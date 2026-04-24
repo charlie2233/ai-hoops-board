@@ -65,7 +65,7 @@ describe("fallback browser-download export", () => {
 
     expect(sessionName).toContain("2026-04-24");
     expect(sessionName).not.toContain("/");
-    expect(filename).toBe(`ClassroomAIExporter/${sessionName}/item.json`);
+    expect(filename).toBe(`CourseBinder/${sessionName}/item.json`);
   });
 
   it("emits all fallback files with raw HTML truncation metadata", () => {

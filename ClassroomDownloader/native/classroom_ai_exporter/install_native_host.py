@@ -41,7 +41,7 @@ def write_manifest(path: Path, wrapper_path: Path, extension_id: str) -> None:
         json.dumps(
             {
                 "name": HOST_NAME,
-                "description": "Classroom AI Exporter native host",
+                "description": "CourseBinder – AI-Ready Google Classroom Exporter native host",
                 "path": str(wrapper_path),
                 "type": "stdio",
                 "allowed_origins": [f"chrome-extension://{extension_id}/"],
@@ -55,11 +55,11 @@ def write_manifest(path: Path, wrapper_path: Path, extension_id: str) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Install the Classroom AI Exporter Chrome native host manifest.")
+    parser = argparse.ArgumentParser(description="Install the CourseBinder – AI-Ready Google Classroom Exporter Chrome native host manifest.")
     parser.add_argument("--extension-id", required=True, help="Chrome extension id from chrome://extensions.")
     parser.add_argument(
         "--archive-root",
-        default=os.environ.get("CLASSROOM_AI_ROOT", "~/ClassroomAIExport"),
+        default=os.environ.get("CLASSROOM_AI_ROOT", "~/CourseBinderArchive"),
         help="Local archive root exposed to the native host.",
     )
     parser.add_argument(
@@ -74,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
 def install(args: argparse.Namespace) -> dict[str, str]:
     archive_root = Path(args.archive_root).expanduser()
     generated_dir = repo_native_dir() / ".native-host"
-    wrapper_path = generated_dir / "classroom-ai-host"
+    wrapper_path = generated_dir / "coursebinder-host"
     manifest_path = Path(args.manifest_dir).expanduser() / f"{HOST_NAME}.json"
 
     write_wrapper(wrapper_path, archive_root, args.python)

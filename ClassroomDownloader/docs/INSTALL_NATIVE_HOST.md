@@ -20,7 +20,7 @@ pip install -e .
 Set the archive root:
 
 ```sh
-export CLASSROOM_AI_ROOT="$HOME/ClassroomAIExport"
+export CLASSROOM_AI_ROOT="$HOME/CourseBinderArchive"
 ```
 
 Smoke-test the host handler directly:
@@ -37,7 +37,7 @@ After building/loading the unpacked extension, copy its extension id from `chrom
 cd native
 python3 -m classroom_ai_exporter.install_native_host \
   --extension-id EXTENSION_ID \
-  --archive-root "$HOME/ClassroomAIExport"
+  --archive-root "$HOME/CourseBinderArchive"
 ```
 
 The installer writes a small executable wrapper under `native/.native-host/` and writes Chrome's native messaging manifest for `com.classroom_ai_exporter.host`.
@@ -47,7 +47,7 @@ If the logged-in Chrome profile is school-managed and blocks unpacked extensions
 ```sh
 python3 -m classroom_ai_exporter.install_native_host \
   --extension-id EXTENSION_ID \
-  --archive-root "$HOME/ClassroomAIExport" \
+  --archive-root "$HOME/CourseBinderArchive" \
   --manifest-dir "$HOME/Library/Application Support/Chromium/NativeMessagingHosts"
 ```
 
@@ -56,7 +56,7 @@ For Chrome for Testing on macOS, use:
 ```sh
 python3 -m classroom_ai_exporter.install_native_host \
   --extension-id EXTENSION_ID \
-  --archive-root "$HOME/ClassroomAIExport" \
+  --archive-root "$HOME/CourseBinderArchive" \
   --manifest-dir "$HOME/Library/Application Support/Google/Chrome for Testing/NativeMessagingHosts"
 ```
 
@@ -73,8 +73,8 @@ Example content:
 ```json
 {
   "name": "com.classroom_ai_exporter.host",
-  "description": "Classroom AI Exporter native host",
-  "path": "/ABSOLUTE/PATH/classroom-ai-exporter/native/.native-host/classroom-ai-host",
+  "description": "CourseBinder – AI-Ready Google Classroom Exporter native host",
+  "path": "/ABSOLUTE/PATH/coursebinder-ai-ready-google-classroom-exporter/native/.native-host/coursebinder-host",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://EXTENSION_ID/"
@@ -88,9 +88,9 @@ Replace `EXTENSION_ID` after loading the unpacked extension.
 
 ```toml
 [mcp_servers.classroom_ai]
-command = "classroom-ai-mcp"
+command = "coursebinder-mcp"
 args = []
-env = { CLASSROOM_AI_ROOT = "/ABSOLUTE/PATH/ClassroomAIExport" }
+env = { CLASSROOM_AI_ROOT = "/ABSOLUTE/PATH/CourseBinderArchive" }
 startup_timeout_sec = 20
 tool_timeout_sec = 300
 ```

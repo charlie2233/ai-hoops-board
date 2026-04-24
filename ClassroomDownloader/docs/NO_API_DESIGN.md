@@ -1,6 +1,6 @@
 # No-API Design
 
-Classroom AI Exporter is not an API sync tool. It uses the user's active browser session and visible page content as the source of truth.
+CourseBinder – AI-Ready Google Classroom Exporter is not an API sync tool. It uses the user's active browser session and visible page content as the source of truth.
 
 ## Why
 
