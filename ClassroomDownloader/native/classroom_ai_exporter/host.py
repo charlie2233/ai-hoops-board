@@ -67,6 +67,16 @@ def handle_message(message: dict[str, Any], root: Path | None = None) -> dict[st
         )
         return {"ok": True, "root": str(archive_root), "paths": paths}
 
+    if message_type == "finalize_download_results":
+        writer = ArchiveWriter(archive_root)
+        paths = writer.finalize_download_results(
+            item_dir=str(message.get("item_dir") or ""),
+            item_id=str(message.get("item_id") or ""),
+            results=[result for result in message.get("results", []) if isinstance(result, dict)],
+        )
+        index = rebuild_index(archive_root)
+        return {"ok": True, "root": str(archive_root), "paths": paths, "index": index}
+
     if message_type == "rebuild_index":
         index = rebuild_index(archive_root)
         return {"ok": True, "root": str(archive_root), "index": index}

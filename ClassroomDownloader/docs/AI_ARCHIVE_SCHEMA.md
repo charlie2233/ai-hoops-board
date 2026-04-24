@@ -35,6 +35,19 @@ The archive uses ordinary files so Codex, shell tools, and future local apps can
 }
 ```
 
+Downloaded attachment records may also include:
+
+```json
+{
+  "download_status": "downloaded",
+  "original_download_path": "/Users/name/Downloads/file.pdf",
+  "local_path": "courses/AP/classwork/Item/attachments/file.pdf",
+  "sha256": "...",
+  "bytes": 12345,
+  "extracted_text_path": "courses/AP/classwork/Item/extracted/file.md"
+}
+```
+
 ## Item Markdown
 
 Every item gets an `item.md` with frontmatter, instructions, attachment references, and an AI safety note.

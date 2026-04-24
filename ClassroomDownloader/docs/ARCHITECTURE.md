@@ -47,6 +47,8 @@ logs/crawl_runs.jsonl
 
 The native side owns the durable queue and indexing work because MV3 service workers are not a reliable place for long-running state.
 
+Completed browser downloads are finalized by the native host. The extension sends Chrome's completed download path, and the native host copies the file into the archive, hashes it, mirrors it under `files/by_hash/`, extracts text when supported, and rebuilds the local index.
+
 ## MCP
 
 The MCP server is read-only over the archive. Its first tools are intentionally data-source shaped:

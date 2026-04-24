@@ -11,7 +11,7 @@ export interface NativeResponse {
   [key: string]: unknown;
 }
 
-export function sendNativeMessage<TPayload extends Record<string, unknown>>(
+export function sendNativeMessage<TPayload extends object>(
   payload: TPayload
 ): Promise<NativeResponse> {
   return browser.runtime

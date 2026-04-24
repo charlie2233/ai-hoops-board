@@ -2,7 +2,11 @@ import { defineBackground } from "wxt/utils/define-background";
 import { browser, type Browser } from "wxt/browser";
 import { inferExportItem } from "../lib/extractors/assignmentPage";
 import type { PageSnapshot } from "../lib/extractors/classroomPage";
-import { buildDownloadJobs, downloadJobs } from "../lib/downloads/downloadQueue";
+import {
+  buildDownloadJobs,
+  buildFinalizeDownloadResultsMessage,
+  downloadJobs
+} from "../lib/downloads/downloadQueue";
 import { sendNativeMessage } from "../lib/native/nativeClient";
 
 interface ExtractResponse {
@@ -52,12 +56,9 @@ async function exportCurrentPage(downloadAttachments: boolean) {
   const downloadResults = await downloadJobs(jobs);
   let downloadRecordResponse = null;
   if (nativeResponse.ok && nativeResponse.paths?.item_dir && downloadResults.length > 0) {
-    downloadRecordResponse = await sendNativeMessage({
-      type: "record_download_results",
-      item_dir: nativeResponse.paths?.item_dir,
-      item_id: item.id,
-      results: downloadResults
-    });
+    downloadRecordResponse = await sendNativeMessage(
+      buildFinalizeDownloadResultsMessage(item.id, nativeResponse.paths.item_dir, downloadResults)
+    );
   }
 
   await browser.storage.session.set({

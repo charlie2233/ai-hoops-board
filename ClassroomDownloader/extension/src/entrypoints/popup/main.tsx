@@ -44,7 +44,7 @@ function App() {
         lastExport?.nativeResponse?.paths?.item_dir ||
         "No export yet",
       downloadSummary: lastExport?.downloadResults
-        ? `${lastExport.downloadResults.filter((result: any) => result.ok).length}/${lastExport.downloadResults.length} browser downloads started`
+        ? `${lastExport.downloadResults.filter((result: any) => result.ok).length}/${lastExport.downloadResults.length} downloads archived`
         : current.downloadSummary
     }));
   }
@@ -100,7 +100,7 @@ function App() {
     }
 
     const downloadSummary = response.downloads
-      ? `${response.downloads.succeeded}/${response.downloads.requested} browser downloads started${
+      ? `${response.downloads.succeeded}/${response.downloads.requested} downloads archived${
           response.downloads.failed ? `, ${response.downloads.failed} failed` : ""
         }`
       : "No downloads queued";

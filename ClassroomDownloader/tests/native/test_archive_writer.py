@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -141,6 +142,64 @@ class ArchiveWriterTest(unittest.TestCase):
             self.assertEqual(manifest["name"], "com.classroom_ai_exporter.host")
             self.assertEqual(manifest["allowed_origins"], ["chrome-extension://abcdefghijklmnopabcdefghijklmnop/"])
             self.assertTrue(Path(result["wrapper"]).exists())
+
+    def test_finalize_download_results_copies_hashes_extracts_and_indexes_attachment(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            archive_root = Path(temp_dir) / "Archive"
+            source = Path(temp_dir) / "downloaded.html"
+            source.write_text("<html><body><h1>Derivative Worksheet</h1><p>Show all work.</p></body></html>", encoding="utf-8")
+            source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+            writer = ArchiveWriter(archive_root)
+            save = writer.save_item(
+                course_slug="AP Calculus",
+                item_slug="Derivative Practice",
+                item={
+                    "id": "item:derivatives",
+                    "entity_type": "coursework",
+                    "course": {"name": "AP Calculus"},
+                    "title": "Derivative Practice",
+                    "source_url": "https://classroom.google.com/c/abc/a/def/details",
+                    "instructions_text": "Use the worksheet.",
+                    "attachments": [
+                        {
+                            "id": "attachment:worksheet",
+                            "title": "Derivative Worksheet",
+                            "kind": "drive_file",
+                            "sourceUrl": "https://drive.google.com/file/d/file-1/view",
+                            "downloadStatus": "queued",
+                        }
+                    ],
+                },
+            )
+            response = handle_message(
+                {
+                    "type": "finalize_download_results",
+                    "item_dir": save["item_dir"],
+                    "item_id": "item:derivatives",
+                    "results": [
+                        {
+                            "attachmentId": "attachment:worksheet",
+                            "title": "Derivative Worksheet",
+                            "url": "https://drive.google.com/uc?export=download&id=file-1",
+                            "filename": "ClassroomAIExporter/Derivative_Worksheet.html",
+                            "ok": True,
+                            "downloadStatus": "downloaded",
+                            "originalDownloadPath": str(source),
+                        }
+                    ],
+                },
+                root=archive_root,
+            )
+
+            self.assertTrue(response["ok"])
+            item = json.loads((archive_root / save["json"]).read_text(encoding="utf-8"))
+            attachment = item["attachments"][0]
+            self.assertEqual(attachment["download_status"], "downloaded")
+            self.assertEqual(attachment["sha256"], source_hash)
+            self.assertTrue((archive_root / attachment["local_path"]).exists())
+            self.assertTrue((archive_root / attachment["extracted_text_path"]).exists())
+            self.assertTrue((archive_root / "files" / "by_hash" / f"sha256_{source_hash}" / "file.json").exists())
+            self.assertTrue(Path(response["index"]["sqlite"]).exists())
 
 
 if __name__ == "__main__":
