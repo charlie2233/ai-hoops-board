@@ -9,7 +9,7 @@ com.classroom_ai_exporter.host
 ## Development Setup
 
 ```sh
-cd ClassroomDownloader/native
+cd native
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e .
@@ -32,13 +32,31 @@ python -m classroom_ai_exporter.mcp.server
 After building/loading the unpacked extension, copy its extension id from `chrome://extensions` and run:
 
 ```sh
-cd ClassroomDownloader/native
-python -m classroom_ai_exporter.install_native_host \
+cd native
+python3 -m classroom_ai_exporter.install_native_host \
   --extension-id EXTENSION_ID \
   --archive-root "$HOME/ClassroomAIExport"
 ```
 
 The installer writes a small executable wrapper under `native/.native-host/` and writes Chrome's native messaging manifest for `com.classroom_ai_exporter.host`.
+
+If the logged-in Chrome profile is school-managed and blocks unpacked extensions, load the extension in a personal Chromium-compatible browser profile and point the installer at that browser's NativeMessagingHosts directory:
+
+```sh
+python3 -m classroom_ai_exporter.install_native_host \
+  --extension-id EXTENSION_ID \
+  --archive-root "$HOME/ClassroomAIExport" \
+  --manifest-dir "$HOME/Library/Application Support/Chromium/NativeMessagingHosts"
+```
+
+For Chrome for Testing on macOS, use:
+
+```sh
+python3 -m classroom_ai_exporter.install_native_host \
+  --extension-id EXTENSION_ID \
+  --archive-root "$HOME/ClassroomAIExport" \
+  --manifest-dir "$HOME/Library/Application Support/Google/Chrome for Testing/NativeMessagingHosts"
+```
 
 ## Chrome Host Manifest
 
@@ -54,7 +72,7 @@ Example content:
 {
   "name": "com.classroom_ai_exporter.host",
   "description": "Classroom AI Exporter native host",
-  "path": "/ABSOLUTE/PATH/ClassroomDownloader/native/.venv/bin/classroom-ai-host",
+  "path": "/ABSOLUTE/PATH/classroom-ai-exporter/native/.native-host/classroom-ai-host",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://EXTENSION_ID/"
@@ -68,8 +86,8 @@ Replace `EXTENSION_ID` after loading the unpacked extension.
 
 ```toml
 [mcp_servers.classroom_ai]
-command = "python"
-args = ["/ABSOLUTE/PATH/ClassroomDownloader/native/classroom_ai_exporter/mcp/server.py"]
+command = "classroom-ai-mcp"
+args = []
 env = { CLASSROOM_AI_ROOT = "/ABSOLUTE/PATH/ClassroomAIExport" }
 startup_timeout_sec = 20
 tool_timeout_sec = 300
