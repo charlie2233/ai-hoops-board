@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+
+# WXT / browser-extension output
+extension/.output/
+extension/.wxt/
+extension/dist/
+
+# Test and coverage output
+extension/coverage/
+
+# Local env files
+.env
+.env.*
+!.env.example

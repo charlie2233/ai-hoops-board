@@ -1,0 +1,123 @@
+:root {
+  color: #18202a;
+  background: #f7f9fb;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 340px;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}
+
+.popup-shell {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 720;
+  line-height: 1.2;
+}
+
+p {
+  margin: 5px 0 0;
+  color: #52606f;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+.actions button {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #18202a;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.actions button:hover:not(:disabled) {
+  border-color: #5a7ea8;
+  box-shadow: 0 6px 18px rgb(35 54 73 / 12%);
+  transform: translateY(-1px);
+}
+
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.actions button.primary {
+  border-color: #1f7a62;
+  color: #ffffff;
+  background: #1f7a62;
+}
+
+.button-icon {
+  display: grid;
+  width: 36px;
+  height: 24px;
+  place-items: center;
+  border-radius: 6px;
+  color: #132033;
+  background: #e6edf5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.primary .button-icon {
+  color: #1f7a62;
+  background: #e8f7f0;
+}
+
+.result {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid #dbe3ec;
+  padding-top: 12px;
+  color: #4d5a66;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.result strong {
+  overflow-wrap: anywhere;
+  color: #18202a;
+  font-weight: 650;
+}
+
+.result.error {
+  color: #a6382f;
+}
