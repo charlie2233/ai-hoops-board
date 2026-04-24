@@ -2,7 +2,9 @@
 
 Effective date: April 24, 2026
 
-Formative AI Exporter is a local Chrome/Chromium extension that exports visible Formative practice content into an AI-readable ZIP file when the user clicks a capture button.
+Practice Snapshot for Formative is a local Chrome/Chromium extension that exports visible Formative practice content into an AI-readable ZIP file when the user clicks a capture button.
+
+Practice Snapshot for Formative is an independent tool and is not affiliated with, endorsed by, or sponsored by Formative.
 
 ## Data Processed
 

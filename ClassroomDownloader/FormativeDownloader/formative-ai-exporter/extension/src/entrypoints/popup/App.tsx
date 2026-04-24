@@ -50,7 +50,7 @@ export default function App() {
     <main className="popup-shell">
       <header className="popup-header">
         <div>
-          <h1>Formative AI Exporter</h1>
+          <h1>Practice Snapshot for Formative</h1>
           <p>{status}</p>
         </div>
       </header>

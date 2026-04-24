@@ -58,7 +58,7 @@ function buildArchiveManifest(practice: PracticeArchive) {
   return {
     schema_version: SCHEMA_VERSION,
     source: "formative-ui",
-    generated_by: "Formative AI Exporter",
+    generated_by: "Practice Snapshot for Formative",
     captured_at: practice.captured_at,
     title: practice.title,
     url: practice.url,

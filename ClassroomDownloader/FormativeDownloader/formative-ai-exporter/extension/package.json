@@ -1,7 +1,7 @@
 {
   "name": "formative-ai-exporter-extension",
   "version": "0.1.0",
-  "description": "Export a visible Formative practice into an AI-readable local archive.",
+  "description": "Save a visible Formative practice as a local ZIP with text, answers, images, links, and screenshots.",
   "license": "MIT",
   "type": "module",
   "scripts": {

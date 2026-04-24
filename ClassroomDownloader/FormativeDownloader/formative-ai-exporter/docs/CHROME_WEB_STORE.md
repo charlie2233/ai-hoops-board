@@ -7,25 +7,27 @@ This document is the release-prep packet for an unlisted, deferred-publish Chrom
 Title:
 
 ```txt
-Formative AI Exporter
+Practice Snapshot for Formative
 ```
 
 Short description:
 
 ```txt
-Export a visible Formative practice into a local AI-readable ZIP with text, answers, images, links, and screenshots.
+Save a visible Formative practice as a local ZIP with text, answers, images, links, and screenshots.
 ```
 
 Detailed description:
 
 ```txt
-Formative AI Exporter helps students save a local archive of a Formative practice they can already access in their browser.
+Practice Snapshot for Formative helps students save a local archive of a Formative practice they can already access in their browser.
 
 The extension captures visible page text, answer fields, links, image metadata, and screenshots, then exports them into an AI-readable ZIP containing Markdown, JSON, text files, and screenshots.
 
 It does not use Formative APIs, OAuth, cookies, token extraction, telemetry, ads, analytics, or a hosted backend. It only runs when the user clicks the capture button and only captures content visible to the currently logged-in user.
 
 It does not submit answers, change answers, bypass locked/proctored modes, or access other users' work.
+
+Practice Snapshot for Formative is an independent tool and is not affiliated with, endorsed by, or sponsored by Formative.
 ```
 
 Category:
@@ -101,7 +103,7 @@ remote code
 Single purpose:
 
 ```txt
-Export one visible Formative practice into a local AI-readable archive.
+Save a visible Formative practice as a local AI-readable ZIP archive.
 ```
 
 Data usage disclosure:

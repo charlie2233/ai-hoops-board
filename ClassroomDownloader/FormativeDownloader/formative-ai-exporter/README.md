@@ -1,6 +1,8 @@
-# Formative AI Exporter
+# Practice Snapshot for Formative
 
-Export one visible Formative practice into an AI-readable local archive.
+Save a visible Formative practice as a local ZIP with text, answers, images, links, and screenshots.
+
+Practice Snapshot for Formative is an independent tool and is not affiliated with, endorsed by, or sponsored by Formative.
 
 This is a Chrome/Chromium extension-only MVP. It does not use the Formative API, Google APIs, OAuth, cookies, token scraping, reverse-engineered network calls, or a native host. It captures only what the currently logged-in user can already see in the active browser tab.
 
