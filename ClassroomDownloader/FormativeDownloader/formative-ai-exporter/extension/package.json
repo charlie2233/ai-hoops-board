@@ -8,6 +8,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "zip": "wxt zip",
+    "release:check": "npm run typecheck && npm test -- --run && npm run build && npm run zip && npm audit --omit=dev",
     "typecheck": "wxt prepare && tsc --noEmit",
     "test": "vitest"
   },
