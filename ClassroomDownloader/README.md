@@ -61,15 +61,19 @@ docs/           Architecture, privacy, schema, and install notes
 ## Native Test
 
 ```sh
-python3 -m unittest discover -s ClassroomDownloader/tests/native
+python3 -m unittest discover -s tests/native
 ```
 
 ## Extension Development
 
 ```sh
-cd ClassroomDownloader/extension
+cd extension
 npm install
 npm run dev
 ```
 
 The extension is intentionally scoped to `classroom.google.com`, `drive.google.com`, and `docs.google.com`.
+
+## License
+
+MIT License. Free to use, copy, modify, merge, publish, distribute, sublicense, and sell, as long as the copyright and permission notice are included.
