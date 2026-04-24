@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Download, FileArchive, RefreshCw, Search } from "lucide-react";
+import { Download, FileArchive, Heart, RefreshCw, Search } from "lucide-react";
 import { browser } from "wxt/browser";
 import "./style.css";
 
@@ -175,6 +175,12 @@ function App() {
           Export + download
         </button>
       </div>
+
+      <footer className="credit" aria-label="Created with love by atrak.dev">
+        <span>created with</span>
+        <Heart size={11} fill="currentColor" aria-hidden="true" />
+        <span>by atrak.dev</span>
+      </footer>
     </main>
   );
 }

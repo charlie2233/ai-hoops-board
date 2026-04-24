@@ -137,3 +137,15 @@ h1 {
   background: #245645;
   color: #fffaf0;
 }
+
+.credit {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 4px;
+  justify-self: end;
+  margin-top: -8px;
+  color: rgba(76, 90, 81, 0.48);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
