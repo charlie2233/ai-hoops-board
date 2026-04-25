@@ -10,8 +10,8 @@ export default defineConfig({
   manifest: {
     name: "CourseBinder – AI-Ready Google Classroom Exporter",
     description: "CourseBinder exports visible Google Classroom pages into local AI-readable archives.",
-    version: "0.1.0",
-    permissions: ["activeTab", "downloads", "storage", "scripting", "nativeMessaging"],
+    version: "0.1.1",
+    permissions: ["activeTab", "downloads", "storage", "nativeMessaging"],
     host_permissions: [
       "https://classroom.google.com/*",
       "https://drive.google.com/*",

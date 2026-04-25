@@ -16,7 +16,6 @@ Allowed first-version permissions:
     "activeTab",
     "downloads",
     "storage",
-    "scripting",
     "nativeMessaging"
   ],
   "host_permissions": [

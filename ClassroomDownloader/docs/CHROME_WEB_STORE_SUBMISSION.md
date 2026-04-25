@@ -51,10 +51,6 @@ Used to save user-requested export files and downloadable attachments to the bro
 
 Used to store local extension state such as the last export result, native-helper health, archive root display, and download summary shown in the popup.
 
-`scripting`
-
-Used by the extension architecture to support controlled content-script execution on Google Classroom pages for user-requested export flows.
-
 `nativeMessaging`
 
 Used only for the optional local Python helper installed by the user. The helper writes structured archive files, hashes/copies downloaded files, extracts text, builds local indexes, and exposes a local read-only MCP server. If the helper is not installed, the extension still works through browser-download fallback.
@@ -120,8 +116,8 @@ Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run buil
 
 - `manifest_version`: `3`
 - `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
-- `version`: `0.1.0`
-- Permissions only: `activeTab`, `downloads`, `storage`, `scripting`, `nativeMessaging`
+- `version`: `0.1.1`
+- Permissions only: `activeTab`, `downloads`, `storage`, `nativeMessaging`
 - Host permissions only: `https://classroom.google.com/*`, `https://drive.google.com/*`, `https://docs.google.com/*`
 - Icons: `16`, `32`, `48`, and `128`
 - Action default icons: `16`, `32`, `48`, and `128`
