@@ -39,6 +39,23 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function readText(filePath) {
+  return fs.readFileSync(filePath, "utf8");
+}
+
+function parseJsonl(text, fileName) {
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .map((line, index) => {
+      try {
+        return JSON.parse(line);
+      } catch (error) {
+        throw new Error(`Invalid JSONL in ${fileName} at line ${index + 1}: ${error.message}`);
+      }
+    });
+}
+
 function existingFile(filePath) {
   return filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile();
 }
@@ -215,6 +232,56 @@ async function main() {
     const downloads = await waitForCompleteDownloads(serviceWorker, expectedFiles.length);
     assert(downloads.length >= expectedFiles.length, `Expected ${expectedFiles.length} downloads, saw ${downloads.length}.`);
     assert(downloads.every((download) => download.state === "complete"), "Not all fallback downloads completed.");
+    const downloadById = new Map(downloads.map((download) => [download.id, download]));
+    const downloadPathsByName = new Map();
+    const fallbackDownloadIds = exportResponse.fallbackResponse.downloadIds || [];
+    assert(
+      fallbackDownloadIds.length === expectedFiles.length,
+      `Expected ${expectedFiles.length} fallback download IDs, got ${fallbackDownloadIds.length}.`
+    );
+    for (const [index, fileName] of expectedFiles.entries()) {
+      const downloadId = fallbackDownloadIds[index];
+      const downloadedPath = downloadById.get(downloadId)?.filename;
+
+      assert(
+        downloadedPath,
+        `Could not find completed download ID ${downloadId} for ${fileName}. Downloads: ${JSON.stringify(
+          downloads.map((download) => ({ filename: download.filename, state: download.state })),
+          null,
+          2
+        )}`
+      );
+      assert(existingFile(downloadedPath), `Downloaded file is missing on disk: ${downloadedPath}`);
+      assert(fs.statSync(downloadedPath).size > 0, `Downloaded file is empty: ${downloadedPath}`);
+      downloadPathsByName.set(fileName, downloadedPath);
+    }
+
+    const itemJson = readJson(downloadPathsByName.get("item.json"));
+    assert(itemJson.title === "Derivative Practice", `Unexpected item title: ${itemJson.title}`);
+    assert(itemJson.course?.name === "AP Calculus", `Unexpected course name: ${itemJson.course?.name}`);
+    assert(itemJson.crawler?.raw_html_truncated === false, "Fixture HTML should not be truncated.");
+
+    const itemMarkdown = readText(downloadPathsByName.get("item.md"));
+    assert(itemMarkdown.includes("# Derivative Practice"), "item.md does not contain the assignment title.");
+    assert(itemMarkdown.includes("Complete problems 1-20"), "item.md does not contain fixture instructions.");
+
+    const rawText = readText(downloadPathsByName.get("raw_text.txt"));
+    assert(rawText.includes("Complete problems 1-20"), "raw_text.txt does not contain fixture instructions.");
+
+    const links = parseJsonl(readText(downloadPathsByName.get("links.jsonl")), "links.jsonl");
+    assert(links.some((link) => link.href === "https://example.edu/derivative-reference"), "links.jsonl is missing the external fixture link.");
+
+    const attachmentManifest = parseJsonl(
+      readText(downloadPathsByName.get("attachments.manifest.jsonl")),
+      "attachments.manifest.jsonl"
+    );
+    assert(
+      attachmentManifest.some((attachment) => attachment.kind === "external_link" && attachment.sourceUrl === "https://example.edu/derivative-reference"),
+      "attachments.manifest.jsonl is missing the external metadata-only attachment."
+    );
+
+    const snapshotHtml = readText(downloadPathsByName.get("page.snapshot.html"));
+    assert(snapshotHtml.includes("Derivative Practice"), "page.snapshot.html does not contain fixture page content.");
 
     const summary = {
       ok: true,
@@ -229,6 +296,7 @@ async function main() {
       },
       fallbackRoot: exportResponse.fallbackResponse.root,
       fallbackFiles: expectedFiles,
+      verifiedDownloadedFiles: expectedFiles.length,
       popupMode: "Browser downloads",
       completedDownloads: downloads.length,
     };
