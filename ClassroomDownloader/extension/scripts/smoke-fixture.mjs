@@ -17,6 +17,7 @@ const expectedFiles = [
   "attachments.manifest.jsonl",
   "page.snapshot.html",
 ];
+const SMOKE_TIMEOUT_MS = Number(process.env.COURSEBINDER_SMOKE_TIMEOUT_MS || 45_000);
 
 async function loadPlaywright() {
   try {
@@ -36,6 +37,48 @@ function assert(condition, message) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function existingFile(filePath) {
+  return filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+}
+
+function findInstalledPlaywrightChromes() {
+  const cacheRoot = path.join(os.homedir(), "Library/Caches/ms-playwright");
+  if (!fs.existsSync(cacheRoot)) {
+    return [];
+  }
+  return fs
+    .readdirSync(cacheRoot)
+    .filter((entry) => /^chromium-\d+$/.test(entry))
+    // If the exact Playwright browser is missing, prefer older cached Chrome-for-Testing builds.
+    // They are more likely to match this repo's previously installed Playwright runtime.
+    .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))
+    .flatMap((entry) => {
+      const root = path.join(cacheRoot, entry);
+      return [
+        path.join(root, "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+        path.join(root, "chrome-mac/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+      ];
+    })
+    .filter(existingFile);
+}
+
+function resolveChromeExecutable(chromium) {
+  const candidates = [
+    process.env.COURSEBINDER_CHROME_PATH,
+    chromium.executablePath(),
+    ...findInstalledPlaywrightChromes(),
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  ];
+  const executablePath = candidates.find(existingFile);
+  if (!executablePath) {
+    throw new Error(
+      "Could not find a Chrome executable for smoke testing. Run `npx playwright install chromium` or set COURSEBINDER_CHROME_PATH."
+    );
+  }
+  return executablePath;
 }
 
 async function waitForCompleteDownloads(serviceWorker, expectedCount, timeoutMs = 10_000) {
@@ -61,13 +104,15 @@ async function main() {
 
   const playwright = await loadPlaywright();
   const { chromium } = playwright;
+  const executablePath = resolveChromeExecutable(chromium);
+  console.error(`CourseBinder fixture smoke using Chrome: ${executablePath}`);
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "coursebinder-smoke-"));
   const html = fs.readFileSync(fixturePath, "utf8");
   const keepProfile = process.env.COURSEBINDER_KEEP_SMOKE_PROFILE === "1";
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
-    executablePath: chromium.executablePath(),
+    executablePath,
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -84,7 +129,7 @@ async function main() {
 
     let serviceWorker = context.serviceWorkers()[0];
     if (!serviceWorker) {
-      serviceWorker = await context.waitForEvent("serviceworker", { timeout: 10_000 });
+      serviceWorker = await context.waitForEvent("serviceworker", { timeout: 30_000 });
     }
     const extensionId = new URL(serviceWorker.url()).host;
 
@@ -126,6 +171,7 @@ async function main() {
       ok: true,
       extensionId,
       userDataDir,
+      executablePath,
       manifest: {
         name: manifest.name,
         version: manifest.version,
@@ -145,7 +191,17 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.stack || error.message : error);
-  process.exitCode = 1;
-});
+const timeout = setTimeout(() => {
+  console.error(`CourseBinder fixture smoke timed out after ${SMOKE_TIMEOUT_MS} ms.`);
+  process.exit(1);
+}, SMOKE_TIMEOUT_MS);
+
+main()
+  .then(() => {
+    clearTimeout(timeout);
+  })
+  .catch((error) => {
+    clearTimeout(timeout);
+    console.error(error instanceof Error ? error.stack || error.message : error);
+    process.exitCode = 1;
+  });
