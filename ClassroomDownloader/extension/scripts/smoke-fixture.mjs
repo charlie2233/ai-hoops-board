@@ -98,7 +98,7 @@ async function waitForCompleteDownloads(serviceWorker, expectedCount, timeoutMs 
 async function main() {
   assert(fs.existsSync(manifestPath), "Build output is missing. Run `npm run build` before `npm run smoke:fixture`.");
   const manifest = readJson(manifestPath);
-  assert(manifest.version === "0.1.6", `Expected built manifest version 0.1.6, got ${manifest.version}.`);
+  assert(manifest.version === "0.1.7", `Expected built manifest version 0.1.7, got ${manifest.version}.`);
   assert(!manifest.permissions?.includes("scripting"), "Built manifest still contains the rejected scripting permission.");
   assert(!manifest.permissions?.includes("activeTab"), "Built manifest still contains the redundant activeTab permission.");
   assert(
@@ -149,20 +149,52 @@ async function main() {
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html`, { waitUntil: "domcontentloaded" });
     await classroomPage.bringToFront();
 
+    await popupPage.waitForFunction(
+      () =>
+        [...document.querySelectorAll("button")].some(
+          (button) => button.textContent?.includes("Export page") && !button.disabled
+        ),
+      undefined,
+      { timeout: 20_000 }
+    );
+    await popupPage.evaluate(() => {
+      const exportButton = [...document.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("Export page")
+      );
+      if (!exportButton) {
+        throw new Error("Could not find Export page button in popup.");
+      }
+      exportButton.click();
+    });
+    try {
+      await popupPage.waitForFunction(
+        () => document.body.innerText.includes("Saved browser-download archive files."),
+        undefined,
+        { timeout: 20_000 }
+      );
+    } catch (error) {
+      const popupText = await popupPage.evaluate(() => document.body.innerText);
+      throw new Error(`Popup did not show browser-download success text. Current popup text:\n${popupText}`);
+    }
+    const popupText = await popupPage.evaluate(() => document.body.innerText);
+    assert(popupText.includes("Archive mode"), "Popup did not show archive mode label after export.");
+    assert(popupText.includes("Browser downloads"), "Popup did not show browser-download mode after export.");
+    assert(!popupText.includes("Native host unavailable"), "Popup should not present browser-download mode as a native-host failure.");
+
     const exportResponse = await popupPage.evaluate(
       async () =>
         await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ type: "classroom_ai:export_current", downloadAttachments: false }, (response) => {
+          chrome.runtime.sendMessage({ type: "classroom_ai:last_export" }, (response) => {
             if (chrome.runtime.lastError) {
               resolve({ ok: false, error: chrome.runtime.lastError.message });
               return;
             }
-            resolve(response);
+            resolve(response?.lastExport || { ok: false, error: "No last export was stored." });
           });
         })
     );
 
-    assert(exportResponse?.ok, `Export response was not ok: ${JSON.stringify(exportResponse)}`);
+    assert(exportResponse?.fallbackResponse || exportResponse?.nativeResponse, `Export was not stored: ${JSON.stringify(exportResponse)}`);
     assert(exportResponse?.fallbackResponse?.ok, "Expected browser-download fallback to succeed without native host.");
     assert(exportResponse?.nativeResponse?.ok === false, "Expected native host to be absent in fixture smoke.");
 
@@ -188,6 +220,7 @@ async function main() {
       },
       fallbackRoot: exportResponse.fallbackResponse.root,
       fallbackFiles: expectedFiles,
+      popupMode: "Browser downloads",
       completedDownloads: downloads.length,
     };
     console.log(JSON.stringify(summary, null, 2));

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Download, FileArchive, Heart, RefreshCw, Search } from "lucide-react";
 import { browser } from "wxt/browser";
@@ -20,6 +20,7 @@ function sendMessage<T>(message: Record<string, unknown>): Promise<T> {
 }
 
 function App() {
+  const operationIdRef = useRef(0);
   const [state, setState] = useState<PopupState>({
     status: "idle",
     message: "Open a Classroom page to export a local AI archive item.",
@@ -52,8 +53,10 @@ function App() {
   }
 
   async function refreshSnapshot() {
+    const operationId = ++operationIdRef.current;
     setState((current) => ({ ...current, status: "loading", message: "Reading visible Classroom content..." }));
     const response = await sendMessage<any>({ type: "classroom_ai:extract_current" });
+    if (operationId !== operationIdRef.current) return;
     if (!response?.ok) {
       setState({
         status: "error",
@@ -82,6 +85,7 @@ function App() {
   }
 
   async function exportPage(downloadAttachments: boolean) {
+    const operationId = ++operationIdRef.current;
     setState((current) => ({
       ...current,
       status: "loading",
@@ -91,6 +95,7 @@ function App() {
       type: "classroom_ai:export_current",
       downloadAttachments
     });
+    if (operationId !== operationIdRef.current) return;
 
     if (!response?.ok) {
       setState((current) => ({
