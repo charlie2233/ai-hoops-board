@@ -132,10 +132,15 @@ jobs:
       - name: Compile native package
         run: python3 -m compileall -q native/classroom_ai_exporter
 
+      - name: Prepare release handoff packet
+        working-directory: extension
+        run: npm run release:handoff
+
       - name: Write package checksum
         run: |
-          ZIP_PATH="$(find extension/.output -maxdepth 1 -type f -name '*-chrome.zip' | sort | tail -n 1)"
+          ZIP_PATH="$(node -p "'extension/.output/' + require('./extension/package.json').name + '-' + require('./extension/package.json').version + '-chrome.zip'")"
           test -n "$ZIP_PATH"
+          test -f "$ZIP_PATH"
           mkdir -p artifacts
           cp "$ZIP_PATH" artifacts/
           shasum -a 256 "$ZIP_PATH" | tee artifacts/chrome-web-store-zip.sha256
@@ -149,4 +154,11 @@ jobs:
             artifacts/*-chrome.zip
             artifacts/chrome-web-store-zip.sha256
             artifacts/chrome-web-store-zip.txt
+          if-no-files-found: error
+
+      - name: Upload release handoff packet
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursebinder-release-handoff
+          path: release-artifacts/coursebinder-*/**
           if-no-files-found: error

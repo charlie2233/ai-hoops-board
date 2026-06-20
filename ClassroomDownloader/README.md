@@ -92,7 +92,7 @@ cd extension
 npm run build:native
 ```
 
-The standalone repository also includes `.github/workflows/build-extension-zip.yml`, which builds the default review-safe Chrome Web Store zip and uploads it as the `coursebinder-chrome-web-store-zip` artifact.
+The standalone repository also includes `.github/workflows/build-extension-zip.yml`, which builds the default review-safe Chrome Web Store zip and uploads it as the `coursebinder-chrome-web-store-zip` artifact. It also uploads `coursebinder-release-handoff`, a reviewer-ready packet with the exact zip, SHA256, manifest summary, and rejection-response note.
 
 The default Chrome Web Store build is intentionally scoped to `classroom.google.com`. Drive and Docs links are classified from the visible Classroom page and downloaded only through user-requested browser downloads.
 

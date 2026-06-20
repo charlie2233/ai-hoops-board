@@ -62,6 +62,8 @@ npm test -- --run
 npm run build
 npm run smoke:fixture
 npm run zip
+npm run smoke:zip
+npm run release:handoff
 npm audit --omit=dev
 cd ..
 python3 -m unittest discover -s tests/native
