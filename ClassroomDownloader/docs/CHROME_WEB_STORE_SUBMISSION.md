@@ -45,7 +45,7 @@ Used to save user-requested export files and downloadable attachments to the bro
 
 `storage`
 
-Used to store local extension state such as the last export result, native-helper health, archive root display, and download summary shown in the popup.
+Used to store local extension state such as the last export result, archive mode display, and download summary shown in the popup.
 
 `https://classroom.google.com/*`
 
