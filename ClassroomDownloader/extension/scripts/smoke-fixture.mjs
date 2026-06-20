@@ -148,6 +148,13 @@ async function main() {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html`, { waitUntil: "domcontentloaded" });
     await classroomPage.bringToFront();
+    const [activeClassroomTab] = await serviceWorker.evaluate(
+      async () => await chrome.tabs.query({ active: true, currentWindow: true })
+    );
+    assert(
+      activeClassroomTab?.url === "https://classroom.google.com/c/abc/a/def/details",
+      `Minimal store permissions did not expose the active Classroom tab URL: ${JSON.stringify(activeClassroomTab)}`
+    );
 
     await popupPage.waitForFunction(
       () =>
