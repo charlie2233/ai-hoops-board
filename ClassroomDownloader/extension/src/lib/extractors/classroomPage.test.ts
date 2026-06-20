@@ -41,4 +41,29 @@ describe("Classroom page extraction", () => {
     expect(truncated.rawHtmlOriginalChars).toBe(10);
     expect(truncated.rawHtmlStoredChars).toBe(4);
   });
+
+  it("keeps item IDs stable across repeated exports of the same page", () => {
+    const baseSnapshot = {
+      url: "https://classroom.google.com/c/abc/a/def/details",
+      title: "Derivative Practice - Google Classroom",
+      capturedAt: "2026-04-24T18:30:00.000Z",
+      headings: ["Derivative Practice"],
+      links: [],
+      buttons: [],
+      bodyText: "AP Calculus\nStream\nClasswork\nDerivative Practice\nComplete problems 1-20.",
+      rawHtml: "<html></html>",
+      rawHtmlTruncated: false,
+      rawHtmlOriginalChars: 13,
+      rawHtmlStoredChars: 13
+    };
+
+    const first = inferExportItem(baseSnapshot);
+    const second = inferExportItem({
+      ...baseSnapshot,
+      capturedAt: "2026-04-25T18:30:00.000Z"
+    });
+
+    expect(first.id).toBe(second.id);
+    expect(first.captured_at).not.toBe(second.captured_at);
+  });
 });

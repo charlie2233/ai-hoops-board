@@ -111,7 +111,7 @@ function summarizeInstructions(snapshot: PageSnapshot): string {
 export function inferExportItem(snapshot: PageSnapshot): ExportItem {
   const courseName = inferCourseName(snapshot);
   const title = firstUsefulHeading(snapshot);
-  const identity = `${snapshot.url}:${title}:${snapshot.capturedAt}`;
+  const identity = `${snapshot.url}:${courseName}:${title}`;
   const attachments = classifyAttachments(snapshot.links).filter((attachment) => {
     const host = new URL(attachment.sourceUrl).hostname;
     return host !== "classroom.google.com";
