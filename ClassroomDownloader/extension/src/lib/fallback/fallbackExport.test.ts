@@ -10,11 +10,19 @@ import {
 } from "./fallbackExport";
 
 const downloadMock = vi.hoisted(() => vi.fn());
+const searchMock = vi.hoisted(() => vi.fn());
+const addListenerMock = vi.hoisted(() => vi.fn());
+const removeListenerMock = vi.hoisted(() => vi.fn());
 
 vi.mock("wxt/browser", () => ({
   browser: {
     downloads: {
-      download: downloadMock
+      download: downloadMock,
+      search: searchMock,
+      onChanged: {
+        addListener: addListenerMock,
+        removeListener: removeListenerMock
+      }
     }
   }
 }));
@@ -77,6 +85,9 @@ const snapshot: PageSnapshot = {
 describe("fallback browser-download export", () => {
   beforeEach(() => {
     downloadMock.mockReset();
+    searchMock.mockReset();
+    addListenerMock.mockReset();
+    removeListenerMock.mockReset();
   });
 
   it("builds a safe Downloads session path", () => {
@@ -119,6 +130,17 @@ describe("fallback browser-download export", () => {
     downloadMock.mockResolvedValueOnce(104);
     downloadMock.mockResolvedValueOnce(105);
     downloadMock.mockResolvedValueOnce(106);
+    searchMock.mockImplementation(({ id }) =>
+      Promise.resolve([
+        {
+          id,
+          filename: `/Users/student/Downloads/CourseBinder/export-${id}`,
+          state: "complete",
+          fileSize: 10,
+          bytesReceived: 10
+        }
+      ])
+    );
 
     const result = await downloadFallbackExport(item, snapshot);
     const filenames = downloadMock.mock.calls.map(([options]) => options.filename);
@@ -126,6 +148,7 @@ describe("fallback browser-download export", () => {
     expect(result.ok).toBe(true);
     expect(result.downloadIds).toEqual([101, 102, 103, 104, 105, 106]);
     expect(downloadMock).toHaveBeenCalledTimes(6);
+    expect(searchMock).toHaveBeenCalledTimes(6);
     expect(filenames).toEqual([
       `${result.root.replace("Downloads/", "")}/item.json`,
       `${result.root.replace("Downloads/", "")}/item.md`,
@@ -136,6 +159,26 @@ describe("fallback browser-download export", () => {
     ]);
     expect(downloadMock.mock.calls.every(([options]) => options.url.startsWith("data:"))).toBe(true);
     expect(downloadMock.mock.calls.every(([options]) => options.saveAs === false)).toBe(true);
+  });
+
+  it("does not report fallback success until generated archive downloads settle", async () => {
+    downloadMock.mockResolvedValueOnce(101);
+    downloadMock.mockResolvedValueOnce(102);
+    downloadMock.mockResolvedValueOnce(103);
+    downloadMock.mockResolvedValueOnce(104);
+    downloadMock.mockResolvedValueOnce(105);
+    downloadMock.mockResolvedValueOnce(106);
+    searchMock.mockResolvedValue([
+      {
+        id: 101,
+        filename: "/Users/student/Downloads/CourseBinder/still-writing",
+        state: "in_progress"
+      }
+    ]);
+
+    await expect(downloadFallbackExport(item, snapshot, buildFallbackSessionName(item), 1)).rejects.toThrow(
+      "Timed out waiting for download 101"
+    );
   });
 
   it("uses the same session folder for fallback files and attachment download jobs", () => {

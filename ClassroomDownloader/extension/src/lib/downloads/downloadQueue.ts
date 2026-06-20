@@ -125,7 +125,7 @@ export function finalizeDownloadResult(
   return finalized;
 }
 
-async function waitForDownloadItem(downloadId: number, timeoutMs: number): Promise<Browser.downloads.DownloadItem> {
+export async function waitForDownloadItem(downloadId: number, timeoutMs: number): Promise<Browser.downloads.DownloadItem> {
   let listener: ((delta: Browser.downloads.DownloadDelta) => void) | null = null;
   const removeListener = () => {
     if (!listener) return;

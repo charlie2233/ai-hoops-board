@@ -1,6 +1,7 @@
 import { browser } from "wxt/browser";
 import type { ExportItem } from "../extractors/assignmentPage";
 import type { PageSnapshot } from "../extractors/classroomPage";
+import { DEFAULT_DOWNLOAD_SETTLE_TIMEOUT_MS, waitForDownloadItem } from "../downloads/downloadQueue";
 
 export interface FallbackFile {
   name: string;
@@ -136,7 +137,8 @@ function textToDataUrl(text: string, mime: string): string {
 export async function downloadFallbackExport(
   item: ExportItem,
   snapshot: PageSnapshot,
-  sessionName = buildFallbackSessionName(item)
+  sessionName = buildFallbackSessionName(item),
+  settleTimeoutMs = DEFAULT_DOWNLOAD_SETTLE_TIMEOUT_MS
 ): Promise<FallbackExportResult> {
   const files = buildFallbackExportFiles(item, snapshot);
   const paths: Record<string, string> = {};
@@ -154,6 +156,8 @@ export async function downloadFallbackExport(
       })
     );
   }
+
+  await Promise.all(downloadIds.map((downloadId) => waitForDownloadItem(downloadId, settleTimeoutMs)));
 
   return {
     ok: true,
