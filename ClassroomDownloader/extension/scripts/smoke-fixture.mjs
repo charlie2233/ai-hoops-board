@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const extensionRoot = path.resolve(scriptDir, "..");
 const repoRoot = path.resolve(extensionRoot, "..");
-const extensionPath = path.join(extensionRoot, ".output/chrome-mv3");
+const extensionPath = path.resolve(process.env.COURSEBINDER_EXTENSION_PATH || path.join(extensionRoot, ".output/chrome-mv3"));
 const manifestPath = path.join(extensionPath, "manifest.json");
 const fixturePath = path.join(repoRoot, "tests/fixtures/classroom_assignment_page.html");
 const expectedFiles = [
@@ -288,6 +288,7 @@ async function main() {
       extensionId,
       userDataDir,
       executablePath,
+      extensionPath,
       manifest: {
         name: manifest.name,
         version: manifest.version,

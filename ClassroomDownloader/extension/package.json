@@ -8,6 +8,7 @@
     "build": "wxt build",
     "build:native": "COURSEBINDER_ENABLE_NATIVE=1 wxt build",
     "smoke:fixture": "node scripts/smoke-fixture.mjs",
+    "smoke:zip": "node scripts/smoke-packaged-zip.mjs",
     "test": "vitest run",
     "zip": "wxt zip",
     "zip:native": "COURSEBINDER_ENABLE_NATIVE=1 wxt zip",
