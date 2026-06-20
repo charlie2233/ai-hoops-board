@@ -97,8 +97,16 @@ writeText("UPLOAD_THIS.md", `
 Upload this zip in the Chrome Web Store Developer Dashboard:
 
 \`\`\`txt
-${path.join(releaseDir, zipFileName)}
+${zipFileName}
 \`\`\`
+
+If you generated this packet locally, the zip is in:
+
+\`\`\`txt
+${releaseDir}
+\`\`\`
+
+If you downloaded the GitHub Actions \`coursebinder-release-handoff\` artifact, upload the zip file in the downloaded \`coursebinder-${packageJson.version}/\` folder.
 
 SHA256:
 
