@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const extensionRoot = path.resolve(scriptDir, "..");
 const outputDir = path.join(extensionRoot, ".output");
+const packageJsonPath = path.join(extensionRoot, "package.json");
 
 function assert(condition, message) {
   if (!condition) {
@@ -14,15 +15,15 @@ function assert(condition, message) {
   }
 }
 
-function latestChromeZip() {
+function expectedChromeZip() {
   assert(fs.existsSync(outputDir), "Missing .output directory. Run `npm run zip` before `npm run smoke:zip`.");
-  const zips = fs
-    .readdirSync(outputDir)
-    .filter((entry) => entry.endsWith("-chrome.zip"))
-    .sort()
-    .map((entry) => path.join(outputDir, entry));
-  assert(zips.length > 0, "Missing Chrome extension zip. Run `npm run zip` before `npm run smoke:zip`.");
-  return zips[zips.length - 1];
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+  const zipPath = path.join(outputDir, `${packageJson.name}-${packageJson.version}-chrome.zip`);
+  assert(
+    fs.existsSync(zipPath),
+    `Missing expected Chrome extension zip ${path.basename(zipPath)}. Run \`npm run zip\` before \`npm run smoke:zip\`.`
+  );
+  return zipPath;
 }
 
 function run(command, args, options = {}) {
@@ -42,7 +43,7 @@ function run(command, args, options = {}) {
   }
 }
 
-const zipPath = latestChromeZip();
+const zipPath = expectedChromeZip();
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "coursebinder-zip-smoke-"));
 const extractedPath = path.join(tempDir, "extension");
 fs.mkdirSync(extractedPath);
