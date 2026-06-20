@@ -76,6 +76,14 @@ npm install
 npm run dev
 ```
 
+Run the local fixture smoke after building to verify the unpacked extension can load in Chrome-for-Testing, read a Classroom-matched page, and write the no-native browser-download fallback:
+
+```sh
+cd extension
+npm run build
+npm run smoke:fixture
+```
+
 The extension is intentionally scoped to `classroom.google.com`, `drive.google.com`, and `docs.google.com`.
 
 ## License

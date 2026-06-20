@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
+    "smoke:fixture": "node scripts/smoke-fixture.mjs",
     "test": "vitest run",
     "zip": "wxt zip",
     "typecheck": "wxt prepare && tsc --noEmit"
