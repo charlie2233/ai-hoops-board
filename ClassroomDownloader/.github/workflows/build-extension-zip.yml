@@ -118,15 +118,17 @@ jobs:
         run: |
           ZIP_PATH="$(find extension/.output -maxdepth 1 -type f -name '*-chrome.zip' | sort | tail -n 1)"
           test -n "$ZIP_PATH"
-          shasum -a 256 "$ZIP_PATH" | tee extension/.output/chrome-web-store-zip.sha256
-          ls -lh "$ZIP_PATH" | tee extension/.output/chrome-web-store-zip.txt
+          mkdir -p artifacts
+          cp "$ZIP_PATH" artifacts/
+          shasum -a 256 "$ZIP_PATH" | tee artifacts/chrome-web-store-zip.sha256
+          ls -lh "$ZIP_PATH" | tee artifacts/chrome-web-store-zip.txt
 
       - name: Upload Chrome Web Store zip
         uses: actions/upload-artifact@v4
         with:
           name: coursebinder-chrome-web-store-zip
           path: |
-            extension/.output/*-chrome.zip
-            extension/.output/chrome-web-store-zip.sha256
-            extension/.output/chrome-web-store-zip.txt
+            artifacts/*-chrome.zip
+            artifacts/chrome-web-store-zip.sha256
+            artifacts/chrome-web-store-zip.txt
           if-no-files-found: error
