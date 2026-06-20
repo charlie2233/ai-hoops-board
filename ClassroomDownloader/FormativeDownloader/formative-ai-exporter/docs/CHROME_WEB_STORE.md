@@ -75,7 +75,9 @@ Expected host permissions:
 ```json
 [
   "https://app.formative.com/*",
+  "https://formative.com/*",
   "https://*.formative.com/*",
+  "https://goformative.com/*",
   "https://*.goformative.com/*"
 ]
 ```

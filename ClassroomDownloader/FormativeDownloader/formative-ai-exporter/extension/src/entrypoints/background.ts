@@ -4,6 +4,7 @@ import type { CapturedPage, PracticeArchive } from "../lib/archive/schema";
 import { SCHEMA_VERSION } from "../lib/archive/schema";
 import { injectClickNext, injectExtractPage } from "../lib/browser/inject";
 import { captureVisibleScreenshot } from "../lib/browser/screenshot";
+import { isAllowedFormativeUrl } from "../lib/browser/formativeUrl";
 import { waitForStablePage } from "../lib/browser/waitForStablePage";
 import { defineBackground } from "wxt/utils/define-background";
 
@@ -271,20 +272,6 @@ function hashPage(page: CapturedPage): string {
     visibleText: page.text.visible_text,
     answers: page.answers
   });
-}
-
-function isAllowedFormativeUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      (url.hostname === "app.formative.com" ||
-        url.hostname.endsWith(".formative.com") ||
-        url.hostname.endsWith(".goformative.com"))
-    );
-  } catch {
-    return false;
-  }
 }
 
 async function setRunState(value: Record<string, unknown>): Promise<void> {
