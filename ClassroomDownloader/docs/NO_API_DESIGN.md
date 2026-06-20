@@ -17,9 +17,7 @@ Allowed first-version permissions:
     "storage"
   ],
   "host_permissions": [
-    "https://classroom.google.com/*",
-    "https://drive.google.com/*",
-    "https://docs.google.com/*"
+    "https://classroom.google.com/*"
   ]
 }
 ```
@@ -32,6 +30,8 @@ cookies
 history
 bookmarks
 nativeMessaging in the default Chrome Web Store build
+https://drive.google.com/*
+https://docs.google.com/*
 https://www.googleapis.com/*
 oauth2
 ```

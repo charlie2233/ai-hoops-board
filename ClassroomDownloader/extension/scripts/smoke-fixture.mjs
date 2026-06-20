@@ -98,12 +98,16 @@ async function waitForCompleteDownloads(serviceWorker, expectedCount, timeoutMs 
 async function main() {
   assert(fs.existsSync(manifestPath), "Build output is missing. Run `npm run build` before `npm run smoke:fixture`.");
   const manifest = readJson(manifestPath);
-  assert(manifest.version === "0.1.3", `Expected built manifest version 0.1.3, got ${manifest.version}.`);
+  assert(manifest.version === "0.1.4", `Expected built manifest version 0.1.4, got ${manifest.version}.`);
   assert(!manifest.permissions?.includes("scripting"), "Built manifest still contains the rejected scripting permission.");
   assert(!manifest.permissions?.includes("activeTab"), "Built manifest still contains the redundant activeTab permission.");
   assert(
     !manifest.permissions?.includes("nativeMessaging"),
     "Default store build should not contain nativeMessaging. Use COURSEBINDER_ENABLE_NATIVE=1 for local native builds."
+  );
+  assert(
+    JSON.stringify(manifest.host_permissions || []) === JSON.stringify(["https://classroom.google.com/*"]),
+    `Expected only classroom.google.com host permission, got ${JSON.stringify(manifest.host_permissions || [])}.`
   );
 
   const playwright = await loadPlaywright();

@@ -51,13 +51,7 @@ Used to store local extension state such as the last export result, native-helpe
 
 Required to read visible Classroom page text, headings, links, button labels, page title, URL, and optional HTML snapshot when the user starts an export.
 
-`https://drive.google.com/*`
-
-Required to classify visible Google Drive attachment links and start user-requested browser downloads for visible/downloadable Drive files.
-
-`https://docs.google.com/*`
-
-Required to classify visible Google Docs, Sheets, and Slides attachment links and start user-requested browser export/download attempts where available.
+Drive, Docs, Sheets, and Slides attachment URLs are classified from links already visible on the Classroom page. The default Chrome Web Store build does not request Drive or Docs host permissions; attachment download attempts use the `downloads` permission after the user chooses an export action.
 
 ## Remote Code Declaration
 
@@ -108,15 +102,17 @@ Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run buil
 
 - `manifest_version`: `3`
 - `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
-- `version`: `0.1.3`
+- `version`: `0.1.4`
 - Permissions only: `downloads`, `storage`
-- Host permissions only: `https://classroom.google.com/*`, `https://drive.google.com/*`, `https://docs.google.com/*`
+- Host permissions only: `https://classroom.google.com/*`
 - Icons: `16`, `32`, `48`, and `128`
 - Action default icons: `16`, `32`, `48`, and `128`
 - No `activeTab` permission
 - No `identity` permission
 - No `cookies` permission
 - No `nativeMessaging` permission in the default Chrome Web Store build
+- No `https://drive.google.com/*` host permission
+- No `https://docs.google.com/*` host permission
 - No `https://www.googleapis.com/*` host permission
 - No externally hosted scripts or remote-code entries
 

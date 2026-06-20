@@ -68,8 +68,11 @@ jobs:
           const present = forbidden.filter((permission) => manifest.permissions?.includes(permission));
           const googleApis = (manifest.host_permissions || []).filter((host) => host.includes("googleapis.com"));
           const requiredPermissions = ["downloads", "storage"];
+          const requiredHosts = ["https://classroom.google.com/*"];
           const missing = requiredPermissions.filter((permission) => !manifest.permissions?.includes(permission));
           const extra = (manifest.permissions || []).filter((permission) => !requiredPermissions.includes(permission));
+          const missingHosts = requiredHosts.filter((host) => !manifest.host_permissions?.includes(host));
+          const extraHosts = (manifest.host_permissions || []).filter((host) => !requiredHosts.includes(host));
 
           if (manifest.manifest_version !== 3) {
             throw new Error(`Expected Manifest V3, got ${manifest.manifest_version}`);
@@ -85,6 +88,9 @@ jobs:
           }
           if (missing.length || extra.length) {
             throw new Error(`Unexpected permissions. Missing: ${missing.join(", ") || "none"} Extra: ${extra.join(", ") || "none"}`);
+          }
+          if (missingHosts.length || extraHosts.length) {
+            throw new Error(`Unexpected host permissions. Missing: ${missingHosts.join(", ") || "none"} Extra: ${extraHosts.join(", ") || "none"}`);
           }
           for (const size of ["16", "32", "48", "128"]) {
             if (!manifest.icons?.[size]) throw new Error(`Missing icon ${size}`);
