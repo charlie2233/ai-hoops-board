@@ -27,6 +27,23 @@ function downloadSummaryFor(downloads: any): string {
   return `${succeeded}/${requested} browser downloads completed${failed ? `, ${failed} failed` : ""}`;
 }
 
+function exportMessageFor(response: any): string {
+  const downloads = response.downloads ?? {};
+  if (downloads.failed > 0) {
+    return "Saved archive files; some browser downloads failed.";
+  }
+  if ((downloads.requested ?? 0) > 0) {
+    return "Saved archive files and completed browser downloads.";
+  }
+  if (response.nativeResponse?.ok) {
+    return "Archive item saved locally.";
+  }
+  if (response.fallbackResponse?.ok) {
+    return "Saved browser-download archive files.";
+  }
+  return `Snapshot captured, but browser-download fallback did not finish: ${response.fallbackResponse?.error || "unknown error"}`;
+}
+
 function App() {
   const operationIdRef = useRef(0);
   const [state, setState] = useState<PopupState>({
@@ -116,11 +133,7 @@ function App() {
 
     setState((current) => ({
       status: "ready",
-      message: response.nativeResponse?.ok
-        ? "Archive item saved locally."
-        : response.fallbackResponse?.ok
-          ? "Saved browser-download archive files."
-          : `Snapshot captured, but browser-download fallback did not finish: ${response.fallbackResponse?.error || "unknown error"}`,
+      message: exportMessageFor(response),
       attachmentCount: response.item?.attachments?.length ?? 0,
       title: response.item?.title ?? "Classroom page",
       nativeConnected: Boolean(response.nativeResponse?.ok),

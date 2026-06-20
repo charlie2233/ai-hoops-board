@@ -99,4 +99,38 @@ describe("download finalization", () => {
     expect(addListenerMock).toHaveBeenCalledTimes(1);
     expect(removeListenerMock).toHaveBeenCalledTimes(1);
   });
+
+  it("fails gracefully when a browser download does not settle", async () => {
+    downloadMock.mockResolvedValueOnce(99);
+    searchMock.mockResolvedValueOnce([
+      {
+        id: 99,
+        filename: "/Users/student/Downloads/CourseBinder/Stuck.pdf",
+        state: "in_progress",
+        bytesReceived: 0
+      }
+    ]);
+
+    const results = await downloadJobs(
+      [
+        {
+          attachmentId: "attachment:stuck",
+          title: "Stuck PDF",
+          url: "https://drive.google.com/uc?export=download&id=stuck",
+          filename: "CourseBinder/Stuck.pdf"
+        }
+      ],
+      1
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      attachmentId: "attachment:stuck",
+      ok: false,
+      downloadStatus: "failed"
+    });
+    expect(results[0]?.error).toContain("Timed out waiting for download 99");
+    expect(addListenerMock).toHaveBeenCalledTimes(1);
+    expect(removeListenerMock).toHaveBeenCalledTimes(1);
+  });
 });

@@ -29,6 +29,8 @@ export interface FinalizeDownloadResultsMessage {
   results: DownloadResult[];
 }
 
+export const DEFAULT_DOWNLOAD_SETTLE_TIMEOUT_MS = 45_000;
+
 function safeFilename(value: string): string {
   return value
     .normalize("NFKD")
@@ -162,7 +164,10 @@ async function waitForDownloadItem(downloadId: number, timeoutMs: number): Promi
   }
 }
 
-export async function downloadJobs(jobs: DownloadJob[], settleTimeoutMs = 300_000): Promise<DownloadResult[]> {
+export async function downloadJobs(
+  jobs: DownloadJob[],
+  settleTimeoutMs = DEFAULT_DOWNLOAD_SETTLE_TIMEOUT_MS
+): Promise<DownloadResult[]> {
   const started: DownloadResult[] = [];
   for (const job of jobs) {
     try {
