@@ -169,6 +169,7 @@ describe("fallback browser-download export", () => {
       `${result.root.replace("Downloads/", "")}/page.snapshot.html`,
     ]);
     expect(downloadMock.mock.calls.every(([options]) => options.url.startsWith("data:"))).toBe(true);
+    expect(downloadMock.mock.calls.every(([options]) => options.conflictAction === "overwrite")).toBe(true);
     expect(downloadMock.mock.calls.every(([options]) => options.saveAs === false)).toBe(true);
   });
 

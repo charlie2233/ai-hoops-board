@@ -150,7 +150,7 @@ export async function downloadFallbackExport(
       await browser.downloads.download({
         url: textToDataUrl(file.text, file.mime),
         filename,
-        conflictAction: "uniquify",
+        conflictAction: "overwrite",
         saveAs: false,
       })
     );
