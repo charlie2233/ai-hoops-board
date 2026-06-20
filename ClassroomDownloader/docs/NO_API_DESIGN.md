@@ -13,7 +13,6 @@ Allowed first-version permissions:
 ```json
 {
   "permissions": [
-    "activeTab",
     "downloads",
     "storage",
     "nativeMessaging"

@@ -39,10 +39,6 @@ CourseBinder – AI-Ready Google Classroom Exporter lets users export Google Cla
 
 ## Permission Justifications
 
-`activeTab`
-
-Used to run the export only on the currently active tab when the user clicks the extension. This lets the extension read the visible Classroom page the user intentionally opened without requesting broad access to all websites.
-
 `downloads`
 
 Used to save user-requested export files and downloadable attachments to the browser Downloads folder. Downloads are initiated only after the user chooses an export action.
@@ -116,11 +112,12 @@ Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run buil
 
 - `manifest_version`: `3`
 - `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
-- `version`: `0.1.1`
-- Permissions only: `activeTab`, `downloads`, `storage`, `nativeMessaging`
+- `version`: `0.1.2`
+- Permissions only: `downloads`, `storage`, `nativeMessaging`
 - Host permissions only: `https://classroom.google.com/*`, `https://drive.google.com/*`, `https://docs.google.com/*`
 - Icons: `16`, `32`, `48`, and `128`
 - Action default icons: `16`, `32`, `48`, and `128`
+- No `activeTab` permission
 - No `identity` permission
 - No `cookies` permission
 - No `https://www.googleapis.com/*` host permission
