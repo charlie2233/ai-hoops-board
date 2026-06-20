@@ -98,7 +98,7 @@ async function waitForCompleteDownloads(serviceWorker, expectedCount, timeoutMs 
 async function main() {
   assert(fs.existsSync(manifestPath), "Build output is missing. Run `npm run build` before `npm run smoke:fixture`.");
   const manifest = readJson(manifestPath);
-  assert(manifest.version === "0.1.5", `Expected built manifest version 0.1.5, got ${manifest.version}.`);
+  assert(manifest.version === "0.1.6", `Expected built manifest version 0.1.6, got ${manifest.version}.`);
   assert(!manifest.permissions?.includes("scripting"), "Built manifest still contains the rejected scripting permission.");
   assert(!manifest.permissions?.includes("activeTab"), "Built manifest still contains the redundant activeTab permission.");
   assert(

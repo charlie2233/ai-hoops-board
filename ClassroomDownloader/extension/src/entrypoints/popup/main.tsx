@@ -26,7 +26,7 @@ function App() {
     attachmentCount: 0,
     title: "No page captured",
     nativeConnected: false,
-    archiveRoot: "Not connected",
+    archiveRoot: "Downloads/CourseBinder",
     lastExportPath: "No export yet",
     downloadSummary: "No downloads queued"
   });
@@ -38,7 +38,7 @@ function App() {
     setState((current) => ({
       ...current,
       nativeConnected: Boolean(native.connected),
-      archiveRoot: native.root || lastExport?.fallbackResponse?.root || "Not connected",
+      archiveRoot: native.root || lastExport?.fallbackResponse?.root || "Downloads/CourseBinder",
       lastExportPath:
         lastExport?.nativeResponse?.paths?.markdown ||
         lastExport?.nativeResponse?.paths?.item_dir ||
@@ -112,8 +112,8 @@ function App() {
       message: response.nativeResponse?.ok
         ? "Archive item saved locally."
         : response.fallbackResponse?.ok
-          ? "Native host unavailable; saved browser-download fallback."
-          : `Snapshot captured. Native host unavailable: ${response.nativeResponse?.error || "not configured"}`,
+          ? "Saved browser-download archive files."
+          : `Snapshot captured, but browser-download fallback did not finish: ${response.fallbackResponse?.error || "unknown error"}`,
       attachmentCount: response.item?.attachments?.length ?? 0,
       title: response.item?.title ?? "Classroom page",
       nativeConnected: Boolean(response.nativeResponse?.ok),
@@ -154,8 +154,8 @@ function App() {
           <span>{state.attachmentCount} attachment links found</span>
         </div>
         <div className="healthGrid">
-          <span>Native host</span>
-          <strong>{state.nativeConnected ? "connected" : "not connected"}</strong>
+          <span>Archive mode</span>
+          <strong>{state.nativeConnected ? "Native host" : "Browser downloads"}</strong>
           <span>Archive root</span>
           <strong title={state.archiveRoot}>{state.archiveRoot}</strong>
           <span>Last export</span>
