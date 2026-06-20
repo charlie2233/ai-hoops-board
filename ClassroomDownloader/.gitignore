@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.native-host/
+extension/node_modules/
+extension/.output/
+extension/.wxt/
+native/.native-host/
+ClassroomAIExport/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+!extension/public/icons/
+!extension/public/icons/*.png

@@ -1,0 +1,5 @@
+.wxt/
+.output/
+dist/
+node_modules/
+*.log
