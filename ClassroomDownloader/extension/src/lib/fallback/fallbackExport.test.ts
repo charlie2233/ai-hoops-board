@@ -91,6 +91,7 @@ describe("fallback browser-download export", () => {
     const files = buildFallbackExportFiles(item, snapshot);
     const names = files.map((file) => file.name);
     const itemJson = JSON.parse(files.find((file) => file.name === "item.json")!.text);
+    const itemMarkdown = files.find((file) => file.name === "item.md")!.text;
 
     expect(names).toEqual([
       "item.json",
@@ -103,6 +104,8 @@ describe("fallback browser-download export", () => {
     expect(itemJson.crawler.raw_html_truncated).toBe(true);
     expect(itemJson.crawler.raw_html_original_chars).toBe(2_500_000);
     expect(itemJson.crawler.raw_html_stored_chars).toBe(2_000_000);
+    expect(itemMarkdown).toContain('course: "AP Calculus / Section A"');
+    expect(itemMarkdown).toContain('title: "Derivative Practice: Unit 5"');
     expect(files.find((file) => file.name === "attachments.manifest.jsonl")!.text).toContain(
       "https://example.edu/derivative-reference"
     );

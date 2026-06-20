@@ -39,6 +39,10 @@ function jsonl(records: unknown[]): string {
   return records.map((record) => JSON.stringify(record)).join("\n") + (records.length ? "\n" : "");
 }
 
+function yamlString(value: string): string {
+  return JSON.stringify(value);
+}
+
 export function renderFallbackMarkdown(item: ExportItem): string {
   const due = item.due?.raw || "Not detected";
   const points = item.points?.raw || "Not detected";
@@ -52,11 +56,11 @@ export function renderFallbackMarkdown(item: ExportItem): string {
   return [
     "---",
     `entity_type: ${item.entity_type}`,
-    `course: ${item.course.name}`,
-    `title: ${item.title}`,
-    `due: ${due}`,
-    `source_url: ${item.source_url}`,
-    `id: ${item.id}`,
+    `course: ${yamlString(item.course.name)}`,
+    `title: ${yamlString(item.title)}`,
+    `due: ${yamlString(due)}`,
+    `source_url: ${yamlString(item.source_url)}`,
+    `id: ${yamlString(item.id)}`,
     "---",
     "",
     `# ${item.title}`,
