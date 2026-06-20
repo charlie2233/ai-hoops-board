@@ -124,27 +124,42 @@ export function finalizeDownloadResult(
 }
 
 async function waitForDownloadItem(downloadId: number, timeoutMs: number): Promise<Browser.downloads.DownloadItem> {
+  let listener: ((delta: Browser.downloads.DownloadDelta) => void) | null = null;
+  const removeListener = () => {
+    if (!listener) return;
+    browser.downloads.onChanged.removeListener(listener);
+    listener = null;
+  };
   const waitForChange = new Promise<void>((resolve, reject) => {
-    const listener = (delta: Browser.downloads.DownloadDelta) => {
+    listener = (delta: Browser.downloads.DownloadDelta) => {
       if (delta.id !== downloadId) return;
       if (delta.state?.current === "complete" || delta.state?.current === "interrupted") {
-        browser.downloads.onChanged.removeListener(listener);
+        removeListener();
         resolve();
       }
       if (delta.error?.current) {
-        browser.downloads.onChanged.removeListener(listener);
+        removeListener();
         reject(new Error(delta.error.current));
       }
     };
     browser.downloads.onChanged.addListener(listener);
   });
 
-  await timeout(waitForChange, timeoutMs, `Timed out waiting for download ${downloadId}`);
-  const [item] = await browser.downloads.search({ id: downloadId });
-  if (!item) {
-    throw new Error(`Could not find completed download ${downloadId}`);
+  try {
+    const [currentItem] = await browser.downloads.search({ id: downloadId });
+    if (currentItem?.state === "complete" || currentItem?.state === "interrupted") {
+      return currentItem;
+    }
+
+    await timeout(waitForChange, timeoutMs, `Timed out waiting for download ${downloadId}`);
+    const [item] = await browser.downloads.search({ id: downloadId });
+    if (!item) {
+      throw new Error(`Could not find completed download ${downloadId}`);
+    }
+    return item;
+  } finally {
+    removeListener();
   }
-  return item;
 }
 
 export async function downloadJobs(jobs: DownloadJob[], settleTimeoutMs = 300_000): Promise<DownloadResult[]> {
