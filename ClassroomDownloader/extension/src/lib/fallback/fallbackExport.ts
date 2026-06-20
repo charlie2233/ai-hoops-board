@@ -31,9 +31,8 @@ export function safePathSegment(value: string, fallback = "classroom-page"): str
 }
 
 export function buildFallbackSessionName(item: ExportItem): string {
-  const date = item.captured_at.slice(0, 10) || new Date().toISOString().slice(0, 10);
   const idTail = item.id.split(":").pop()?.slice(0, 8) || "export";
-  return safePathSegment(`${date}__${item.course.name}__${item.title}__${idTail}`);
+  return safePathSegment(`${item.course.name}__${item.title}__${idTail}`);
 }
 
 function jsonl(records: unknown[]): string {

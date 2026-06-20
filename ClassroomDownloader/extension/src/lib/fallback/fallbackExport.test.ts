@@ -94,9 +94,20 @@ describe("fallback browser-download export", () => {
     const sessionName = buildFallbackSessionName(item);
     const filename = filenameForFallbackFile(sessionName, "item.json");
 
-    expect(sessionName).toContain("2026-04-24");
+    expect(sessionName).toContain("AP_Calculus");
+    expect(sessionName).toContain("Derivative_Practice");
     expect(sessionName).not.toContain("/");
     expect(filename).toBe(`CourseBinder/${sessionName}/item.json`);
+  });
+
+  it("keeps the Downloads session path stable across repeated exports", () => {
+    const firstSessionName = buildFallbackSessionName(item);
+    const secondSessionName = buildFallbackSessionName({
+      ...item,
+      captured_at: "2026-04-25T18:30:00.000Z"
+    });
+
+    expect(firstSessionName).toBe(secondSessionName);
   });
 
   it("emits all fallback files with raw HTML truncation metadata", () => {
