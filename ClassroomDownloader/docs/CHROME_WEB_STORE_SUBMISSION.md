@@ -10,7 +10,7 @@ CourseBinder exports visible Google Classroom pages into local AI-readable Markd
 
 CourseBinder – AI-Ready Google Classroom Exporter helps students and educators turn Google Classroom pages they can already see in their browser into a local, AI-readable archive.
 
-With one click, the extension can export the current Classroom page into structured files such as Markdown, JSON, raw text, links, attachment manifests, and page snapshots. When available, it can also start browser downloads for visible/downloadable attachment links.
+With one click, the extension can export the current Classroom page into structured files such as Markdown, JSON, raw text, links, attachment manifests, and page snapshots. When available, it can also start browser downloads for visible/downloadable attachment links, using one best-effort download attempt per visible Google editor attachment.
 
 The extension is designed for local-first AI workflows. Exported files can be read by tools like Codex, GPT, local MCP servers, and other study or productivity systems.
 
@@ -102,7 +102,7 @@ Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run buil
 
 - `manifest_version`: `3`
 - `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
-- `version`: `0.1.9`
+- `version`: `0.1.10`
 - Permissions only: `downloads`, `storage`
 - Host permissions only: `https://classroom.google.com/*`
 - Icons: `16`, `32`, `48`, and `128`

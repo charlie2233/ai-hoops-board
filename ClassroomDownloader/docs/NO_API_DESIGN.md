@@ -41,7 +41,7 @@ The optional native host is still available for local developer builds with `COU
 ## Attachment Strategy
 
 - Drive file links become best-effort browser-session download jobs.
-- Docs, Sheets, and Slides get best-effort export URLs.
+- Docs, Sheets, and Slides get one best-effort export URL each to avoid duplicate/noisy browser downloads.
 - Drive folders are saved as metadata until folder-page crawling exists.
 - YouTube and external sites are saved as links and metadata.
 - Download-disabled or view-only files stay metadata-only.

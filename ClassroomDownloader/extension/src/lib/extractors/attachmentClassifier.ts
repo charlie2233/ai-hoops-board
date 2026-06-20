@@ -45,24 +45,15 @@ function driveFileDownloadUrl(fileId: string): string {
 
 function docsExportUrls(kind: AttachmentKind, docId: string): string[] {
   if (kind === "google_doc") {
-    return [
-      `https://docs.google.com/document/d/${encodeURIComponent(docId)}/export?format=pdf`,
-      `https://docs.google.com/document/d/${encodeURIComponent(docId)}/export?format=docx`
-    ];
+    return [`https://docs.google.com/document/d/${encodeURIComponent(docId)}/export?format=pdf`];
   }
 
   if (kind === "google_sheet") {
-    return [
-      `https://docs.google.com/spreadsheets/d/${encodeURIComponent(docId)}/export?format=xlsx`,
-      `https://docs.google.com/spreadsheets/d/${encodeURIComponent(docId)}/export?format=pdf`
-    ];
+    return [`https://docs.google.com/spreadsheets/d/${encodeURIComponent(docId)}/export?format=xlsx`];
   }
 
   if (kind === "google_slide") {
-    return [
-      `https://docs.google.com/presentation/d/${encodeURIComponent(docId)}/export/pptx`,
-      `https://docs.google.com/presentation/d/${encodeURIComponent(docId)}/export/pdf`
-    ];
+    return [`https://docs.google.com/presentation/d/${encodeURIComponent(docId)}/export/pptx`];
   }
 
   return [];
