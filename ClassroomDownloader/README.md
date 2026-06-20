@@ -96,6 +96,8 @@ The standalone repository also includes `.github/workflows/build-extension-zip.y
 
 The default Chrome Web Store build is intentionally scoped to `classroom.google.com`. Drive and Docs links are classified from the visible Classroom page and downloaded only through user-requested browser downloads.
 
+For a real-browser validation checklist before resubmitting or sharing a build, see [docs/MANUAL_SMOKE_TEST.md](docs/MANUAL_SMOKE_TEST.md).
+
 ## License
 
 MIT License. Free to use, copy, modify, merge, publish, distribute, sublicense, and sell, as long as the copyright and permission notice are included.
