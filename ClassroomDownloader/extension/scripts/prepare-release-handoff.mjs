@@ -100,10 +100,10 @@ Upload this zip in the Chrome Web Store Developer Dashboard:
 ${zipFileName}
 \`\`\`
 
-If you generated this packet locally, the zip is in:
+If you generated this packet locally, the zip is in this repo-relative folder:
 
 \`\`\`txt
-${releaseDir}
+release-artifacts/coursebinder-${packageJson.version}/
 \`\`\`
 
 If you downloaded the GitHub Actions \`coursebinder-release-handoff\` artifact, upload the zip file in the downloaded \`coursebinder-${packageJson.version}/\` folder.
