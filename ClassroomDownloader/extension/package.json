@@ -7,6 +7,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "build:native": "COURSEBINDER_ENABLE_NATIVE=1 wxt build",
+    "release:handoff": "node scripts/prepare-release-handoff.mjs",
     "smoke:fixture": "node scripts/smoke-fixture.mjs",
     "smoke:zip": "node scripts/smoke-packaged-zip.mjs",
     "test": "vitest run",
