@@ -7,7 +7,10 @@ export default defineConfig({
   srcDir: "src",
   modules: [],
   vite: () => ({
-    plugins: [react()]
+    plugins: [react()],
+    define: {
+      __COURSEBINDER_ENABLE_NATIVE__: JSON.stringify(enableNativeMessaging)
+    }
   }),
   manifest: {
     name: "CourseBinder – AI-Ready Google Classroom Exporter",
