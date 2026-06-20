@@ -7,7 +7,11 @@ import {
   buildFinalizeDownloadResultsMessage,
   downloadJobs
 } from "../lib/downloads/downloadQueue";
-import { downloadFallbackExport, type FallbackExportResult } from "../lib/fallback/fallbackExport";
+import {
+  buildFallbackSessionName,
+  downloadFallbackExport,
+  type FallbackExportResult
+} from "../lib/fallback/fallbackExport";
 import { sendNativeMessage } from "../lib/native/nativeClient";
 import { userFacingExtractionError } from "../lib/runtime/errors";
 
@@ -43,8 +47,8 @@ async function exportCurrentPage(downloadAttachments: boolean) {
   const extracted = await extractCurrentPage();
   const snapshot = extracted.snapshot!;
   const item = extracted.item || inferExportItem(snapshot);
-  const sessionPrefix = `${item.course.name}_${item.title}_${new Date().toISOString().slice(0, 10)}`;
-  const jobs = downloadAttachments ? buildDownloadJobs(item.attachments, sessionPrefix) : [];
+  const fallbackSessionName = buildFallbackSessionName(item);
+  const jobs = downloadAttachments ? buildDownloadJobs(item.attachments, fallbackSessionName) : [];
 
   const nativeResponse = await sendNativeMessage({
     type: "save_item",
@@ -57,7 +61,7 @@ async function exportCurrentPage(downloadAttachments: boolean) {
   let fallbackResponse: FallbackExportResult | null = null;
   if (!nativeResponse.ok) {
     try {
-      fallbackResponse = await downloadFallbackExport(item, snapshot);
+      fallbackResponse = await downloadFallbackExport(item, snapshot, fallbackSessionName);
     } catch (error) {
       fallbackResponse = {
         ok: false,

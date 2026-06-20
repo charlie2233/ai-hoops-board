@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportItem } from "../extractors/assignmentPage";
 import type { PageSnapshot } from "../extractors/classroomPage";
+import { buildDownloadJobs } from "../downloads/downloadQueue";
 import {
   buildFallbackExportFiles,
   buildFallbackSessionName,
@@ -135,5 +136,29 @@ describe("fallback browser-download export", () => {
     ]);
     expect(downloadMock.mock.calls.every(([options]) => options.url.startsWith("data:"))).toBe(true);
     expect(downloadMock.mock.calls.every(([options]) => options.saveAs === false)).toBe(true);
+  });
+
+  it("uses the same session folder for fallback files and attachment download jobs", () => {
+    const itemWithDownload: ExportItem = {
+      ...item,
+      attachments: [
+        {
+          id: "attachment:pdf",
+          title: "Derivative Practice PDF",
+          kind: "drive_file",
+          sourceUrl: "https://drive.google.com/file/d/drive-file-123/view",
+          browserDownloadUrl: "https://drive.google.com/uc?export=download&id=drive-file-123",
+          exportUrls: [],
+          downloadStatus: "queued",
+        },
+      ],
+    };
+    const sessionName = buildFallbackSessionName(itemWithDownload);
+    const sessionFolder = `CourseBinder/${sessionName}/`;
+    const jobs = buildDownloadJobs(itemWithDownload.attachments, sessionName);
+
+    expect(filenameForFallbackFile(sessionName, "item.json")).toBe(`${sessionFolder}item.json`);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.filename).toBe(`${sessionFolder}Derivative_Practice_PDF`);
   });
 });

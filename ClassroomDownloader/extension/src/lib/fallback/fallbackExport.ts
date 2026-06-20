@@ -133,8 +133,11 @@ function textToDataUrl(text: string, mime: string): string {
   return `data:${mime};charset=utf-8;base64,${btoa(chunks.join(""))}`;
 }
 
-export async function downloadFallbackExport(item: ExportItem, snapshot: PageSnapshot): Promise<FallbackExportResult> {
-  const sessionName = buildFallbackSessionName(item);
+export async function downloadFallbackExport(
+  item: ExportItem,
+  snapshot: PageSnapshot,
+  sessionName = buildFallbackSessionName(item)
+): Promise<FallbackExportResult> {
   const files = buildFallbackExportFiles(item, snapshot);
   const paths: Record<string, string> = {};
   const downloadIds: number[] = [];

@@ -112,9 +112,9 @@ Only run this on a page with a small, non-sensitive, clearly downloadable attach
 
 1. Click `Export + download`.
 2. Confirm the popup reports how many browser downloads completed or failed.
-3. Confirm any attachment download remains in Chrome's normal Downloads area.
+3. Confirm completed attachment downloads are saved under the same `Downloads/CourseBinder/<session>/` folder as the exported archive files.
 
-The default Web Store build does not copy downloaded attachments into an archive-owned folder. That richer flow belongs to the optional native-host build.
+The default Web Store build does not hash, extract, index, or copy downloaded attachments into a separate archive-owned mirror. That richer flow belongs to the optional native-host build.
 
 ## Troubleshooting
 
