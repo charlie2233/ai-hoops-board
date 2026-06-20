@@ -1,0 +1,132 @@
+name: Build Chrome Extension Zip
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-extension-zip.yml"
+      - "extension/**"
+      - "native/**"
+      - "tests/native/**"
+      - "README.md"
+      - "docs/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build-extension-zip.yml"
+      - "extension/**"
+      - "native/**"
+      - "tests/native/**"
+      - "README.md"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Build review-safe Chrome Web Store package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install extension dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Typecheck extension
+        working-directory: extension
+        run: npm run typecheck
+
+      - name: Test extension
+        working-directory: extension
+        run: npm test -- --run
+
+      - name: Build extension
+        working-directory: extension
+        run: npm run build
+
+      - name: Verify review-safe manifest permissions
+        working-directory: extension
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const manifest = JSON.parse(fs.readFileSync(".output/chrome-mv3/manifest.json", "utf8"));
+          const forbidden = ["scripting", "activeTab", "nativeMessaging", "identity", "cookies"];
+          const present = forbidden.filter((permission) => manifest.permissions?.includes(permission));
+          const googleApis = (manifest.host_permissions || []).filter((host) => host.includes("googleapis.com"));
+          const requiredPermissions = ["downloads", "storage"];
+          const missing = requiredPermissions.filter((permission) => !manifest.permissions?.includes(permission));
+          const extra = (manifest.permissions || []).filter((permission) => !requiredPermissions.includes(permission));
+
+          if (manifest.manifest_version !== 3) {
+            throw new Error(`Expected Manifest V3, got ${manifest.manifest_version}`);
+          }
+          if (manifest.version !== require("./package.json").version) {
+            throw new Error(`Manifest version ${manifest.version} does not match package.json`);
+          }
+          if (present.length) {
+            throw new Error(`Forbidden permissions present: ${present.join(", ")}`);
+          }
+          if (googleApis.length) {
+            throw new Error(`Forbidden googleapis host permissions present: ${googleApis.join(", ")}`);
+          }
+          if (missing.length || extra.length) {
+            throw new Error(`Unexpected permissions. Missing: ${missing.join(", ") || "none"} Extra: ${extra.join(", ") || "none"}`);
+          }
+          for (const size of ["16", "32", "48", "128"]) {
+            if (!manifest.icons?.[size]) throw new Error(`Missing icon ${size}`);
+            if (!manifest.action?.default_icon?.[size]) throw new Error(`Missing action.default_icon ${size}`);
+          }
+          console.log(JSON.stringify({
+            name: manifest.name,
+            version: manifest.version,
+            permissions: manifest.permissions,
+            host_permissions: manifest.host_permissions,
+            icons: Object.keys(manifest.icons || {}),
+            action_default_icon: Object.keys(manifest.action?.default_icon || {})
+          }, null, 2));
+          NODE
+
+      - name: Package extension zip
+        working-directory: extension
+        run: npm run zip
+
+      - name: Audit production dependencies
+        working-directory: extension
+        run: npm audit --omit=dev
+
+      - name: Test native package
+        run: python3 -m unittest discover -s tests/native
+
+      - name: Compile native package
+        run: python3 -m compileall -q native/classroom_ai_exporter
+
+      - name: Write package checksum
+        run: |
+          ZIP_PATH="$(find extension/.output -maxdepth 1 -type f -name '*-chrome.zip' | sort | tail -n 1)"
+          test -n "$ZIP_PATH"
+          shasum -a 256 "$ZIP_PATH" | tee extension/.output/chrome-web-store-zip.sha256
+          ls -lh "$ZIP_PATH" | tee extension/.output/chrome-web-store-zip.txt
+
+      - name: Upload Chrome Web Store zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursebinder-chrome-web-store-zip
+          path: |
+            extension/.output/*-chrome.zip
+            extension/.output/chrome-web-store-zip.sha256
+            extension/.output/chrome-web-store-zip.txt
+          if-no-files-found: error
