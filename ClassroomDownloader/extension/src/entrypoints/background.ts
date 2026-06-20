@@ -71,7 +71,7 @@ async function exportCurrentPage(downloadAttachments: boolean) {
 
   if (!nativeResponse.ok && !fallbackResponse?.ok) {
     throw new Error(
-      `Native host unavailable and browser-download fallback failed: ${fallbackResponse?.error || nativeResponse.error || "unknown error"}`
+      `Browser-download export failed: ${fallbackResponse?.error || nativeResponse.error || "unknown error"}`
     );
   }
 
