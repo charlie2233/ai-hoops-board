@@ -33,7 +33,27 @@ The default Web Store build does not request:
 
 ## Resubmission Notes
 
-Upload the newly built `0.1.11` zip from:
+Preferred local upload path after running `npm run release:handoff` from `extension/`:
+
+```txt
+release-artifacts/coursebinder-0.1.11/coursebinder-ai-ready-google-classroom-exporter-0.1.11-chrome.zip
+```
+
+Preferred GitHub Actions artifact:
+
+```txt
+coursebinder-release-handoff
+```
+
+The handoff artifact contains:
+
+- `coursebinder-ai-ready-google-classroom-exporter-0.1.11-chrome.zip`
+- `SHA256.txt`
+- `manifest-summary.json`
+- `UPLOAD_THIS.md`
+- `REVIEWER_NOTE.txt`
+
+The build-cache zip is also valid after `npm run zip`, but prefer the handoff path for dashboard upload:
 
 ```txt
 extension/.output/coursebinder-ai-ready-google-classroom-exporter-0.1.11-chrome.zip

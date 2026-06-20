@@ -2,6 +2,24 @@
 
 This packet is for an unlisted or deferred Chrome Web Store submission of CourseBinder – AI-Ready Google Classroom Exporter.
 
+## Upload Package
+
+Preferred local upload path after running `npm run release:handoff` from `extension/`:
+
+```txt
+release-artifacts/coursebinder-0.1.11/coursebinder-ai-ready-google-classroom-exporter-0.1.11-chrome.zip
+```
+
+Preferred GitHub Actions artifact:
+
+```txt
+coursebinder-release-handoff
+```
+
+That artifact contains the same upload zip plus `SHA256.txt`, `manifest-summary.json`, `UPLOAD_THIS.md`, and `REVIEWER_NOTE.txt`.
+
+The lower-level CI artifact `coursebinder-chrome-web-store-zip` is also valid, but the handoff packet is safer for resubmission because it includes the reviewer note and manifest audit.
+
 ## Short Description
 
 CourseBinder exports visible Google Classroom pages into local AI-readable Markdown, JSON, snapshots, links, and attachment archives.
