@@ -102,7 +102,7 @@ Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run buil
 
 - `manifest_version`: `3`
 - `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
-- `version`: `0.1.8`
+- `version`: `0.1.9`
 - Permissions only: `downloads`, `storage`
 - Host permissions only: `https://classroom.google.com/*`
 - Icons: `16`, `32`, `48`, and `128`

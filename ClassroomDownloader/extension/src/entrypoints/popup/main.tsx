@@ -19,6 +19,14 @@ function sendMessage<T>(message: Record<string, unknown>): Promise<T> {
   return browser.runtime.sendMessage(message);
 }
 
+function downloadSummaryFor(downloads: any): string {
+  const requested = downloads?.requested ?? downloads?.length ?? 0;
+  if (!requested) return "No downloads queued";
+  const succeeded = downloads?.succeeded ?? downloads.filter((result: any) => result.ok).length;
+  const failed = downloads?.failed ?? downloads.filter((result: any) => !result.ok).length;
+  return `${succeeded}/${requested} browser downloads completed${failed ? `, ${failed} failed` : ""}`;
+}
+
 function App() {
   const operationIdRef = useRef(0);
   const [state, setState] = useState<PopupState>({
@@ -46,9 +54,7 @@ function App() {
         lastExport?.fallbackResponse?.paths?.["item.md"] ||
         lastExport?.fallbackResponse?.root ||
         "No export yet",
-      downloadSummary: lastExport?.downloadResults
-        ? `${lastExport.downloadResults.filter((result: any) => result.ok).length}/${lastExport.downloadResults.length} browser downloads completed`
-        : current.downloadSummary
+      downloadSummary: lastExport?.downloadResults ? downloadSummaryFor(lastExport.downloadResults) : current.downloadSummary
     }));
   }
 
@@ -106,11 +112,7 @@ function App() {
       return;
     }
 
-    const downloadSummary = response.downloads
-      ? `${response.downloads.succeeded}/${response.downloads.requested} browser downloads completed${
-          response.downloads.failed ? `, ${response.downloads.failed} failed` : ""
-        }`
-      : "No downloads queued";
+    const downloadSummary = downloadSummaryFor(response.downloads);
 
     setState((current) => ({
       status: "ready",

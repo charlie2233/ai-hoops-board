@@ -12,7 +12,7 @@ export default defineConfig({
   manifest: {
     name: "CourseBinder – AI-Ready Google Classroom Exporter",
     description: "CourseBinder exports visible Google Classroom pages into local AI-readable archives.",
-    version: "0.1.8",
+    version: "0.1.9",
     permissions: ["downloads", "storage", ...(enableNativeMessaging ? ["nativeMessaging"] : [])],
     host_permissions: ["https://classroom.google.com/*"],
     icons: {
