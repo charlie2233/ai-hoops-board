@@ -17,6 +17,7 @@ const expectedFiles = [
   "attachments.manifest.jsonl",
   "page.snapshot.html",
 ];
+const expectedAttachmentDownloadCount = 2;
 const SMOKE_TIMEOUT_MS = Number(process.env.COURSEBINDER_SMOKE_TIMEOUT_MS || 45_000);
 
 async function loadPlaywright() {
@@ -151,6 +152,26 @@ async function main() {
     await context.route("https://classroom.google.com/**", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html });
     });
+    await context.route("https://drive.google.com/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/pdf",
+        headers: {
+          "content-disposition": 'attachment; filename="derivative-practice.pdf"',
+        },
+        body: "%PDF-1.4\n% CourseBinder smoke fixture PDF\n",
+      });
+    });
+    await context.route("https://docs.google.com/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/pdf",
+        headers: {
+          "content-disposition": 'attachment; filename="teacher-notes.pdf"',
+        },
+        body: "%PDF-1.4\n% CourseBinder smoke fixture Google Doc export\n",
+      });
+    });
 
     let serviceWorker = context.serviceWorkers()[0];
     if (!serviceWorker) {
@@ -283,6 +304,88 @@ async function main() {
     const snapshotHtml = readText(downloadPathsByName.get("page.snapshot.html"));
     assert(snapshotHtml.includes("Derivative Practice"), "page.snapshot.html does not contain fixture page content.");
 
+    await popupPage.evaluate(() => {
+      const exportDownloadButton = [...document.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("Export + download")
+      );
+      if (!exportDownloadButton) {
+        throw new Error("Could not find Export + download button in popup.");
+      }
+      exportDownloadButton.click();
+    });
+    try {
+      await popupPage.waitForFunction(
+        () =>
+          document.body.innerText.includes("Saved archive files") &&
+          document.body.innerText.includes("/2 browser downloads completed"),
+        undefined,
+        { timeout: 25_000 }
+      );
+    } catch (error) {
+      const popupTextAfterDownload = await popupPage.evaluate(() => document.body.innerText);
+      const failedExportResponse = await popupPage.evaluate(
+        async () =>
+          await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ type: "classroom_ai:last_export" }, (response) => {
+              if (chrome.runtime.lastError) {
+                resolve({ ok: false, error: chrome.runtime.lastError.message });
+                return;
+              }
+              resolve(response?.lastExport || { ok: false, error: "No last export was stored after failed Export + download." });
+            });
+          })
+      );
+      throw new Error(
+        `Popup did not show Export + download success text. Current popup text:\n${popupTextAfterDownload}\n\nLast export:\n${JSON.stringify(
+          failedExportResponse,
+          null,
+          2
+        )}`
+      );
+    }
+
+    const exportDownloadResponse = await popupPage.evaluate(
+      async () =>
+        await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: "classroom_ai:last_export" }, (response) => {
+            if (chrome.runtime.lastError) {
+              resolve({ ok: false, error: chrome.runtime.lastError.message });
+              return;
+            }
+            resolve(response?.lastExport || { ok: false, error: "No last export was stored after Export + download." });
+          });
+        })
+    );
+    const attachmentDownloadResults = exportDownloadResponse?.downloadResults || [];
+    assert(
+      attachmentDownloadResults.length === expectedAttachmentDownloadCount,
+      `Expected ${expectedAttachmentDownloadCount} attachment download results, got ${attachmentDownloadResults.length}: ${JSON.stringify(
+        attachmentDownloadResults,
+        null,
+        2
+      )}`
+    );
+    const fallbackSessionPrefix = exportDownloadResponse.fallbackResponse?.paths?.["item.json"]?.replace(/item\.json$/, "");
+    assert(fallbackSessionPrefix?.startsWith("CourseBinder/"), `Missing fallback session prefix: ${fallbackSessionPrefix}`);
+    const successfulAttachmentDownloads = attachmentDownloadResults.filter((result) => result.ok);
+    const failedAttachmentDownloads = attachmentDownloadResults.filter((result) => !result.ok);
+    for (const result of attachmentDownloadResults) {
+      assert(
+        result.filename?.startsWith(fallbackSessionPrefix),
+        `Attachment download did not use the fallback session folder. Expected prefix ${fallbackSessionPrefix}, got ${result.filename}`
+      );
+      if (result.ok) {
+        assert(existingFile(result.originalDownloadPath), `Attachment download file is missing: ${result.originalDownloadPath}`);
+        assert(fs.statSync(result.originalDownloadPath).size > 0, `Attachment download file is empty: ${result.originalDownloadPath}`);
+      } else {
+        assert(result.error, `Failed attachment download did not include an error: ${JSON.stringify(result)}`);
+      }
+    }
+    assert(
+      successfulAttachmentDownloads.length + failedAttachmentDownloads.length === expectedAttachmentDownloadCount,
+      "Attachment download accounting did not add up."
+    );
+
     const summary = {
       ok: true,
       extensionId,
@@ -298,8 +401,10 @@ async function main() {
       fallbackRoot: exportResponse.fallbackResponse.root,
       fallbackFiles: expectedFiles,
       verifiedDownloadedFiles: expectedFiles.length,
+      attachmentDownloadsSucceeded: successfulAttachmentDownloads.length,
+      attachmentDownloadsFailed: failedAttachmentDownloads.length,
       popupMode: "Browser downloads",
-      completedDownloads: downloads.length,
+      completedDownloads: downloads.length + successfulAttachmentDownloads.length,
     };
     console.log(JSON.stringify(summary, null, 2));
   } finally {
