@@ -20,6 +20,7 @@ The first version is local-only:
 
 - No `identity` permission.
 - No `cookies` permission.
+- No `nativeMessaging` permission in the default Chrome Web Store build.
 - No `https://www.googleapis.com/*` host access.
 - No telemetry or hosted backend.
 - MCP tools read the local archive and do not mutate Classroom.
@@ -82,6 +83,13 @@ Run the local fixture smoke after building to verify the unpacked extension can 
 cd extension
 npm run build
 npm run smoke:fixture
+```
+
+The default build is the Chrome Web Store build and uses browser-download fallback when the optional native host is unavailable. For local development with the optional native host enabled, use:
+
+```sh
+cd extension
+npm run build:native
 ```
 
 The extension is intentionally scoped to `classroom.google.com`, `drive.google.com`, and `docs.google.com`.

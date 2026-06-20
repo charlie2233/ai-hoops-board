@@ -1,14 +1,16 @@
 {
   "name": "coursebinder-ai-ready-google-classroom-exporter",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
+    "build:native": "COURSEBINDER_ENABLE_NATIVE=1 wxt build",
     "smoke:fixture": "node scripts/smoke-fixture.mjs",
     "test": "vitest run",
     "zip": "wxt zip",
+    "zip:native": "COURSEBINDER_ENABLE_NATIVE=1 wxt zip",
     "typecheck": "wxt prepare && tsc --noEmit"
   },
   "dependencies": {

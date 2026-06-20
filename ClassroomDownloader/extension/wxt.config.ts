@@ -1,6 +1,8 @@
 import { defineConfig } from "wxt";
 import react from "@vitejs/plugin-react";
 
+const enableNativeMessaging = process.env.COURSEBINDER_ENABLE_NATIVE === "1";
+
 export default defineConfig({
   srcDir: "src",
   modules: [],
@@ -10,8 +12,8 @@ export default defineConfig({
   manifest: {
     name: "CourseBinder – AI-Ready Google Classroom Exporter",
     description: "CourseBinder exports visible Google Classroom pages into local AI-readable archives.",
-    version: "0.1.2",
-    permissions: ["downloads", "storage", "nativeMessaging"],
+    version: "0.1.3",
+    permissions: ["downloads", "storage", ...(enableNativeMessaging ? ["nativeMessaging"] : [])],
     host_permissions: [
       "https://classroom.google.com/*",
       "https://drive.google.com/*",

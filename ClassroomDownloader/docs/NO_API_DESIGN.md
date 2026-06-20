@@ -14,8 +14,7 @@ Allowed first-version permissions:
 {
   "permissions": [
     "downloads",
-    "storage",
-    "nativeMessaging"
+    "storage"
   ],
   "host_permissions": [
     "https://classroom.google.com/*",
@@ -32,9 +31,12 @@ identity
 cookies
 history
 bookmarks
+nativeMessaging in the default Chrome Web Store build
 https://www.googleapis.com/*
 oauth2
 ```
+
+The optional native host is still available for local developer builds with `COURSEBINDER_ENABLE_NATIVE=1`.
 
 ## Attachment Strategy
 

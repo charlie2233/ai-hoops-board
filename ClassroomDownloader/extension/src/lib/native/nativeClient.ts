@@ -14,8 +14,18 @@ export interface NativeResponse {
 export function sendNativeMessage<TPayload extends object>(
   payload: TPayload
 ): Promise<NativeResponse> {
-  return browser.runtime
-    .sendNativeMessage(HOST_NAME, payload)
-    .then((response) => (response as NativeResponse) || { ok: false, error: "empty native host response" })
-    .catch((error: Error) => ({ ok: false, error: error.message || "native host request failed" }));
+  try {
+    if (typeof browser.runtime.sendNativeMessage !== "function") {
+      return Promise.resolve({ ok: false, error: "native messaging is not enabled in this build" });
+    }
+    return browser.runtime
+      .sendNativeMessage(HOST_NAME, payload)
+      .then((response) => (response as NativeResponse) || { ok: false, error: "empty native host response" })
+      .catch((error: Error) => ({ ok: false, error: error.message || "native host request failed" }));
+  } catch (error) {
+    return Promise.resolve({
+      ok: false,
+      error: error instanceof Error ? error.message : "native host request failed"
+    });
+  }
 }

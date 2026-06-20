@@ -26,7 +26,9 @@ Downloads are initiated through the browser session. The extension does not bypa
 
 ## Optional Native Host
 
-The extension can connect to an optional local Python native host installed by the user. This native host is used only for local archive enhancements such as writing structured files, hashing downloaded files, extracting text, building local indexes, and exposing a local read-only MCP server.
+The default Chrome Web Store extension does not request the `nativeMessaging` permission and does not connect to a native host.
+
+For local developer builds outside the default Chrome Web Store package, CourseBinder can connect to an optional local Python native host installed by the user. This native host is used only for local archive enhancements such as writing structured files, hashing downloaded files, extracting text, building local indexes, and exposing a local read-only MCP server.
 
 If the native host is not installed, the extension still provides a browser-download fallback export.
 

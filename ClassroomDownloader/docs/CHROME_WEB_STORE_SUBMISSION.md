@@ -25,7 +25,7 @@ Privacy boundary:
 - No ads
 - No hosted backend
 
-The optional native helper can be installed separately by the user to write richer local archives, hash/copy downloaded files, extract text, build indexes, and expose a local read-only MCP server. If the helper is not installed, the browser-download fallback still works.
+The browser-download fallback works without a native helper. The optional native helper remains available for local developer builds outside the default Chrome Web Store package.
 
 CourseBinder – AI-Ready Google Classroom Exporter only processes content the signed-in user can already see in their browser and does not bypass permissions, view-only restrictions, or access controls.
 
@@ -46,10 +46,6 @@ Used to save user-requested export files and downloadable attachments to the bro
 `storage`
 
 Used to store local extension state such as the last export result, native-helper health, archive root display, and download summary shown in the popup.
-
-`nativeMessaging`
-
-Used only for the optional local Python helper installed by the user. The helper writes structured archive files, hashes/copies downloaded files, extracts text, builds local indexes, and exposes a local read-only MCP server. If the helper is not installed, the extension still works through browser-download fallback.
 
 `https://classroom.google.com/*`
 
@@ -104,7 +100,7 @@ To test:
 5. If the optional native host is not installed, the extension will use browser-download fallback and save export files under `Downloads/CourseBinder/<session>/`.
 6. Confirm that `item.json`, `item.md`, `raw_text.txt`, `links.jsonl`, `attachments.manifest.jsonl`, and `page.snapshot.html` are created.
 
-The extension does not require Google APIs, OAuth, cookies, or developer-provided credentials. The native host is optional and is not required for basic export functionality.
+The extension does not require Google APIs, OAuth, cookies, native host installation, or developer-provided credentials.
 
 ## Built Manifest Audit
 
@@ -112,14 +108,15 @@ Expected `extension/.output/chrome-mv3/manifest.json` values after `npm run buil
 
 - `manifest_version`: `3`
 - `name`: `CourseBinder – AI-Ready Google Classroom Exporter`
-- `version`: `0.1.2`
-- Permissions only: `downloads`, `storage`, `nativeMessaging`
+- `version`: `0.1.3`
+- Permissions only: `downloads`, `storage`
 - Host permissions only: `https://classroom.google.com/*`, `https://drive.google.com/*`, `https://docs.google.com/*`
 - Icons: `16`, `32`, `48`, and `128`
 - Action default icons: `16`, `32`, `48`, and `128`
 - No `activeTab` permission
 - No `identity` permission
 - No `cookies` permission
+- No `nativeMessaging` permission in the default Chrome Web Store build
 - No `https://www.googleapis.com/*` host permission
 - No externally hosted scripts or remote-code entries
 

@@ -31,7 +31,14 @@ python -m classroom_ai_exporter.mcp.server
 
 ## Dev Installer
 
-After building/loading the unpacked extension, copy its extension id from `chrome://extensions` and run:
+Build the local native-enabled extension first:
+
+```sh
+cd extension
+npm run build:native
+```
+
+After loading that unpacked extension, copy its extension id from `chrome://extensions` and run:
 
 ```sh
 cd native
