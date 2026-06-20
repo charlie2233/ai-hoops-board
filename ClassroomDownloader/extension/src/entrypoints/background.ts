@@ -9,6 +9,7 @@ import {
 } from "../lib/downloads/downloadQueue";
 import { downloadFallbackExport, type FallbackExportResult } from "../lib/fallback/fallbackExport";
 import { sendNativeMessage } from "../lib/native/nativeClient";
+import { userFacingExtractionError } from "../lib/runtime/errors";
 
 interface ExtractResponse {
   ok: boolean;
@@ -131,7 +132,7 @@ export default defineBackground(() => {
     }
 
     if (message?.type === "classroom_ai:extract_current") {
-      return extractCurrentPage().catch((error: Error) => ({ ok: false, error: error.message }));
+      return extractCurrentPage().catch((error: unknown) => ({ ok: false, error: userFacingExtractionError(error) }));
     }
 
     if (message?.type === "classroom_ai:native_health") {
@@ -139,9 +140,9 @@ export default defineBackground(() => {
     }
 
     if (message?.type === "classroom_ai:export_current") {
-      return exportCurrentPage(Boolean(message.downloadAttachments)).catch((error: Error) => ({
+      return exportCurrentPage(Boolean(message.downloadAttachments)).catch((error: unknown) => ({
         ok: false,
-        error: error.message
+        error: userFacingExtractionError(error)
       }));
     }
 
