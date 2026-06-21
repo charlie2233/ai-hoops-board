@@ -35,22 +35,31 @@ The archive uses ordinary files so Codex, shell tools, and future local apps can
 }
 ```
 
-Downloaded attachment records may also include:
+Browser-download fallback attachment records use camelCase fields and may include:
 
 ```json
 {
-  "download_status": "downloaded",
-  "original_download_path": "/Users/name/Downloads/file.pdf",
-  "local_path": "courses/AP/classwork/Item/attachments/file.pdf",
-  "sha256": "...",
+  "downloadStatus": "downloaded",
+  "downloadAttemptUrl": "https://drive.google.com/uc?export=download&id=...",
+  "browserDownloadFilename": "CourseBinder/AP_Calculus__Derivative_Practice__71908c7e/Derivative_Practice_PDF",
+  "originalDownloadPath": "/Users/name/Downloads/CourseBinder/AP_Calculus__Derivative_Practice__71908c7e/Derivative_Practice_PDF",
   "bytes": 12345,
-  "extracted_text_path": "courses/AP/classwork/Item/extracted/file.md"
+  "mime": "application/pdf"
 }
 ```
 
+Possible `downloadStatus` values are:
+
+- `queued`: CourseBinder found a visible/downloadable-looking attachment link before a browser download attempt.
+- `downloaded`: Chrome reported that the browser download completed.
+- `failed`: Chrome could not complete the attempted browser download; the record should include `downloadError` when available.
+- `metadata_only`: CourseBinder saved only the link/metadata, usually for external links, folders, media, or view-only/download-disabled material.
+
+Native-host archive records may additionally include archive-owned paths and hashes such as `local_path`, `sha256`, and `extracted_text_path` after the local helper copies and processes completed downloads.
+
 ## Item Markdown
 
-Every item gets an `item.md` with frontmatter, instructions, attachment references, and an AI safety note.
+Every item gets an `item.md` with frontmatter, instructions, attachment references, attachment-status notes, and an AI safety note.
 
 ## Indexes
 

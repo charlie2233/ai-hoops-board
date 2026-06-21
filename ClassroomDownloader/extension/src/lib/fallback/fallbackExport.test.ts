@@ -179,6 +179,8 @@ describe("fallback browser-download export", () => {
     expect(itemJson.attachments[1].downloadStatus).toBe("failed");
     expect(itemMarkdown).toContain("downloaded");
     expect(itemMarkdown).toContain("SERVER_BAD_CONTENT");
+    expect(itemMarkdown).toContain("Attachment download statuses are best-effort browser results.");
+    expect(itemMarkdown).toContain("does not bypass view-only");
     expect(manifestRows.map((row) => row.downloadStatus)).toEqual(["downloaded", "failed"]);
   });
 
