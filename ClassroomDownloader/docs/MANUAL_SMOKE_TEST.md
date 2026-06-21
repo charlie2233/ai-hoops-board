@@ -13,6 +13,12 @@ This smoke test proves that CourseBinder can:
 
 It does not prove native-host archive writing, hashing, extraction, indexing, MCP, or whole-class crawling. Those are optional/local-development paths.
 
+## Automated Fixture Smoke Caveat
+
+`npm run smoke:fixture` and `npm run smoke:zip` use a local Classroom-shaped HTML fixture, then let Chrome handle any Google Drive or Docs attachment download attempts through the real browser download stack. Because that fixture run is not logged in to Google, attachment attempts may report failures such as `SERVER_BAD_CONTENT` or interrupted Google HTML responses.
+
+That is not a failure of the no-native page export. The automated smoke is considered passing when the extension loads, the popup works, all six browser-download archive files are written, and attachment failures are recorded clearly in `item.json` and `attachments.manifest.jsonl`. Real attachment success still needs a manual logged-in Classroom page with a small, non-sensitive, downloadable file.
+
 ## Preflight
 
 From the repository root, build the extension:
