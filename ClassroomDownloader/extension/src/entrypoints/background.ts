@@ -1,11 +1,12 @@
 import { defineBackground } from "wxt/utils/define-background";
 import { browser, type Browser } from "wxt/browser";
-import { inferExportItem } from "../lib/extractors/assignmentPage";
+import { inferExportItem, type ExportItem } from "../lib/extractors/assignmentPage";
 import type { PageSnapshot } from "../lib/extractors/classroomPage";
 import {
   buildDownloadJobs,
   buildFinalizeDownloadResultsMessage,
-  downloadJobs
+  downloadJobs,
+  type DownloadResult
 } from "../lib/downloads/downloadQueue";
 import {
   buildFallbackSessionName,
@@ -18,8 +19,40 @@ import { userFacingExtractionError } from "../lib/runtime/errors";
 interface ExtractResponse {
   ok: boolean;
   snapshot?: PageSnapshot;
-  item?: ReturnType<typeof inferExportItem>;
+  item?: ExportItem;
   error?: string;
+}
+
+function mergeDownloadResultsIntoItem(item: ExportItem, results: DownloadResult[]): ExportItem {
+  if (!results.length) return item;
+
+  const resultsByAttachment = new Map<string, DownloadResult>();
+  for (const result of results) {
+    if (!resultsByAttachment.has(result.attachmentId)) {
+      resultsByAttachment.set(result.attachmentId, result);
+    }
+  }
+
+  return {
+    ...item,
+    attachments: item.attachments.map((attachment) => {
+      const result = resultsByAttachment.get(attachment.id);
+      if (!result) return attachment;
+
+      const updatedAttachment = {
+        ...attachment,
+        downloadStatus: result.downloadStatus || (result.ok ? "downloaded" : "failed"),
+        downloadAttemptUrl: result.url,
+        browserDownloadFilename: result.filename,
+      };
+      if (result.originalDownloadPath) updatedAttachment.originalDownloadPath = result.originalDownloadPath;
+      if (result.bytes) updatedAttachment.bytes = result.bytes;
+      if (result.mime) updatedAttachment.mime = result.mime;
+      if (result.error) updatedAttachment.downloadError = result.error;
+      if (result.downloadId) updatedAttachment.downloadId = result.downloadId;
+      return updatedAttachment;
+    })
+  };
 }
 
 async function activeClassroomTab(): Promise<Browser.tabs.Tab> {
@@ -46,7 +79,7 @@ async function extractCurrentPage(): Promise<ExtractResponse> {
 async function exportCurrentPage(downloadAttachments: boolean) {
   const extracted = await extractCurrentPage();
   const snapshot = extracted.snapshot!;
-  const item = extracted.item || inferExportItem(snapshot);
+  let item = extracted.item || inferExportItem(snapshot);
   const fallbackSessionName = buildFallbackSessionName(item);
   const jobs = downloadAttachments ? buildDownloadJobs(item.attachments, fallbackSessionName) : [];
 
@@ -85,6 +118,20 @@ async function exportCurrentPage(downloadAttachments: boolean) {
     downloadRecordResponse = await sendNativeMessage(
       buildFinalizeDownloadResultsMessage(item.id, nativeResponse.paths.item_dir, downloadResults)
     );
+  }
+
+  if (!nativeResponse.ok && fallbackResponse?.ok && downloadResults.length > 0) {
+    item = mergeDownloadResultsIntoItem(item, downloadResults);
+    try {
+      fallbackResponse = await downloadFallbackExport(item, snapshot, fallbackSessionName);
+    } catch (error) {
+      fallbackResponse = {
+        ...fallbackResponse,
+        error: `Saved initial archive files, but could not update attachment download results: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      };
+    }
   }
 
   await browser.storage.session.set({

@@ -134,6 +134,54 @@ describe("fallback browser-download export", () => {
     );
   });
 
+  it("writes attachment download outcomes into Markdown, JSON, and manifest files", () => {
+    const itemWithResults: ExportItem = {
+      ...item,
+      attachments: [
+        {
+          id: "attachment:downloaded",
+          title: "Downloaded PDF",
+          kind: "drive_file",
+          sourceUrl: "https://drive.google.com/file/d/downloaded/view",
+          browserDownloadUrl: "https://drive.google.com/uc?export=download&id=downloaded",
+          exportUrls: [],
+          downloadStatus: "downloaded",
+          browserDownloadFilename: "CourseBinder/AP/Downloaded_PDF",
+          originalDownloadPath: "/Users/student/Downloads/CourseBinder/AP/Downloaded_PDF",
+          bytes: 2048,
+          mime: "application/pdf",
+          downloadId: 42
+        },
+        {
+          id: "attachment:failed",
+          title: "Failed PDF",
+          kind: "drive_file",
+          sourceUrl: "https://drive.google.com/file/d/failed/view",
+          browserDownloadUrl: "https://drive.google.com/uc?export=download&id=failed",
+          exportUrls: [],
+          downloadStatus: "failed",
+          browserDownloadFilename: "CourseBinder/AP/Failed_PDF",
+          downloadError: "SERVER_BAD_CONTENT",
+          downloadId: 43
+        }
+      ]
+    };
+    const files = buildFallbackExportFiles(itemWithResults, snapshot);
+    const itemJson = JSON.parse(files.find((file) => file.name === "item.json")!.text);
+    const itemMarkdown = files.find((file) => file.name === "item.md")!.text;
+    const manifestRows = files
+      .find((file) => file.name === "attachments.manifest.jsonl")!
+      .text.trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+
+    expect(itemJson.attachments[0].downloadStatus).toBe("downloaded");
+    expect(itemJson.attachments[1].downloadStatus).toBe("failed");
+    expect(itemMarkdown).toContain("downloaded");
+    expect(itemMarkdown).toContain("SERVER_BAD_CONTENT");
+    expect(manifestRows.map((row) => row.downloadStatus)).toEqual(["downloaded", "failed"]);
+  });
+
   it("queues every fallback archive file through Chrome downloads", async () => {
     downloadMock.mockResolvedValueOnce(101);
     downloadMock.mockResolvedValueOnce(102);

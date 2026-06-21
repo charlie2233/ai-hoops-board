@@ -385,6 +385,41 @@ async function main() {
       successfulAttachmentDownloads.length + failedAttachmentDownloads.length === expectedAttachmentDownloadCount,
       "Attachment download accounting did not add up."
     );
+    const finalArchiveDownloads = await serviceWorker.evaluate(
+      async () => await new Promise((resolve) => chrome.downloads.search({}, resolve))
+    );
+    const finalDownloadById = new Map(finalArchiveDownloads.map((download) => [download.id, download]));
+    const finalFallbackDownloadIds = exportDownloadResponse.fallbackResponse?.downloadIds || [];
+    assert(
+      finalFallbackDownloadIds.length === expectedFiles.length,
+      `Expected ${expectedFiles.length} final fallback download IDs after Export + download, got ${finalFallbackDownloadIds.length}.`
+    );
+    const finalItemJsonPath = finalDownloadById.get(finalFallbackDownloadIds[0])?.filename;
+    const finalAttachmentManifestPath = finalDownloadById.get(finalFallbackDownloadIds[4])?.filename;
+    assert(existingFile(finalItemJsonPath), `Final item.json is missing on disk: ${finalItemJsonPath}`);
+    assert(
+      existingFile(finalAttachmentManifestPath),
+      `Final attachments.manifest.jsonl is missing on disk: ${finalAttachmentManifestPath}`
+    );
+    const finalItemJson = readJson(finalItemJsonPath);
+    const finalAttachmentManifest = parseJsonl(
+      readText(finalAttachmentManifestPath),
+      "final attachments.manifest.jsonl"
+    );
+    assert(
+      finalItemJson.attachments.filter((attachment) => attachment.downloadStatus === "failed").length ===
+        failedAttachmentDownloads.length,
+      `Final item.json did not record failed attachment download statuses: ${JSON.stringify(finalItemJson.attachments, null, 2)}`
+    );
+    assert(
+      finalAttachmentManifest.filter((attachment) => attachment.downloadStatus === "failed").length ===
+        failedAttachmentDownloads.length,
+      `Final attachments.manifest.jsonl did not record failed attachment download statuses: ${JSON.stringify(
+        finalAttachmentManifest,
+        null,
+        2
+      )}`
+    );
 
     const summary = {
       ok: true,

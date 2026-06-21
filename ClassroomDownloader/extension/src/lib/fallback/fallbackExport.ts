@@ -49,7 +49,14 @@ export function renderFallbackMarkdown(item: ExportItem): string {
   const attachments = item.attachments.length
     ? item.attachments.map((attachment) => {
         const status = attachment.downloadStatus || "metadata_only";
-        return `- **${attachment.title}** (${attachment.kind}, ${status}): ${attachment.sourceUrl}`;
+        const details = [
+          attachment.originalDownloadPath ? `saved by Chrome: \`${attachment.originalDownloadPath}\`` : "",
+          attachment.downloadError ? `error: ${attachment.downloadError}` : "",
+          attachment.reason ? `reason: ${attachment.reason}` : ""
+        ].filter(Boolean);
+        return `- **${attachment.title}** (${attachment.kind}, ${status}): ${attachment.sourceUrl}${
+          details.length ? ` (${details.join("; ")})` : ""
+        }`;
       })
     : ["- No attachment links were detected on the visible page."];
 

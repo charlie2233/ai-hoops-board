@@ -17,7 +17,14 @@ export interface AttachmentCandidate {
   sourceUrl: string;
   browserDownloadUrl?: string;
   exportUrls: string[];
-  downloadStatus: "queued" | "metadata_only";
+  downloadStatus: "queued" | "metadata_only" | "downloaded" | "failed" | "in_progress";
+  downloadAttemptUrl?: string;
+  browserDownloadFilename?: string;
+  originalDownloadPath?: string;
+  bytes?: number;
+  mime?: string;
+  downloadError?: string;
+  downloadId?: number;
   reason?: string;
 }
 
