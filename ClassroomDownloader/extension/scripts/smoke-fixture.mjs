@@ -224,6 +224,7 @@ async function main() {
     const popupText = await popupPage.evaluate(() => document.body.innerText);
     assert(popupText.includes("Archive mode"), "Popup did not show archive mode label after export.");
     assert(popupText.includes("Browser downloads"), "Popup did not show browser-download mode after export.");
+    assert(popupText.includes("Downloads/CourseBinder/"), "Popup did not show a full Downloads/CourseBinder last export path.");
     assert(popupText.includes("No downloads queued"), "Popup should say no downloads were queued for Export page.");
     assert(!popupText.includes("0/0 browser downloads completed"), "Popup should not show a confusing 0/0 download summary.");
     assert(!popupText.includes("Native host unavailable"), "Popup should not present browser-download mode as a native-host failure.");

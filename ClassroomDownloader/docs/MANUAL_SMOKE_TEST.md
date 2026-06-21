@@ -72,10 +72,11 @@ Do not install or configure the native host for this default Web Store smoke tes
 7. Click `Export page`.
 8. Wait until the popup shows `Saved browser-download archive files.`
 9. Confirm the popup shows `Downloads` as `No downloads queued`.
+10. Confirm `Last export` starts with `Downloads/CourseBinder/` and ends with `/item.md`.
 
 ## Verify Files
 
-Open the browser downloads list or Finder and locate the newest folder under:
+Open the browser downloads list or Finder and locate the folder shown by `Last export` in the popup under:
 
 ```txt
 Downloads/CourseBinder/
@@ -90,18 +91,19 @@ The session folder should contain:
 - `attachments.manifest.jsonl`
 - `page.snapshot.html`
 
-Quick terminal check:
+Quick terminal check. This finds the newest exported `item.json` file rather than the newest folder, because CourseBinder intentionally reuses stable folders and overwrites generated archive files on repeated exports:
 
 ```bash
-LATEST="$(ls -td "$HOME/Downloads/CourseBinder"/* 2>/dev/null | head -1)"
-echo "$LATEST"
-ls -1 "$LATEST"
-python3 -m json.tool "$LATEST/item.json" >/dev/null
-test -s "$LATEST/item.md"
-test -s "$LATEST/raw_text.txt"
-test -s "$LATEST/links.jsonl"
-test -s "$LATEST/attachments.manifest.jsonl"
-test -s "$LATEST/page.snapshot.html"
+LATEST_ITEM="$(find "$HOME/Downloads/CourseBinder" -name item.json -type f -print0 2>/dev/null | xargs -0 ls -t | head -1)"
+EXPORT_DIR="$(dirname "$LATEST_ITEM")"
+echo "$EXPORT_DIR"
+ls -1 "$EXPORT_DIR"
+python3 -m json.tool "$EXPORT_DIR/item.json" >/dev/null
+test -s "$EXPORT_DIR/item.md"
+test -s "$EXPORT_DIR/raw_text.txt"
+test -s "$EXPORT_DIR/links.jsonl"
+test -s "$EXPORT_DIR/attachments.manifest.jsonl"
+test -s "$EXPORT_DIR/page.snapshot.html"
 ```
 
 If `item.json` parses and all six files exist, the no-native current-page export is usable.
@@ -113,6 +115,7 @@ Only run this on a page with a small, non-sensitive, clearly downloadable attach
 1. Click `Export + download`.
 2. Confirm the popup reports how many browser downloads completed or failed.
 3. Confirm completed attachment downloads are saved under the same `Downloads/CourseBinder/<session>/` folder as the exported archive files.
+4. Reopen `item.json` or `attachments.manifest.jsonl` and confirm any attempted attachment downloads now show `downloadStatus` as `downloaded` or `failed`, not just `queued`.
 
 The default Web Store build does not hash, extract, index, or copy downloaded attachments into a separate archive-owned mirror. That richer flow belongs to the optional native-host build.
 

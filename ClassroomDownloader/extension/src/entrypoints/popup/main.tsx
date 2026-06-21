@@ -44,6 +44,23 @@ function exportMessageFor(response: any): string {
   return `Snapshot captured, but browser-download fallback did not finish: ${response.fallbackResponse?.error || "unknown error"}`;
 }
 
+function fallbackDisplayPath(fallbackResponse: any): string | undefined {
+  const itemMarkdownPath = fallbackResponse?.paths?.["item.md"];
+  if (itemMarkdownPath) {
+    return itemMarkdownPath.startsWith("Downloads/") ? itemMarkdownPath : `Downloads/${itemMarkdownPath}`;
+  }
+  return fallbackResponse?.root;
+}
+
+function lastExportPathFor(exportRecord: any, fallback: string): string {
+  return (
+    exportRecord?.nativeResponse?.paths?.markdown ||
+    exportRecord?.nativeResponse?.paths?.item_dir ||
+    fallbackDisplayPath(exportRecord?.fallbackResponse) ||
+    fallback
+  );
+}
+
 function App() {
   const operationIdRef = useRef(0);
   const [state, setState] = useState<PopupState>({
@@ -65,12 +82,7 @@ function App() {
       ...current,
       nativeConnected: Boolean(native.connected),
       archiveRoot: native.root || lastExport?.fallbackResponse?.root || "Downloads/CourseBinder",
-      lastExportPath:
-        lastExport?.nativeResponse?.paths?.markdown ||
-        lastExport?.nativeResponse?.paths?.item_dir ||
-        lastExport?.fallbackResponse?.paths?.["item.md"] ||
-        lastExport?.fallbackResponse?.root ||
-        "No export yet",
+      lastExportPath: lastExportPathFor(lastExport, "No export yet"),
       downloadSummary: lastExport?.downloadResults ? downloadSummaryFor(lastExport.downloadResults) : current.downloadSummary
     }));
   }
@@ -138,12 +150,7 @@ function App() {
       title: response.item?.title ?? "Classroom page",
       nativeConnected: Boolean(response.nativeResponse?.ok),
       archiveRoot: response.nativeResponse?.root || response.fallbackResponse?.root || current.archiveRoot,
-      lastExportPath:
-        response.nativeResponse?.paths?.markdown ||
-        response.nativeResponse?.paths?.item_dir ||
-        response.fallbackResponse?.paths?.["item.md"] ||
-        response.fallbackResponse?.root ||
-        current.lastExportPath,
+      lastExportPath: lastExportPathFor(response, current.lastExportPath),
       downloadSummary
     }));
     await refreshNativeHealth();
